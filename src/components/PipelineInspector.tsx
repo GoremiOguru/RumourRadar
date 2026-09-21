@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { VerificationResult } from '@/types';
 import { Activity, CheckCircle, ChevronDown, ChevronUp, Layers, Terminal } from 'lucide-react';

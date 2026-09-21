@@ -1,0 +1,182 @@
+[
+  {
+    "id": "rumor-01",
+    "zone": "South-West (SW)",
+    "category": "banking_fintech",
+    "claim": "OPay is shutting down its operations in Nigeria next month due to regulatory violations",
+    "groundTruthVerdict": "CONTRADICTED",
+    "primaryAuthority": "Central Bank of Nigeria (CBN)",
+    "context": "Viral panic message prompting users to withdraw funds from mobile wallets."
+  },
+  {
+    "id": "rumor-02",
+    "zone": "North-Central (NC)",
+    "category": "banking_fintech",
+    "claim": "CBN announces old N500 and N1000 notes will cease to be legal tender by midnight",
+    "groundTruthVerdict": "CONTRADICTED",
+    "primaryAuthority": "Supreme Court of Nigeria / CBN",
+    "context": "Periodic hoax causing market traders to reject legal tender notes."
+  },
+  {
+    "id": "rumor-03",
+    "zone": "National",
+    "category": "public_health",
+    "claim": "NCDC issues emergency alert on rising Cholera cases across 30 Nigerian states",
+    "groundTruthVerdict": "SUPPORTED",
+    "primaryAuthority": "Nigeria Centre for Disease Control (NCDC)",
+    "context": "Legitimate public health advisory activating emergency response center."
+  },
+  {
+    "id": "rumor-04",
+    "zone": "National",
+    "category": "education_exams",
+    "claim": "JAMB reduces national cutoff mark to 120 for Medicine and Law admissions",
+    "groundTruthVerdict": "MISLEADING",
+    "primaryAuthority": "Joint Admissions and Matriculation Board (JAMB)",
+    "context": "Conflates general minimum national benchmark with competitive university faculty requirements."
+  },
+  {
+    "id": "rumor-05",
+    "zone": "South-West (SW)",
+    "category": "security_alerts",
+    "claim": "24-hour curfew declared across all areas of Lagos State starting 6 PM today",
+    "groundTruthVerdict": "UNVERIFIED",
+    "primaryAuthority": "Lagos State Government / Police Command",
+    "context": "Recycled social media forward causing unnecessary transit panic."
+  },
+  {
+    "id": "rumor-06",
+    "zone": "South-East (SE)",
+    "category": "security_alerts",
+    "claim": "One-week continuous sit-at-home declared across all South-East states by unauthorized faction",
+    "groundTruthVerdict": "CONTRADICTED",
+    "primaryAuthority": "South-East Governors Forum & Police Commands",
+    "context": "Disproven factional audio broadcast refuted by mainstream community leadership."
+  },
+  {
+    "id": "rumor-07",
+    "zone": "South-West (SW)",
+    "category": "transport_infrastructure",
+    "claim": "Third Mainland Bridge closed indefinitely due to structural collapse fear",
+    "groundTruthVerdict": "CONTRADICTED",
+    "primaryAuthority": "Federal Ministry of Works",
+    "context": "False alarm distorting scheduled routine maintenance rehabilitation."
+  },
+  {
+    "id": "rumor-08",
+    "zone": "North-Central (NC)",
+    "category": "elections_politics",
+    "claim": "INEC cancels results in 10 states and postpones general elections",
+    "groundTruthVerdict": "CONTRADICTED",
+    "primaryAuthority": "Independent National Electoral Commission (INEC)",
+    "context": "Sensational post-election disinformation mimicking official INEC font."
+  },
+  {
+    "id": "rumor-09",
+    "zone": "National",
+    "category": "telecom_tech",
+    "claim": "NCC orders immediate disconnection of all SIM cards not linked to NIN within 48 hours",
+    "groundTruthVerdict": "MISLEADING",
+    "primaryAuthority": "Nigerian Communications Commission (NCC)",
+    "context": "Exaggerates phased regulatory enforcement deadlines."
+  },
+  {
+    "id": "rumor-10",
+    "zone": "South-South (SS)",
+    "category": "economy_welfare",
+    "claim": "Federal Government giving N50,000 presidential cash grant to all Nigerian bank accounts without application",
+    "groundTruthVerdict": "CONTRADICTED",
+    "primaryAuthority": "Federal Ministry of Industry, Trade and Investment",
+    "context": "Phishing scam website harvesting BVN and bank account numbers."
+  },
+  {
+    "id": "rumor-11",
+    "zone": "North-West (NW)",
+    "category": "security_alerts",
+    "claim": "Abuja-Kaduna highway completely shut down due to active bandit attacks today",
+    "groundTruthVerdict": "UNVERIFIED",
+    "primaryAuthority": "Kaduna State Security Council / Military",
+    "context": "Uncorroborated panic broadcast circulating without official defense advisory."
+  },
+  {
+    "id": "rumor-12",
+    "zone": "National",
+    "category": "education_exams",
+    "claim": "WAEC announces mass failure and cancels 2024 SSCE results nationwide",
+    "groundTruthVerdict": "CONTRADICTED",
+    "primaryAuthority": "West African Examinations Council (WAEC)",
+    "context": "Fabricated exam panic spreading on student WhatsApp groups."
+  },
+  {
+    "id": "rumor-13",
+    "zone": "North-East (NE)",
+    "category": "humanitarian_welfare",
+    "claim": "UNHCR distributing $500 monthly resettlement allowance to Borno returnees",
+    "groundTruthVerdict": "CONTRADICTED",
+    "primaryAuthority": "Borno State Government / UNHCR",
+    "context": "Imposter portal collecting user details."
+  },
+  {
+    "id": "rumor-14",
+    "zone": "National",
+    "category": "public_health",
+    "claim": "Federal Ministry of Health confirms new Ebola outbreak detected in Abuja",
+    "groundTruthVerdict": "CONTRADICTED",
+    "primaryAuthority": "NCDC / Federal Ministry of Health",
+    "context": "Hoax graphic imitating national television breaking news ticker."
+  },
+  {
+    "id": "rumor-15",
+    "zone": "South-South (SS)",
+    "category": "energy_subsidy",
+    "claim": "Dangote Refinery cuts petrol pump price to N300 per litre starting Monday",
+    "groundTruthVerdict": "CONTRADICTED",
+    "primaryAuthority": "Dangote Group Official Press / NMDPRA",
+    "context": "Wishful pricing rumor circulated by speculative political blogs."
+  },
+  {
+    "id": "rumor-16",
+    "zone": "South-West (SW)",
+    "category": "elections_politics",
+    "claim": "Ondo State governorship election postponed by 3 weeks due to ballot shortages",
+    "groundTruthVerdict": "CONTRADICTED",
+    "primaryAuthority": "INEC Nigeria",
+    "context": "Disinformation aimed at voter demobilization."
+  },
+  {
+    "id": "rumor-17",
+    "zone": "National",
+    "category": "banking_fintech",
+    "claim": "Commercial banks to charge 0.5% cybersecurity levy on all electronic bank transfers",
+    "groundTruthVerdict": "MISLEADING",
+    "primaryAuthority": "Central Bank of Nigeria (CBN)",
+    "context": "Circular was initially issued but subsequently suspended by presidential directive."
+  },
+  {
+    "id": "rumor-18",
+    "zone": "North-Central (NC)",
+    "category": "security_alerts",
+    "claim": "Terrorists planning major strike on luxury hotels in Abuja central district",
+    "groundTruthVerdict": "UNVERIFIED",
+    "primaryAuthority": "Department of State Services (DSS)",
+    "context": "Unverified threat memo circulating without official security alert level escalation."
+  },
+  {
+    "id": "rumor-19",
+    "zone": "South-East (SE)",
+    "category": "education_exams",
+    "claim": "UNN increases tuition fees to N1.5 million for all undergraduate programs",
+    "groundTruthVerdict": "CONTRADICTED",
+    "primaryAuthority": "University of Nigeria, Nsukka Management",
+    "context": "Misrepresentation of proposed non-mandatory postgraduate accommodation rates."
+  },
+  {
+    "id": "rumor-20",
+    "zone": "National",
+    "category": "economy_welfare",
+    "claim": "National Minimum Wage increased to N70,000 following tripartite agreement and presidential assent",
+    "groundTruthVerdict": "SUPPORTED",
+    "primaryAuthority": "Presidency & National Assembly of Nigeria",
+    "context": "Verified new national minimum wage legislation."
+  }
+]

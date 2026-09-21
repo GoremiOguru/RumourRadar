@@ -1,3 +1,21 @@
+/**
+ * ============================================================================
+ * RUMOR RADAR — EVIDENCE-GROUNDED VERIFIER ENGINE
+ * ============================================================================
+ * 
+ * Core Rules:
+ * 1. Evidence-Grounded, Not Memory-Grounded:
+ *    The verifier evaluates ONLY the retrieved live evidence and confirmed
+ *    fact-checks. It is forbidden from guessing based on pretraining memory.
+ * 
+ * 2. Fixed Verdict Schema:
+ *    Supported | Contradicted | Misleading | Unverified
+ * 
+ * 3. Built-in Humility (<60% Rule):
+ *    If confidence score is below 60% or if evidence does not meet high
+ *    authority thresholds, it falls back to 'UNVERIFIED'.
+ */
+
 import { GoogleGenAI, Type } from '@google/genai';
 import { EvidenceItem, ExtractedClaim, FactCheckMatch, VerdictType, ConfidenceLevel, VerificationResult } from '@/types';
 import { VerifierOutputSchema } from './ai-schemas';
@@ -199,6 +217,7 @@ function verifyClaimWithEvidenceFallback(
 ): VerificationResult {
   const topEvidence = evidence[0];
   const queryLower = query.toLowerCase();
+
 
   let verdict: VerdictType = 'UNVERIFIED';
   let confidence: ConfidenceLevel = 'LOW';

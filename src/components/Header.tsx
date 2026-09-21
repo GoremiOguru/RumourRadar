@@ -1,7 +1,11 @@
 import React from 'react';
-import { Radio, ShieldAlert, Cpu, Activity } from 'lucide-react';
+import { Radio, ShieldAlert, Cpu, Activity, HelpCircle, Sparkles } from 'lucide-react';
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  onOpenWhyModal?: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onOpenWhyModal }) => {
   return (
     <header className="w-full border-b border-emerald-900/40 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -29,9 +33,20 @@ export const Header: React.FC = () => {
           </div>
         </div>
 
-        {/* Status Indicators */}
-        <div className="flex items-center space-x-3">
-          <div className="flex items-center space-x-2 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-lg text-xs text-slate-300">
+        {/* Status & Why Modal Button */}
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          {onOpenWhyModal && (
+            <button
+              onClick={onOpenWhyModal}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-300 text-xs font-semibold transition-all shadow-sm"
+              title="See why Rumor Radar is different from plain ChatGPT"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Why Not ChatGPT?</span>
+            </button>
+          )}
+
+          <div className="hidden sm:flex items-center space-x-2 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-lg text-xs text-slate-300">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span className="font-mono text-[11px] text-slate-400">Active Pipeline</span>
           </div>
@@ -45,3 +60,4 @@ export const Header: React.FC = () => {
     </header>
   );
 };
+

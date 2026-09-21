@@ -1,11 +1,25 @@
+/**
+ * ============================================================================
+ * RUMOR RADAR — DETERMINISTIC 5-FACTOR EVIDENCE RANKING ENGINE
+ * ============================================================================
+ * 
+ * Formula:
+ * Score = (0.30 * Authority) + (0.25 * Relevance) + (0.20 * Recency) + 
+ *         (0.15 * Corroboration) + (0.10 * Context)
+ * 
+ * Weights Rationale:
+ * - Authority (30%): Official Nigerian regulators (.gov.ng) & certified fact-checkers.
+ * - Relevance (25%): Normalized claim and semantic keyword overlap.
+ * - Recency (20%): Time decay factor prioritizing current announcements.
+ * - Corroboration (15%): Cross-domain corroboration bonus.
+ * - Context (10%): Information completeness and snippet density.
+ */
+
 import { EvidenceItem } from '@/types';
 
-/**
- * Ranks evidence items using the multi-factor hackathon formula:
- * Score = (0.30 * Authority) + (0.25 * Relevance) + (0.20 * Recency) + (0.15 * Corroboration) + (0.10 * Context)
- */
 export function rankEvidence(items: EvidenceItem[], claimKeywords: string[]): EvidenceItem[] {
   if (!items || items.length === 0) return [];
+
 
   // Deduplicate items with similar titles or same URL
   const seenUrls = new Set<string>();

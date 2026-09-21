@@ -6,6 +6,7 @@ import { VerdictBadge } from '@/components/VerdictBadge';
 import { ConfidenceMeter } from '@/components/ConfidenceMeter';
 import { EvidenceCard } from '@/components/EvidenceCard';
 import { PipelineInspector } from '@/components/PipelineInspector';
+import { WhyRumorRadarModal } from '@/components/WhyRumorRadarModal';
 import { DEMO_PRESETS } from '@/lib/constants';
 import { VerificationResult } from '@/types';
 import {
@@ -20,7 +21,14 @@ import {
   ExternalLink,
   Quote,
   Clock,
-  Zap
+  Zap,
+  Layers,
+  Brain,
+  Database,
+  Calculator,
+  AlertTriangle,
+  ShieldAlert,
+  ChevronRight
 } from 'lucide-react';
 
 export default function Home() {
@@ -30,6 +38,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [usePidgin, setUsePidgin] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isWhyModalOpen, setIsWhyModalOpen] = useState(false);
 
   const handleVerify = async (textToVerify?: string) => {
     const text = textToVerify || query;
@@ -76,7 +85,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-200">
-      <Header />
+      <Header onOpenWhyModal={() => setIsWhyModalOpen(true)} />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
         {/* Hero Section */}
@@ -93,6 +102,41 @@ export default function Home() {
           <p className="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto">
             Paste any viral WhatsApp message, Twitter headline, or breaking forward. Rumor Radar checks verified registries, searches official Nigerian authorities, and returns an evidence-grounded verdict in seconds.
           </p>
+        </div>
+
+        {/* Why Not ChatGPT Banner */}
+        <div 
+          onClick={() => setIsWhyModalOpen(true)}
+          className="group cursor-pointer rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-slate-900/90 to-teal-950/40 p-4 sm:p-5 backdrop-blur-xl shadow-lg hover:border-emerald-500/60 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+        >
+          <div className="flex items-start sm:items-center space-x-3.5">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0 group-hover:scale-105 transition-transform">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h3 className="font-bold text-sm sm:text-base text-white group-hover:text-emerald-300 transition-colors">
+                  Rumor Radar isn't just "ask an LLM"
+                </h3>
+                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  Zero Hallucination
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Evidence-grounded verifier • Nigeria-First Authority Router • 5-factor scoring formula • Built-in humility (&lt;60% rule)
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsWhyModalOpen(true);
+            }}
+            className="self-end sm:self-center flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold transition-all shrink-0"
+          >
+            <span>Compare Architecture</span>
+            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+          </button>
         </div>
 
         {/* Input Form & Demo Pills */}
@@ -228,6 +272,18 @@ export default function Home() {
                     {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
                     <span>{copied ? 'Copied!' : 'Share WhatsApp'}</span>
                   </button>
+
+                  {/* Permalink button */}
+                  <a
+                    href={`/check/${result.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-semibold text-emerald-300 transition-all"
+                    title="Open shareable permanent link"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Permalink</span>
+                  </a>
                 </div>
               </div>
 
@@ -329,7 +385,7 @@ export default function Home() {
                     Ranked Authoritative Evidence ({result.evidence.length})
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Ranked by Authority (30%), Relevance (25%), Recency (20%), and Corroboration (15%)
+                    Ranked by Authority (30%), Relevance (25%), Recency (20%), Corroboration (15%), Context (10%)
                   </p>
                 </div>
               </div>
@@ -346,41 +402,92 @@ export default function Home() {
           </div>
         )}
 
-        {/* Informational Footer Cards */}
+        {/* 6 Architectural Pillars Feature Cards */}
         {!result && !loading && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t border-slate-900">
-            <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/40 space-y-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-bold">
-                1
+          <div className="space-y-4 pt-4 border-t border-slate-900">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-base text-slate-200">The 6 Pillars of Rumor Radar</h3>
+                <p className="text-xs text-slate-400">How our pipeline ensures factual accuracy and zero hallucination</p>
               </div>
-              <h4 className="font-semibold text-sm text-slate-200">Evidence-First AI</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Rather than asking an LLM to guess truth from obsolete weights, Rumor Radar grounds every decision in retrieved Nigerian records.
-              </p>
+              <button
+                onClick={() => setIsWhyModalOpen(true)}
+                className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold"
+              >
+                View Full Comparison &rarr;
+              </button>
             </div>
 
-            <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/40 space-y-2">
-              <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 font-bold">
-                2
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/40 space-y-2 hover:border-slate-700 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-bold">
+                  <Brain className="w-4 h-4" />
+                </div>
+                <h4 className="font-semibold text-sm text-slate-200">Evidence-Grounded</h4>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Forbidden from using training memory. Synthesizes answers exclusively over live verified sources retrieved for that claim.
+                </p>
               </div>
-              <h4 className="font-semibold text-sm text-slate-200">Nigeria-First Authority Routing</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Targeted routing to CBN, INEC, NCDC, JAMB, and WAEC databases prevents social media noise from skewing verdicts.
-              </p>
-            </div>
 
-            <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/40 space-y-2">
-              <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-400 font-bold">
-                3
+              <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/40 space-y-2 hover:border-slate-700 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 font-bold">
+                  <Database className="w-4 h-4" />
+                </div>
+                <h4 className="font-semibold text-sm text-slate-200">Nigeria-First Router</h4>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Targeted routing to CBN, INEC, NCDC, JAMB, and WAEC databases prevents social media noise from skewing verdicts.
+                </p>
               </div>
-              <h4 className="font-semibold text-sm text-slate-200">Designed Uncertainty</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                When official corroboration is lacking, the system returns <span className="text-slate-300 font-semibold">Unverified</span> instead of hallucinating false certainty.
-              </p>
+
+              <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/40 space-y-2 hover:border-slate-700 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400 font-bold">
+                  <Calculator className="w-4 h-4" />
+                </div>
+                <h4 className="font-semibold text-sm text-slate-200">Deterministic Scoring</h4>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Formula: <span className="text-slate-300 font-mono">0.30×Auth + 0.25×Rel + 0.20×Rec + 0.15×Corr + 0.10×Ctx</span> before verifier step.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/40 space-y-2 hover:border-slate-700 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-400 font-bold">
+                  <Layers className="w-4 h-4" />
+                </div>
+                <h4 className="font-semibold text-sm text-slate-200">Fixed Verdict Schema</h4>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Strict schema: Supported, Contradicted, Misleading, or Unverified with 2–4 verified source citations & timestamps.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/40 space-y-2 hover:border-slate-700 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 font-bold">
+                  <AlertTriangle className="w-4 h-4" />
+                </div>
+                <h4 className="font-semibold text-sm text-slate-200">Built-in Humility</h4>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  If confidence falls below 60%, it deliberately yields <span className="text-slate-300 font-semibold">Unverified</span> instead of hallucinating.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/40 space-y-2 hover:border-slate-700 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-400 font-bold">
+                  <ShieldAlert className="w-4 h-4" />
+                </div>
+                <h4 className="font-semibold text-sm text-slate-200">Production Hardened</h4>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Fast cache layer, multi-search provider fallback chains, and adversarial defense against Nigerian satire & jailbreaks.
+                </p>
+              </div>
             </div>
           </div>
         )}
       </main>
+
+      {/* Why Rumor Radar Modal */}
+      <WhyRumorRadarModal
+        isOpen={isWhyModalOpen}
+        onClose={() => setIsWhyModalOpen(false)}
+      />
 
       {/* Footer */}
       <footer className="w-full border-t border-slate-900 bg-slate-950 py-6 text-center text-xs text-slate-500">
@@ -392,3 +499,4 @@ export default function Home() {
     </div>
   );
 }
+
