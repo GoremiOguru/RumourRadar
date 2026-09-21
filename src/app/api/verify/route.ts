@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     const rankedEvidence = rankEvidence(rawEvidence, claimKeywords);
 
     // Stage 4: Evidence-Grounded Verification Synthesis
-    const result = verifyClaimWithEvidence(
+    const result = await verifyClaimWithEvidence(
       claim,
       rankedEvidence,
       factCheckMatch,

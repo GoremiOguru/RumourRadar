@@ -1,14 +1,94 @@
+import { GoogleGenAI, Type } from '@google/genai';
 import { ClaimCategory, ExtractedClaim } from '@/types';
+import { ExtractedClaimSchema } from './ai-schemas';
 
 /**
- * Extracts normalized factual claims from messy social messages or URLs.
- * Categorizes and isolates the core testable assertion.
+ * Initialize Google GenAI client if the GEMINI_API_KEY environment variable is present.
+ */
+const apiKey = process.env.GEMINI_API_KEY || '';
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
+
+/**
+ * Stage 1: Claim Extractor & Normalizer
+ * Extracts normalized factual assertions from messy social messages or URLs using Gemini 1.5 Flash.
+ * Falls back to deterministic Nigerian heuristic rules if API key is missing or request fails.
  */
 export async function extractClaim(rawInput: string): Promise<ExtractedClaim> {
   const cleanedInput = rawInput.trim();
 
-  // Heuristic rule-based claim extraction & categorization
-  const lower = cleanedInput.toLowerCase();
+  // If no API key is configured, gracefully fall back to local rule-based extraction
+  if (!ai) {
+    console.info('[RumorRadar AI] GEMINI_API_KEY not found. Running heuristic fallback.');
+    return extractClaimFallback(cleanedInput);
+  }
+
+  try {
+    const systemInstruction = `
+You are the Claim Extraction Engine of Rumor Radar, a specialized fact-checking platform for Nigeria.
+Your job is to read raw, noisy social messages (e.g. WhatsApp forwards, tweets, Facebook posts) and extract:
+1. "normalizedClaim": Strip all panic and forwarding text ("BREAKING", "Forward to all groups", "Pls read urgent!"). Rephrase the core factual assertion into a neutral, single-sentence claim.
+2. "entity": Identify the primary Nigerian institution or personality (e.g. CBN, INEC, JAMB, NCDC, OPay, Dangote).
+3. "category": Must be one of: banking_fintech, elections_politics, education_exams, telecom_tech, public_health, security_alerts, general.
+4. "location": City or state if mentioned (e.g. "Lagos", "Abuja"), otherwise "Nigeria (National)".
+5. "isTestableClaim": true if this is an objective testable assertion of fact; false if it is merely an opinion, greeting, religious text, or nonsense.
+`.trim();
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.6-flash',
+      contents: `Extract the claim from this raw message:\n\n"${cleanedInput}"`,
+      config: {
+        systemInstruction,
+        temperature: 0.1, // Near-zero temperature for strictly factual, repeatable classification
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            normalizedClaim: { type: Type.STRING },
+            entity: { type: Type.STRING },
+            category: {
+              type: Type.STRING,
+              enum: [
+                'banking_fintech',
+                'elections_politics',
+                'education_exams',
+                'telecom_tech',
+                'public_health',
+                'security_alerts',
+                'general'
+              ]
+            },
+            location: { type: Type.STRING },
+            isTestableClaim: { type: Type.BOOLEAN }
+          },
+          required: ['normalizedClaim', 'entity', 'category', 'location', 'isTestableClaim']
+        }
+      }
+    });
+
+    const jsonText = response.text || '{}';
+    const parsedData = JSON.parse(jsonText);
+    const validated = ExtractedClaimSchema.parse(parsedData);
+
+    return {
+      normalizedClaim: validated.normalizedClaim,
+      entity: validated.entity,
+      category: validated.category as ClaimCategory,
+      location: validated.location,
+      dateClaimed: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      rawText: cleanedInput
+    };
+  } catch (error) {
+    console.error('[RumorRadar AI] Gemini extraction failed, using heuristic fallback:', error);
+    return extractClaimFallback(cleanedInput);
+  }
+}
+
+/**
+ * Deterministic Heuristic Fallback Engine
+ * Ensures 100% uptime during hackathon demos even without internet or if API rate limit triggers.
+ */
+function extractClaimFallback(rawInput: string): ExtractedClaim {
+  const lower = rawInput.toLowerCase();
 
   let category: ClaimCategory = 'general';
   let entity = 'Nigeria';
@@ -46,13 +126,12 @@ export async function extractClaim(rawInput: string): Promise<ExtractedClaim> {
     else entity = 'Security & Defence Authorities';
   }
 
-  // Generate normalized claim statement by stripping clickbait and urgency markers
-  let normalized = cleanedInput
+  // Strip clickbait and urgency markers
+  let normalized = rawInput
     .replace(/^(BREAKING|URGENT|ATTENTION|VIRAL|ALERT|SECURITY ALERT|JUST IN):\s*/i, '')
     .replace(/(share this to 10 groups|forward to everyone|withdraw all your money|do not ignore)\.?/gi, '')
     .trim();
 
-  // If text is too long, take the primary sentence
   if (normalized.length > 200) {
     const firstSentence = normalized.split(/[.\n!?]/)[0];
     if (firstSentence && firstSentence.length > 20) {
