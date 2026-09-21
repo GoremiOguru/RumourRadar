@@ -9,8 +9,8 @@ interface CacheEntry {
 // In-memory cache for ultra-fast sub-100ms response on repeat queries
 const claimCache = new Map<string, CacheEntry>();
 
-// Cache TTL: 12 Hours
-const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
+// Cache TTL: 1 Hour (Ensures fast response while keeping breaking news fresh)
+const CACHE_TTL_MS = 60 * 60 * 1000;
 
 /**
  * Computes a normalized SHA-256 hash for a claim text.

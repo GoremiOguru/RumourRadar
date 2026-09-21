@@ -1,71 +1,120 @@
 import { ClaimCategory, ExtractedClaim } from '@/types';
+import { ExtractedClaimSchema } from './ai-schemas';
+import { openrouter, openRouterApiKey, FREE_MODELS } from './openrouter';
 
 /**
- * Extracts normalized factual claims from messy social messages or URLs.
- * Categorizes and isolates the core testable assertion.
+ * Stage 1: Claim Extractor & Normalizer
+ * Extracts normalized factual assertions from messy social messages or URLs using OpenRouter.
+ * Routes dynamically through OpenRouter's free tier pool.
  */
 export async function extractClaim(rawInput: string): Promise<ExtractedClaim> {
   const cleanedInput = rawInput.trim();
 
-  // Heuristic rule-based claim extraction & categorization
-  const lower = cleanedInput.toLowerCase();
-
-  let category: ClaimCategory = 'general';
-  let entity = 'Nigeria';
-
-  if (lower.includes('cbn') || lower.includes('opay') || lower.includes('moniepoint') || lower.includes('bank') || lower.includes('naira') || lower.includes('fintech') || lower.includes('withdraw') || lower.includes('flutterwave')) {
-    category = 'banking_fintech';
-    if (lower.includes('opay')) entity = 'OPay';
-    else if (lower.includes('cbn') || lower.includes('central bank')) entity = 'Central Bank of Nigeria (CBN)';
-    else if (lower.includes('moniepoint')) entity = 'Moniepoint';
-    else entity = 'Banking / Financial System';
-  } else if (lower.includes('inec') || lower.includes('election') || lower.includes('tinubu') || lower.includes('president') || lower.includes('governor') || lower.includes('minister') || lower.includes('vote')) {
-    category = 'elections_politics';
-    if (lower.includes('inec')) entity = 'INEC';
-    else if (lower.includes('tinubu')) entity = 'President Bola Tinubu';
-    else entity = 'Federal Government of Nigeria';
-  } else if (lower.includes('jamb') || lower.includes('waec') || lower.includes('neco') || lower.includes('utme') || lower.includes('admission') || lower.includes('university') || lower.includes('nuc')) {
-    category = 'education_exams';
-    if (lower.includes('jamb') || lower.includes('utme')) entity = 'JAMB';
-    else if (lower.includes('waec')) entity = 'WAEC';
-    else entity = 'Education Authorities';
-  } else if (lower.includes('ncdc') || lower.includes('cholera') || lower.includes('lassa') || lower.includes('outbreak') || lower.includes('health') || lower.includes('vaccine') || lower.includes('hospital') || lower.includes('nafdac')) {
-    category = 'public_health';
-    if (lower.includes('ncdc')) entity = 'NCDC';
-    else if (lower.includes('nafdac')) entity = 'NAFDAC';
-    else entity = 'Federal Ministry of Health / NCDC';
-  } else if (lower.includes('ncc') || lower.includes('mtn') || lower.includes('airtel') || lower.includes('glo') || lower.includes('network') || lower.includes('sim') || lower.includes('nin') || lower.includes('data')) {
-    category = 'telecom_tech';
-    if (lower.includes('ncc')) entity = 'NCC';
-    else if (lower.includes('mtn')) entity = 'MTN Nigeria';
-    else entity = 'Telecom Regulatory Commission';
-  } else if (lower.includes('curfew') || lower.includes('riot') || lower.includes('kidnap') || lower.includes('police') || lower.includes('army') || lower.includes('attack') || lower.includes('gunmen') || lower.includes('alert') || lower.includes('security')) {
-    category = 'security_alerts';
-    if (lower.includes('lagos')) entity = 'Lagos State Security Council';
-    else if (lower.includes('police')) entity = 'Nigeria Police Force';
-    else entity = 'Security & Defence Authorities';
+  if (!openRouterApiKey) {
+    throw new Error('OPENROUTER_API_KEY is not configured in .env.local');
   }
 
-  // Generate normalized claim statement by stripping clickbait and urgency markers
-  let normalized = cleanedInput
-    .replace(/^(BREAKING|URGENT|ATTENTION|VIRAL|ALERT|SECURITY ALERT|JUST IN):\s*/i, '')
-    .replace(/(share this to 10 groups|forward to everyone|withdraw all your money|do not ignore)\.?/gi, '')
-    .trim();
+  const systemInstruction = `
+You are the Claim Extraction Engine of Rumor Radar, a specialized fact-checking platform for Nigeria.
+Your job is to read raw, noisy social messages (e.g. WhatsApp forwards, tweets, Facebook posts) and return a JSON object with:
+1. "normalizedClaim": Strip all panic and forwarding text ("BREAKING", "Forward to all groups", "Pls read urgent!"). Rephrase the core factual assertion into a neutral, single-sentence claim.
+2. "entity": Identify the primary Nigerian institution or personality (e.g. CBN, INEC, JAMB, NCDC, OPay, Dangote).
+3. "category": Must be one of: "banking_fintech", "elections_politics", "education_exams", "telecom_tech", "public_health", "security_alerts", "general".
+4. "location": City or state if mentioned (e.g. "Lagos", "Abuja"), otherwise "Nigeria (National)".
+5. "isTestableClaim": true if this is an objective testable assertion of fact; false if it is merely an opinion, greeting, religious text, or nonsense.
 
-  // If text is too long, take the primary sentence
-  if (normalized.length > 200) {
-    const firstSentence = normalized.split(/[.\n!?]/)[0];
-    if (firstSentence && firstSentence.length > 20) {
-      normalized = firstSentence.trim();
+Respond ONLY with valid JSON.
+`.trim();
+
+  let completion;
+  try {
+    // 1. Primary: openrouter/free dynamic router
+    completion = await openrouter.chat.completions.create({
+      model: FREE_MODELS.PRIMARY,
+      messages: [
+        { role: 'system', content: systemInstruction },
+        { role: 'user', content: `Extract the claim from this raw message:\n\n"${cleanedInput}"` }
+      ],
+      temperature: 0.1,
+      response_format: { type: 'json_object' }
+    });
+  } catch (primaryErr) {
+    console.warn('[RumorRadar AI] Primary model busy, switching to fallback free model...', primaryErr);
+    completion = await openrouter.chat.completions.create({
+      model: FREE_MODELS.FALLBACK,
+      messages: [
+        { role: 'system', content: systemInstruction },
+        { role: 'user', content: `Extract the claim from this raw message:\n\n"${cleanedInput}"` }
+      ],
+      temperature: 0.1,
+      response_format: { type: 'json_object' }
+    });
+  }
+
+  const content = completion.choices[0]?.message?.content || '{}';
+  const sanitized = sanitizeClaimOutput(content, cleanedInput);
+  const validated = ExtractedClaimSchema.parse(sanitized);
+
+  return {
+    normalizedClaim: validated.normalizedClaim,
+    entity: validated.entity,
+    category: validated.category as ClaimCategory,
+    location: validated.location,
+    dateClaimed: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+    rawText: cleanedInput
+  };
+}
+
+function sanitizeClaimOutput(raw: string, fallbackText: string): any {
+  let text = raw.trim();
+  const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fenceMatch && fenceMatch[1]) {
+    text = fenceMatch[1].trim();
+  }
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  if (start !== -1 && end !== -1 && end > start) {
+    text = text.slice(start, end + 1);
+  }
+  let data: any = {};
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    console.warn('[RumorRadar AI] Claim parse notice, text was:', text);
+  }
+
+  if (data && typeof data === 'object' && !data.normalizedClaim) {
+    for (const key of ['result', 'data', 'claim', 'output']) {
+      if (data[key] && typeof data[key] === 'object' && data[key].normalizedClaim) {
+        data = data[key];
+        break;
+      }
+    }
+    if (!data.normalizedClaim) {
+      for (const k of Object.keys(data)) {
+        if (data[k] && typeof data[k] === 'object' && data[k].normalizedClaim) {
+          data = data[k];
+          break;
+        }
+      }
     }
   }
 
-  return {
-    normalizedClaim: normalized,
-    entity,
-    category,
-    location: lower.includes('lagos') ? 'Lagos, Nigeria' : lower.includes('abuja') ? 'Abuja, Nigeria' : 'Nigeria (National)',
-    dateClaimed: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-    rawText: rawInput
-  };
+  if (!data.normalizedClaim || typeof data.normalizedClaim !== 'string') {
+    data.normalizedClaim = fallbackText;
+  }
+  if (!data.entity || typeof data.entity !== 'string') {
+    data.entity = 'Nigeria';
+  }
+  if (!data.category || typeof data.category !== 'string') {
+    data.category = 'general';
+  }
+  if (!data.location || typeof data.location !== 'string') {
+    data.location = 'Nigeria (National)';
+  }
+  if (typeof data.isTestableClaim !== 'boolean') {
+    data.isTestableClaim = true;
+  }
+
+  return data;
 }

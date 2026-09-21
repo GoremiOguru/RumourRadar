@@ -24,7 +24,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { extractClaim } from '@/lib/claim-extractor';
-import { extractClaimWithGemini, synthesizeVerdictWithGemini } from '@/lib/gemini';
 import { lookupGoogleFactCheck } from '@/lib/factcheck-api';
 import { searchAuthoritativeEvidence } from '@/lib/search-provider';
 import { rankEvidence } from '@/lib/evidence-ranker';
@@ -54,9 +53,8 @@ export async function POST(req: NextRequest) {
     const scraped = await scrapeArticleIfUrl(query);
     const textToProcess = scraped.isUrl && scraped.extractedQuery ? scraped.extractedQuery : query;
 
-    // Stage 1: Claim Extraction & Normalization (Gemini AI with heuristic fallback)
-    const geminiClaim = await extractClaimWithGemini(textToProcess);
-    const claim = geminiClaim || await extractClaim(textToProcess);
+    // Stage 1: Claim Extraction & Normalization (OpenRouter AI)
+    const claim = await extractClaim(textToProcess);
 
     // Stage 2: Parallel Dual-Channel Retrieval (Google Fact Check + Nigeria-First Authority Router)
     const [factCheckMatch, rawEvidence] = await Promise.all([
@@ -68,50 +66,17 @@ export async function POST(req: NextRequest) {
     const claimKeywords = claim.normalizedClaim.split(/\s+/).filter(w => w.length > 3);
     const rankedEvidence = rankEvidence(rawEvidence, claimKeywords);
 
-    // Stage 4: Evidence-Grounded Verification Synthesis (Gemini AI with verifier fallback)
-    let result: VerificationResult;
-    const geminiSynthesis = await synthesizeVerdictWithGemini(claim, rankedEvidence, factCheckMatch);
+    // Stage 4: Evidence-Grounded Verification Synthesis
+    const result = await verifyClaimWithEvidence(
+      claim,
+      rankedEvidence,
+      factCheckMatch,
+      query,
+      startTime
+    );
 
-    if (geminiSynthesis) {
-      const duration = Date.now() - startTime;
-      result = {
-        id: `check-${Date.now()}`,
-        query,
-        extractedClaim: claim,
-        verdict: geminiSynthesis.verdict,
-        confidence: geminiSynthesis.confidence,
-        confidenceScore: geminiSynthesis.confidenceScore,
-        reasoning: geminiSynthesis.reasoning,
-        shortExplanation: geminiSynthesis.shortExplanation,
-        pidginExplanation: geminiSynthesis.pidginExplanation,
-        keyQuote: geminiSynthesis.keyQuote,
-        evidence: rankedEvidence,
-        factCheckFound: !!factCheckMatch,
-        factCheckDetails: factCheckMatch || undefined,
-        verifiedAt: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WAT',
-        processingTimeMs: duration,
-        pipelineStages: [
-          { stage: '1. Live URL & Claim Extraction (Gemini AI)', status: 'completed', durationMs: Math.round(duration * 0.2), details: `Entity: "${claim.entity}" | Category: ${claim.category}` },
-          { stage: '2. Google Fact Check Tools API', status: factCheckMatch ? 'completed' : 'fallback', durationMs: Math.round(duration * 0.2), details: factCheckMatch ? `Match: ${factCheckMatch.publisher}` : 'Checked Global Registry' },
-          { stage: '3. Nigeria-First Authority Search (Serper/Live)', status: 'completed', durationMs: Math.round(duration * 0.3), details: `Scanned ${rankedEvidence.length} Nigerian authoritative sources` },
-          { stage: '4. Multi-Factor Formula Ranking Engine', status: 'completed', durationMs: Math.round(duration * 0.1), details: `Formula: 0.30×Auth + 0.25×Rel + 0.20×Rec + 0.15×Corr + 0.10×Ctx` },
-          { stage: '5. Evidence-Grounded Synthesis (Gemini AI)', status: 'completed', durationMs: Math.round(duration * 0.2), details: `Verdict: ${geminiSynthesis.verdict} (${geminiSynthesis.confidenceScore}% Confidence)` }
-        ]
-      };
-    } else {
-      // Deterministic fallback verifier engine
-      result = verifyClaimWithEvidence(
-        claim,
-        rankedEvidence,
-        factCheckMatch,
-        query,
-        startTime
-      );
-    }
-
-    // Stage 5: Cache & Persist
+    // Stage 5: Cache & Persist (Instant repeat queries + Supabase storage)
     setCachedResult(query, result);
-    // Background async persist to Supabase / local DB
     saveVerificationToDB(result).catch(err => console.warn('Background save notice:', err));
 
     return NextResponse.json(result);

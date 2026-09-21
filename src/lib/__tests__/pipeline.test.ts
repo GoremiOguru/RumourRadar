@@ -1,9 +1,40 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { rankEvidence } from '../evidence-ranker';
 import { computeClaimHash, getCachedResult, setCachedResult } from '../cache';
 import { extractUrlFromText } from '../url-scraper';
 import { verifyClaimWithEvidence } from '../verifier';
 import { EvidenceItem, ExtractedClaim } from '@/types';
+
+vi.mock('../openrouter', () => ({
+  openrouter: {
+    chat: {
+      completions: {
+        create: vi.fn().mockResolvedValue({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  verdict: 'UNVERIFIED',
+                  confidence: 'LOW',
+                  confidenceScore: 35,
+                  shortExplanation: 'No authoritative evidence found.',
+                  pidginExplanation: 'We no see any proof say na true.',
+                  reasoning: 'Insufficient evidence.'
+                })
+              }
+            }
+          ]
+        })
+      }
+    }
+  },
+  openRouterApiKey: 'test-mock-openrouter-key',
+  FREE_MODELS: {
+    PRIMARY: 'openrouter/free',
+    FALLBACK: 'google/gemma-4-31b-it:free',
+    JSON_SPECIALIST: 'qwen/qwen3.8-27b:free'
+  }
+}));
 
 describe('1. Mathematical Evidence Ranking Formula (30/25/20/15/10)', () => {
   it('correctly scores evidence using 0.30*Auth + 0.25*Rel + 0.20*Rec + 0.15*Corr + 0.10*Ctx', () => {
@@ -121,7 +152,7 @@ describe('3. Live URL Extraction', () => {
 });
 
 describe('4. Built-in Humility & Uncertainty Fallback (<60% Rule)', () => {
-  it('yields UNVERIFIED when no corroborating official evidence is found', () => {
+  it('yields UNVERIFIED when no corroborating official evidence is found', async () => {
     const claim: ExtractedClaim = {
       normalizedClaim: 'Aliens landed in Maitama Abuja yesterday evening',
       entity: 'Maitama Abuja',
@@ -130,7 +161,7 @@ describe('4. Built-in Humility & Uncertainty Fallback (<60% Rule)', () => {
     };
 
     const emptyEvidence: EvidenceItem[] = [];
-    const result = verifyClaimWithEvidence(claim, emptyEvidence, null, claim.rawText, Date.now());
+    const result = await verifyClaimWithEvidence(claim, emptyEvidence, null, claim.rawText, Date.now());
 
     expect(result.verdict).toBe('UNVERIFIED');
     expect(result.confidenceScore).toBeLessThan(60);
