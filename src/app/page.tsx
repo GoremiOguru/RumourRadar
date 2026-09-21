@@ -96,7 +96,7 @@ export default function Home() {
           </div>
 
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white max-w-3xl mx-auto leading-tight">
-            Stop Rumors Before They Spread in <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500 bg-clip-text text-transparent">Nigeria</span>
+            Stop Rumors Before They Spread in <span className="bg-emerald">Nigeria</span>
           </h1>
 
           <p className="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto">
