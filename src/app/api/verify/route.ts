@@ -24,7 +24,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { extractClaim } from '@/lib/claim-extractor';
-import { extractClaimWithGemini, synthesizeVerdictWithGemini } from '@/lib/gemini';
 import { lookupGoogleFactCheck } from '@/lib/factcheck-api';
 import { searchAuthoritativeEvidence } from '@/lib/search-provider';
 import { rankEvidence } from '@/lib/evidence-ranker';
@@ -54,9 +53,8 @@ export async function POST(req: NextRequest) {
     const scraped = await scrapeArticleIfUrl(query);
     const textToProcess = scraped.isUrl && scraped.extractedQuery ? scraped.extractedQuery : query;
 
-    // Stage 1: Claim Extraction & Normalization (Gemini AI with heuristic fallback)
-    const geminiClaim = await extractClaimWithGemini(textToProcess);
-    const claim = geminiClaim || await extractClaim(textToProcess);
+    // Stage 1: Claim Extraction & Normalization (OpenRouter AI)
+    const claim = await extractClaim(textToProcess);
 
     // Stage 2: Parallel Dual-Channel Retrieval (Google Fact Check + Nigeria-First Authority Router)
     const [factCheckMatch, rawEvidence] = await Promise.all([
