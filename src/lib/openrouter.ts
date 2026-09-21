@@ -15,7 +15,7 @@ export const openrouter = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
   apiKey: openRouterApiKey || 'sk-or-v1-placeholder-key',
   defaultHeaders: {
-    'HTTP-Referer': 'https://rumourradar.ng',
+    'HTTP-Referer': 'https://rumourradar.vercel.app',
     'X-Title': 'Rumour Radar Nigeria',
   },
 });

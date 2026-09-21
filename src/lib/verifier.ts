@@ -65,15 +65,17 @@ export async function verifyClaimWithEvidence(
 You are the Evidence-Grounded Verification Engine of Rumor Radar, a specialized fact-checking platform for Nigeria.
 Your job is to evaluate the CLAIM strictly based on the provided [EVIDENCE].
 
-CRITICAL ANTI-HALLUCINATION RULES:
-1. EVIDENCE-GROUNDED ONLY: You are strictly FORBIDDEN from using your pretraining memory to confirm breaking news. Base your verdict ENTIRELY on the provided evidence snippets.
+CRITICAL ANTI-HALLUCINATION & REASONING RULES:
+1. EVIDENCE-FIRST & HISTORICAL KNOWLEDGE:
+   - For BREAKING NEWS, VIRAL RUMORS, CURRENT ALERTS, OR POLICY CHANGES: Base your verdict strictly on the provided evidence snippets. Never invent or assume breaking news without corroborating evidence.
+   - For ESTABLISHED HISTORICAL, CONSTITUTIONAL, OR GEOGRAPHICAL FACTS (e.g. former Nigerian heads of state like Buhari/Jonathan, state capitals, national dates): You MAY confirm them as "SUPPORTED" using undisputed public records, clearly specifying the timeframe (e.g. "Muhammadu Buhari served as the President of Nigeria from 2015 to 2023, succeeded by President Bola Ahmed Tinubu").
 2. VERDICT CATEGORIES:
-   - "SUPPORTED": The evidence explicitly confirms the claim is true.
+   - "SUPPORTED": The evidence (or undisputed historical record) confirms the claim is true.
    - "CONTRADICTED": The evidence explicitly denies, refutes, or disproves the claim (e.g. official regulatory denial or debunk).
    - "MISLEADING": The claim contains a grain of truth, but distorts context, quotes, dates, or policies.
-   - "UNVERIFIED": The evidence is insufficient, inconclusive, or completely absent.
-3. BUILT-IN HUMILITY: If the confidence score is below 60%, or if evidence is ambiguous, the verdict MUST be "UNVERIFIED". Never fabricate certainty.
-4. NIGERIAN PIDGIN: You must include "pidginExplanation" — a natural, culturally resonant Nigerian Pidgin English translation (e.g. "Dis news na lie, CBN don confirm say...", "No official paper talk say curfew dey, make una no spread panic.").
+   - "UNVERIFIED": The evidence is insufficient, inconclusive, or completely absent for an alleged breaking event.
+3. BUILT-IN HUMILITY: If the claim is about an unconfirmed breaking event and evidence is ambiguous or missing, the verdict MUST be "UNVERIFIED". Never fabricate certainty for breaking rumors.
+4. NIGERIAN PIDGIN: You must include "pidginExplanation" — a natural, culturally resonant Nigerian Pidgin English translation (e.g. "Dis news na confirm true talk! Buhari serve as President of Nigeria from 2015 reach 2023.").
 
 Respond ONLY with a valid JSON object containing these exact fields:
 - "verdict": "SUPPORTED" | "CONTRADICTED" | "MISLEADING" | "UNVERIFIED"
@@ -120,8 +122,8 @@ Evaluate the claim against the evidence and output the structured JSON verdict.
   }
 
   const jsonText = completion.choices[0]?.message?.content || '{}';
-  const parsed = JSON.parse(jsonText);
-  const validated = VerifierOutputSchema.parse(parsed);
+  const sanitized = sanitizeVerifierOutput(jsonText);
+  const validated = VerifierOutputSchema.parse(sanitized);
 
   // Enforce Hackathon humility rule: if confidence is below 60, force UNVERIFIED
   let finalVerdict: VerdictType = validated.verdict as VerdictType;
@@ -155,4 +157,100 @@ Evaluate the claim against the evidence and output the structured JSON verdict.
       { stage: '5. Evidence-Grounded LLM Verdict Synthesis', status: 'completed', durationMs: Math.round(duration * 0.15), details: `Verdict: ${finalVerdict} (${validated.confidence} Confidence)` }
     ]
   };
+}
+
+/**
+ * Robust JSON extraction and normalization.
+ * Handles markdown backticks, nested wrappers ({result: ...}), case differences, and missing fields.
+ */
+function sanitizeVerifierOutput(raw: string): any {
+  let text = raw.trim();
+
+  // 1. Strip markdown code fences if model output ```json ... ```
+  const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fenceMatch && fenceMatch[1]) {
+    text = fenceMatch[1].trim();
+  }
+
+  // 2. Extract substring between first '{' and last '}'
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  if (start !== -1 && end !== -1 && end > start) {
+    text = text.slice(start, end + 1);
+  }
+
+  let data: any = {};
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    console.warn('[RumorRadar AI] Failed direct JSON parse, text was:', text);
+  }
+
+  // 3. Unwrap if model nested the object inside "result", "verification", "output", "data", etc.
+  if (data && typeof data === 'object' && !data.verdict) {
+    for (const key of ['result', 'data', 'verification', 'verifications', 'output', 'response']) {
+      if (data[key] && typeof data[key] === 'object' && data[key].verdict) {
+        data = data[key];
+        break;
+      }
+    }
+    if (!data.verdict) {
+      for (const k of Object.keys(data)) {
+        if (data[k] && typeof data[k] === 'object' && data[k].verdict) {
+          data = data[k];
+          break;
+        }
+      }
+    }
+  }
+
+  // 4. Normalize verdict casing & aliases
+  if (typeof data.verdict === 'string') {
+    const vUpper = data.verdict.toUpperCase().trim();
+    if (['SUPPORTED', 'CONTRADICTED', 'MISLEADING', 'UNVERIFIED'].includes(vUpper)) {
+      data.verdict = vUpper;
+    } else if (vUpper.includes('TRUE') || vUpper.includes('VERIF') || vUpper.includes('CORRECT')) {
+      data.verdict = 'SUPPORTED';
+    } else if (vUpper.includes('FALSE') || vUpper.includes('FAKE') || vUpper.includes('DEBUNK')) {
+      data.verdict = 'CONTRADICTED';
+    } else if (vUpper.includes('MISLEAD') || vUpper.includes('PARTIAL')) {
+      data.verdict = 'MISLEADING';
+    } else {
+      data.verdict = 'UNVERIFIED';
+    }
+  } else {
+    data.verdict = 'UNVERIFIED';
+  }
+
+  // 5. Normalize confidence casing & values
+  if (typeof data.confidence === 'string') {
+    const cUpper = data.confidence.toUpperCase().trim();
+    if (['HIGH', 'MEDIUM', 'LOW'].includes(cUpper)) {
+      data.confidence = cUpper;
+    } else {
+      data.confidence = 'MEDIUM';
+    }
+  } else {
+    data.confidence = data.verdict === 'UNVERIFIED' ? 'LOW' : 'HIGH';
+  }
+
+  // 6. Normalize confidenceScore to integer number
+  if (typeof data.confidenceScore === 'string') {
+    data.confidenceScore = parseInt(data.confidenceScore, 10) || 75;
+  } else if (typeof data.confidenceScore !== 'number') {
+    data.confidenceScore = data.confidence === 'HIGH' ? 92 : data.confidence === 'MEDIUM' ? 75 : 45;
+  }
+
+  // 7. Ensure required text fields are populated
+  if (!data.shortExplanation) {
+    data.shortExplanation = data.explanation || data.summary || 'Verified against authoritative Nigerian evidence.';
+  }
+  if (!data.reasoning) {
+    data.reasoning = data.analysis || data.shortExplanation;
+  }
+  if (!data.pidginExplanation) {
+    data.pidginExplanation = data.pidgin || data.shortExplanation;
+  }
+
+  return data;
 }

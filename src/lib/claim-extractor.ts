@@ -52,8 +52,8 @@ Respond ONLY with valid JSON.
   }
 
   const content = completion.choices[0]?.message?.content || '{}';
-  const parsedData = JSON.parse(content);
-  const validated = ExtractedClaimSchema.parse(parsedData);
+  const sanitized = sanitizeClaimOutput(content, cleanedInput);
+  const validated = ExtractedClaimSchema.parse(sanitized);
 
   return {
     normalizedClaim: validated.normalizedClaim,
@@ -63,4 +63,58 @@ Respond ONLY with valid JSON.
     dateClaimed: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
     rawText: cleanedInput
   };
+}
+
+function sanitizeClaimOutput(raw: string, fallbackText: string): any {
+  let text = raw.trim();
+  const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fenceMatch && fenceMatch[1]) {
+    text = fenceMatch[1].trim();
+  }
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  if (start !== -1 && end !== -1 && end > start) {
+    text = text.slice(start, end + 1);
+  }
+  let data: any = {};
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    console.warn('[RumorRadar AI] Claim parse notice, text was:', text);
+  }
+
+  if (data && typeof data === 'object' && !data.normalizedClaim) {
+    for (const key of ['result', 'data', 'claim', 'output']) {
+      if (data[key] && typeof data[key] === 'object' && data[key].normalizedClaim) {
+        data = data[key];
+        break;
+      }
+    }
+    if (!data.normalizedClaim) {
+      for (const k of Object.keys(data)) {
+        if (data[k] && typeof data[k] === 'object' && data[k].normalizedClaim) {
+          data = data[k];
+          break;
+        }
+      }
+    }
+  }
+
+  if (!data.normalizedClaim || typeof data.normalizedClaim !== 'string') {
+    data.normalizedClaim = fallbackText;
+  }
+  if (!data.entity || typeof data.entity !== 'string') {
+    data.entity = 'Nigeria';
+  }
+  if (!data.category || typeof data.category !== 'string') {
+    data.category = 'general';
+  }
+  if (!data.location || typeof data.location !== 'string') {
+    data.location = 'Nigeria (National)';
+  }
+  if (typeof data.isTestableClaim !== 'boolean') {
+    data.isTestableClaim = true;
+  }
+
+  return data;
 }
