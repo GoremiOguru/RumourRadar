@@ -1,5 +1,5 @@
 import React from 'react';
-import { Radio, ShieldAlert, Cpu, Activity, HelpCircle, Sparkles } from 'lucide-react';
+import { Radio, Sparkles } from 'lucide-react';
 
 interface HeaderProps {
   onOpenWhyModal?: () => void;
@@ -13,10 +13,10 @@ export const Header: React.FC<HeaderProps> = ({ onOpenWhyModal }) => {
         <div className="flex items-center space-x-3">
           <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
             <Radio className="w-5 h-5 animate-pulse text-emerald-400" />
-            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+            {/* <span className="absolute -top-1 -right-1 flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-            </span>
+            </span> */}
           </div>
           <div>
             <div className="flex items-center space-x-2">
@@ -39,10 +39,10 @@ export const Header: React.FC<HeaderProps> = ({ onOpenWhyModal }) => {
             <button
               onClick={onOpenWhyModal}
               className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-300 text-xs font-semibold transition-all shadow-sm"
-              title="See why Rumor Radar is different from plain ChatGPT"
+              title="Learn why Rumor Radar uses Nigerian evidence"
             >
               <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Why Not ChatGPT?</span>
+              <span>Why Rumor Radar?</span>
             </button>
           )}
 

@@ -7,12 +7,9 @@ import {
   Brain,
   Layers,
   Calculator,
-  Scale,
-  Sparkles,
   CheckCircle2,
   XCircle,
   Database,
-  ArrowRight,
   ShieldCheck,
   AlertTriangle
 } from 'lucide-react';
@@ -28,7 +25,7 @@ export const WhyRumorRadarModal: React.FC<WhyRumorRadarModalProps> = ({ isOpen, 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
       <div 
-        className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden my-8 text-slate-100 max-h-[90vh] flex flex-col"
+        className="glass-panel relative w-full max-w-4xl rounded-2xl overflow-hidden my-8 text-slate-100 max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -39,10 +36,10 @@ export const WhyRumorRadarModal: React.FC<WhyRumorRadarModalProps> = ({ isOpen, 
             </div>
             <div>
               <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
-                Why Rumor Radar? <span className="text-xs font-mono font-normal text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">vs Raw LLMs (ChatGPT)</span>
+                Why Rumor Radar?
               </h2>
               <p className="text-xs text-slate-400">
-                A purpose-built verification pipeline engineered to eliminate hallucination.
+                A practical way to check fast-moving claims with Nigerian evidence.
               </p>
             </div>
           </div>
@@ -57,8 +54,23 @@ export const WhyRumorRadarModal: React.FC<WhyRumorRadarModalProps> = ({ isOpen, 
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto space-y-6 text-sm">
           {/* Executive Summary Banner */}
-          <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-teal-950/40 border border-emerald-500/20 leading-relaxed text-slate-300">
-            <strong className="text-emerald-300">The Core Distinction:</strong> ChatGPT is a general-purpose reasoning model that speaks from static memory weights. Rumor Radar is a <strong>deterministic, multi-stage fact-checking pipeline</strong> that uses AI purely as a reasoning agent over live, ranked authoritative Nigerian evidence.
+          <div className="p-4 rounded-xl bg-slate-950/60 border border-emerald-500/20 leading-relaxed text-slate-300">
+            <strong className="text-emerald-300">Why this matters in Nigeria:</strong> A forwarded claim about a bank, election, health warning, school admission, or fuel price can reach thousands of people before an official correction does. Rumor Radar helps you test the claim, find the relevant Nigerian authority, and see clearly when the evidence is not strong enough for a confident verdict.
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="border-l-2 border-emerald-500 pl-3">
+              <h3 className="text-xs font-bold text-slate-200">Local context</h3>
+              <p className="mt-1 text-xs leading-relaxed text-slate-400">Routes claims toward institutions Nigerians actually rely on.</p>
+            </div>
+            <div className="border-l-2 border-emerald-500 pl-3">
+              <h3 className="text-xs font-bold text-slate-200">Visible evidence</h3>
+              <p className="mt-1 text-xs leading-relaxed text-slate-400">Shows the sources behind the verdict instead of asking for blind trust.</p>
+            </div>
+            <div className="border-l-2 border-emerald-500 pl-3">
+              <h3 className="text-xs font-bold text-slate-200">Room for uncertainty</h3>
+              <p className="mt-1 text-xs leading-relaxed text-slate-400">Returns Unverified when the available evidence cannot support certainty.</p>
+            </div>
           </div>
 
           {/* Comparison Grid */}
@@ -199,7 +211,7 @@ export const WhyRumorRadarModal: React.FC<WhyRumorRadarModalProps> = ({ isOpen, 
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
               The 6 Architectural Pillars
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-flow-col auto-cols-[minmax(15rem,1fr)] gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
               <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5">
                 <div className="flex items-center space-x-2 text-emerald-400 font-bold text-xs">
                   <Brain className="w-4 h-4" />
@@ -246,7 +258,7 @@ export const WhyRumorRadarModal: React.FC<WhyRumorRadarModalProps> = ({ isOpen, 
                   <span>5. Built-in Humility (&lt;60% Rule)</span>
                 </div>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  If confidence falls below 60%, Rumor Radar automatically yields "Unverified" rather than hallucinating false certainty.
+                  If confidence falls below 60%, Rumor Radar automatically yields &quot;Unverified&quot; rather than hallucinating false certainty.
                 </p>
               </div>
 

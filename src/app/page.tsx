@@ -20,8 +20,6 @@ import {
   AlertCircle,
   ExternalLink,
   Quote,
-  Clock,
-  Zap,
   Layers,
   Brain,
   Database,
@@ -61,7 +59,7 @@ export default function Home() {
 
       const data: VerificationResult = await response.json();
       setResult(data);
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
       setError('An error occurred while verifying the claim. Please try again.');
     } finally {
@@ -84,30 +82,54 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-200">
+    <div className="app-shell min-h-screen text-slate-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-200">
       <Header onOpenWhyModal={() => setIsWhyModalOpen(true)} />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
         {/* Hero Section */}
         <div className="text-center space-y-3 pt-2">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
-            <Zap className="w-3.5 h-3.5" />
+          <div className="hero-reveal inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
             <span>Evidence-First AI Fact-Checking Engine</span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white max-w-3xl mx-auto leading-tight">
-            Stop Rumors Before They Spread in <span className="bg-emerald">Nigeria</span>
+          <h1 className="hero-reveal hero-reveal-delay-1 text-3xl sm:text-5xl font-black tracking-tight text-white max-w-3xl mx-auto leading-tight">
+            Stop Rumors Before They{' '}
+            <span className="whitespace-nowrap">
+              <span className="text-[#008751]">
+                {'Spread'.split('').map((letter, index, letters) => (
+                  <span
+                    key={`spread-${index}`}
+                    className="hero-letter"
+                    style={{ animationDelay: `${(letters.length - 1 - index) * 70}ms` }}
+                  >
+                    {letter}
+                  </span>
+                ))}
+              </span>{' '}
+              in{' '}
+              <span className="text-[#008751]">
+                {'Nigeria'.split('').map((letter, index) => (
+                  <span
+                    key={`nigeria-${index}`}
+                    className="hero-letter"
+                    style={{ animationDelay: `${index * 70}ms` }}
+                  >
+                    {letter}
+                  </span>
+                ))}
+              </span>
+            </span>
           </h1>
 
-          <p className="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto">
+          <p className="hero-reveal hero-reveal-delay-2 text-slate-400 text-sm sm:text-base max-w-2xl mx-auto">
             Paste any viral WhatsApp message, Twitter headline, or breaking forward. Rumor Radar checks verified registries, searches official Nigerian authorities, and returns an evidence-grounded verdict in seconds.
           </p>
         </div>
 
-        {/* Why Not ChatGPT Banner */}
-        <div 
+        {/* Why Rumor Radar Banner */}
+          <div
           onClick={() => setIsWhyModalOpen(true)}
-          className="group cursor-pointer rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-slate-900/90 to-teal-950/40 p-4 sm:p-5 backdrop-blur-xl shadow-lg hover:border-emerald-500/60 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+            className="glass-panel group cursor-pointer rounded-xl border-emerald-500/30 p-4 sm:p-5 hover:border-emerald-500/60 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3"
         >
           <div className="flex items-start sm:items-center space-x-3.5">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0 group-hover:scale-105 transition-transform">
@@ -116,14 +138,14 @@ export default function Home() {
             <div>
               <div className="flex items-center space-x-2">
                 <h3 className="font-bold text-sm sm:text-base text-white group-hover:text-emerald-300 transition-colors">
-                  Rumor Radar isn't just "ask an LLM"
+                  Why this check uses Nigerian sources
                 </h3>
                 <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                   Zero Hallucination
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                Evidence-grounded verifier • Nigeria-First Authority Router • 5-factor scoring formula • Built-in humility (&lt;60% rule)
+                Official sources first • Clear evidence • Honest uncertainty when the record is incomplete
               </p>
             </div>
           </div>
@@ -141,7 +163,7 @@ export default function Home() {
 
         {/* Input Form & Demo Pills */}
         <div className="space-y-4">
-          <div className="relative rounded-2xl border border-slate-800 bg-slate-900/80 p-2 sm:p-3 shadow-2xl backdrop-blur-xl focus-within:border-emerald-500/50 transition-all">
+          <div className="glass-panel relative rounded-2xl p-2 sm:p-3 focus-within:border-emerald-500/50 transition-all">
             <textarea
               id="rumor-input"
               value={query}
@@ -152,7 +174,7 @@ export default function Home() {
 
             <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/80 px-2">
               <span className="text-xs text-slate-400 font-mono">
-                {query.length} characters
+                {query.length} {query.length === 1 ? 'character' : 'characters'}
               </span>
 
               <div className="flex items-center space-x-2">
@@ -187,25 +209,28 @@ export default function Home() {
           </div>
 
           {/* Quick Demo Pills */}
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2 text-xs text-slate-400">
-              <span className="font-semibold uppercase tracking-wider text-slate-300">Quick Test Cases:</span>
+          {!result && !loading && (
+            <div className="space-y-2">
+              <div className="space-y-1 text-xs text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-slate-300">Try a real claim</span>
+                <p>Start with an example below, or paste a message you received.</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {DEMO_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    onClick={() => handlePresetClick(preset.prompt)}
+                    className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/50 hover:bg-slate-800/90 hover:border-emerald-500/40 text-xs text-slate-300 transition-all flex items-center space-x-1.5 group"
+                  >
+                    <span className="font-medium text-slate-200 group-hover:text-emerald-300">{preset.title}</span>
+                    <span className="text-[10px] text-slate-400 font-mono px-1.5 py-0.2 bg-slate-950 rounded">
+                      {preset.tag}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {DEMO_PRESETS.map((preset) => (
-                <button
-                  key={preset.id}
-                  onClick={() => handlePresetClick(preset.prompt)}
-                  className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/50 hover:bg-slate-800/90 hover:border-emerald-500/40 text-xs text-slate-300 transition-all flex items-center space-x-1.5 group"
-                >
-                  <span className="font-medium text-slate-200 group-hover:text-emerald-300">{preset.title}</span>
-                  <span className="text-[10px] text-slate-400 font-mono px-1.5 py-0.2 bg-slate-950 rounded">
-                    {preset.tag}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Error Alert */}
@@ -218,28 +243,75 @@ export default function Home() {
 
         {/* Loading Skeleton */}
         {loading && (
-          <div className="p-8 rounded-2xl border border-slate-800 bg-slate-900/40 backdrop-blur-md space-y-6 text-center animate-pulse">
+          <div className="glass-panel p-6 sm:p-8 rounded-2xl space-y-6 text-center">
             <div className="flex justify-center">
               <div className="relative flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
                 <Search className="w-8 h-8 animate-bounce text-emerald-400" />
               </div>
             </div>
-            <div className="space-y-2 max-w-md mx-auto">
-              <h3 className="text-lg font-bold text-slate-200">Executing Evidence Pipeline</h3>
-              <p className="text-xs text-slate-400">
-                Querying Google Fact Check Tools API • Routing to official Nigerian regulators • Ranking authoritative evidence...
-              </p>
+            <div className="space-y-3 max-w-lg mx-auto text-left">
+              <div className="text-center">
+                <h3 className="text-lg font-bold text-slate-200">Checking this claim</h3>
+                <p className="text-xs text-slate-400">The result will appear when the evidence has been ranked.</p>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {['Extracting claim', 'Checking Nigerian sources', 'Ranking evidence'].map((stage, index) => (
+                  <div
+                    key={stage}
+                    className="glass-panel-subtle rounded-lg p-3 text-center text-xs text-slate-300"
+                    style={{ animationDelay: `${index * 140}ms` }}
+                  >
+                    <span className="mb-2 mx-auto flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-300 font-mono">
+                      {index + 1}
+                    </span>
+                    {stage}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
         {/* Verification Result Showcase */}
         {result && !loading && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div
+            key={result.extractedClaim.normalizedClaim}
+            className="space-y-6 animate-result-enter"
+          >
             {/* Main Verdict Card */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 backdrop-blur-xl shadow-2xl space-y-6">
+            <details className="glass-panel rounded-2xl group">
+              <summary className="result-summary list-none cursor-pointer p-5 sm:p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0 space-y-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                      Verification Summary
+                    </span>
+                    <p className="text-sm sm:text-base font-semibold leading-relaxed text-slate-100">
+                      &quot;{result.extractedClaim.normalizedClaim}&quot;
+                    </p>
+                    <p className="text-xs sm:text-sm leading-relaxed text-slate-400 line-clamp-2">
+                      {result.shortExplanation}
+                    </p>
+                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
+                      <span className="text-emerald-300">{result.confidence} confidence</span>
+                      <span className="text-slate-600">•</span>
+                      <span>{result.confidenceScore}% evidence score</span>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <VerdictBadge verdict={result.verdict} size="md" />
+                    <span className="text-xs font-semibold text-slate-400 group-open:text-emerald-300">
+                      <span className="sm:hidden">Details</span>
+                      <span className="hidden sm:inline">Details</span>{' '}
+                      <span aria-hidden="true" className="text-base leading-none">+</span>
+                    </span>
+                  </div>
+                </div>
+              </summary>
+
+              <div className="space-y-6 border-t border-slate-800/80 p-5 sm:p-6">
               {/* Header with Badges & Share */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+              <div className="flex flex-col gap-3 pb-4 border-b border-slate-800 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-1">
                   <span className="text-xs uppercase tracking-wider font-bold text-slate-400">
                     Official Verdict
@@ -249,7 +321,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2 self-start sm:self-center">
+                <div className="flex max-w-full shrink-0 items-center gap-2 overflow-x-auto pb-1 sm:translate-y-2">
                   {/* Pidgin Toggle */}
                   <button
                     onClick={() => setUsePidgin(!usePidgin)}
@@ -260,7 +332,7 @@ export default function Home() {
                     }`}
                   >
                     <Languages className="w-3.5 h-3.5" />
-                    <span>{usePidgin ? 'Switch to English' : 'Naija Pidgin 🇳🇬'}</span>
+                    <span className="hidden sm:inline">{usePidgin ? 'Switch to English' : 'Naija Pidgin 🇳🇬'}</span>
                   </button>
 
                   {/* Share button */}
@@ -270,7 +342,7 @@ export default function Home() {
                     title="Copy WhatsApp formatted summary"
                   >
                     {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
-                    <span>{copied ? 'Copied!' : 'Share WhatsApp'}</span>
+                    <span className="hidden sm:inline">{copied ? 'Copied!' : 'Share WhatsApp'}</span>
                   </button>
 
                   {/* Permalink button */}
@@ -282,13 +354,13 @@ export default function Home() {
                     title="Open shareable permanent link"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
-                    <span>Permalink</span>
+                    <span className="hidden sm:inline">Permalink</span>
                   </a>
                 </div>
               </div>
 
               {/* Grid: Explanation + Confidence */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-3">
                 <div className="md:col-span-2 space-y-4">
                   {/* Normalized Claim Box */}
                   <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-300 space-y-1">
@@ -297,7 +369,7 @@ export default function Home() {
                       <span className="font-mono text-[11px]">{result.extractedClaim.location}</span>
                     </div>
                     <p className="font-medium text-slate-200 italic">
-                      "{result.extractedClaim.normalizedClaim}"
+                      &quot;{result.extractedClaim.normalizedClaim}&quot;
                     </p>
                   </div>
 
@@ -359,7 +431,7 @@ export default function Home() {
                       </span>
                     </div>
                     <p className="text-slate-300">
-                      <strong>{result.factCheckDetails.publisher}</strong> reviewed this: <span className="text-slate-200 font-medium">"{result.factCheckDetails.rating}"</span>
+                      <strong>{result.factCheckDetails.publisher}</strong> reviewed this: <span className="text-slate-200 font-medium">&quot;{result.factCheckDetails.rating}&quot;</span>
                     </p>
                   </div>
                   {result.factCheckDetails.reviewUrl && (
@@ -375,7 +447,8 @@ export default function Home() {
                   )}
                 </div>
               )}
-            </div>
+              </div>
+            </details>
 
             {/* Evidence Section */}
             <div className="space-y-4">
@@ -392,7 +465,13 @@ export default function Home() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {result.evidence.map((item, idx) => (
-                  <EvidenceCard key={item.id} evidence={item} rank={idx + 1} />
+                  <div
+                    key={item.id}
+                    className="animate-result-enter"
+                    style={{ animationDelay: `${idx * 100}ms` }}
+                  >
+                    <EvidenceCard evidence={item} rank={idx + 1} />
+                  </div>
                 ))}
               </div>
             </div>
@@ -418,8 +497,8 @@ export default function Home() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/40 space-y-2 hover:border-slate-700 transition-colors">
+            <div className="grid grid-flow-col auto-cols-[minmax(15rem,1fr)] gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
+              <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/45 space-y-2 hover:border-slate-700 transition-colors">
                 <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-bold">
                   <Brain className="w-4 h-4" />
                 </div>
@@ -429,7 +508,7 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/40 space-y-2 hover:border-slate-700 transition-colors">
+              <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/45 space-y-2 hover:border-slate-700 transition-colors">
                 <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 font-bold">
                   <Database className="w-4 h-4" />
                 </div>
@@ -439,7 +518,7 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/40 space-y-2 hover:border-slate-700 transition-colors">
+              <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/45 space-y-2 hover:border-slate-700 transition-colors">
                 <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400 font-bold">
                   <Calculator className="w-4 h-4" />
                 </div>
@@ -449,7 +528,7 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/40 space-y-2 hover:border-slate-700 transition-colors">
+              <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/45 space-y-2 hover:border-slate-700 transition-colors">
                 <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-400 font-bold">
                   <Layers className="w-4 h-4" />
                 </div>
@@ -459,7 +538,7 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/40 space-y-2 hover:border-slate-700 transition-colors">
+              <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/45 space-y-2 hover:border-slate-700 transition-colors">
                 <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 font-bold">
                   <AlertTriangle className="w-4 h-4" />
                 </div>
@@ -469,7 +548,7 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/40 space-y-2 hover:border-slate-700 transition-colors">
+              <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/45 space-y-2 hover:border-slate-700 transition-colors">
                 <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-400 font-bold">
                   <ShieldAlert className="w-4 h-4" />
                 </div>

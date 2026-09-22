@@ -1,6 +1,6 @@
 import React from 'react';
 import { EvidenceItem } from '@/types';
-import { ExternalLink, Landmark, Newspaper, Award, ArrowUpRight } from 'lucide-react';
+import { Landmark, Newspaper, Award, ArrowUpRight } from 'lucide-react';
 
 interface EvidenceCardProps {
   evidence: EvidenceItem;
@@ -9,7 +9,7 @@ interface EvidenceCardProps {
 
 export const EvidenceCard: React.FC<EvidenceCardProps> = ({ evidence, rank }) => {
   return (
-    <div className="group relative rounded-xl border border-slate-800 bg-slate-900/60 p-4 transition-all duration-200 hover:border-emerald-500/40 hover:bg-slate-900/90">
+    <article className="glass-panel-subtle group relative rounded-xl p-4 transition-all duration-200 hover:border-emerald-500/40 hover:bg-slate-900/70">
       <div className="flex items-start justify-between gap-3">
         {/* Source Badge & Rank */}
         <div className="flex items-center space-x-2">
@@ -28,9 +28,7 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({ evidence, rank }) =>
                 Reputable Media
               </span>
             )}
-            <span className="text-xs text-slate-400 font-mono">
-              {evidence.domain}
-            </span>
+            <span className="text-xs text-slate-400 font-mono">{evidence.domain}</span>
           </div>
         </div>
 
@@ -54,11 +52,14 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({ evidence, rank }) =>
       </p>
 
       {/* Footer Info & Link */}
-      <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
-        <span className="text-slate-400">
-          Source: <strong className="text-slate-300">{evidence.sourceName}</strong>
-          {evidence.publishedDate && ` • ${evidence.publishedDate}`}
-        </span>
+      <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex flex-col gap-2 text-[11px] sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 text-slate-400">
+          <span className="block truncate">{evidence.sourceName}</span>
+          <span className="text-slate-500">
+            {evidence.isOfficialAuthority ? 'Official source' : 'Reported source'}
+            {evidence.publishedDate && ` • ${evidence.publishedDate}`}
+          </span>
+        </div>
 
         <a
           href={evidence.url}
@@ -70,6 +71,6 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({ evidence, rank }) =>
           <ArrowUpRight className="w-3 h-3" />
         </a>
       </div>
-    </div>
+    </article>
   );
 };
