@@ -7,7 +7,7 @@ export type ClaimCategory =
   | 'security_alerts'
   | 'general';
 
-export type VerdictType = 'SUPPORTED' | 'CONTRADICTED' | 'MISLEADING' | 'UNVERIFIED';
+export type VerdictType = 'SUPPORTED' | 'CONTRADICTED' | 'MISLEADING' | 'UNVERIFIED' | 'SATIRE_PARODY';
 
 export type ConfidenceLevel = 'HIGH' | 'MEDIUM' | 'LOW';
 
@@ -18,6 +18,7 @@ export interface ExtractedClaim {
   location?: string;
   dateClaimed?: string;
   rawText: string;
+  isSatireOrParody?: boolean;
 }
 
 export interface EvidenceItem {
@@ -78,3 +79,80 @@ export interface DemoPreset {
   tag: string;
   badgeColor: string;
 }
+
+export interface BrandAlert {
+  id: string;
+  title: string;
+  summary: string;
+  sourceUrl: string;
+  sourceName: string;
+  publishedDate: string;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'SAFE';
+  category: 'VIRAL_RUMOUR' | 'PHISHING_SCAM' | 'FAKE_DIRECTIVE' | 'ROUTINE_NEWS';
+  verdictRecommendation: VerdictType;
+  confidenceScore: number;
+}
+
+export interface DebunkKit {
+  brandName: string;
+  targetRumour: string;
+  officialStatementDraft: string;
+  bulletPoints: string[];
+  suggestedAction: string;
+  twitterPost: string;
+  whatsappBroadcastTemplate: string;
+  linkedInStatement: string;
+  facebookInstagramCaption: string;
+}
+
+
+export interface BrandShieldScanResult {
+  brandName: string;
+  scannedAt: string;
+  totalAlerts: number;
+  threatLevel: 'CRITICAL' | 'ELEVATED' | 'LOW' | 'CLEAR';
+  alerts: BrandAlert[];
+  debunkKit?: DebunkKit;
+}
+
+export interface BmoniVirtualAccount {
+  accountNumber: string;
+  bankName: string;
+  accountHolderName: string;
+  tier: 'newsroom_pro' | 'enterprise_shield';
+  monthlyFeeNGN: number;
+  expiresAt: string;
+  status: 'ACTIVE' | 'PENDING_PAYMENT';
+}
+
+export type MediaType = 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT_CIRCULAR';
+
+export interface MediaForensicAnomaly {
+  type: 'VISUAL' | 'AUDIO' | 'METADATA' | 'TEXT_OCR';
+  description: string;
+  severity: 'HIGH' | 'MEDIUM' | 'LOW';
+  timestampOrRegion?: string;
+}
+
+export interface MediaForensicReport {
+  id: string;
+  mediaType: MediaType;
+  fileName?: string;
+  mediaPreviewUrl?: string;
+  analyzedAt: string;
+  isSyntheticOrAiGenerated: boolean;
+  syntheticConfidence: number; // 0 - 100
+  overallIntegrityScore: number; // 0 - 100 (100 = authentic, 0 = pure deepfake/forgery)
+  forensicVerdict: 'AUTHENTIC' | 'AI_SYNTHETIC_DEEPFAKE' | 'FORGED_DOCUMENT' | 'RECONTEXTUALIZED_CHEAPFAKE' | 'SUSPICIOUS_UNVERIFIED';
+  visualAnomalies: MediaForensicAnomaly[];
+  audioAnomalies: MediaForensicAnomaly[];
+  extractedClaimOrText: string;
+  outOfContextCheck: {
+    isRecycled: boolean;
+    explanation?: string;
+    estimatedOriginalYear?: string;
+  };
+  groundedVerification?: VerificationResult;
+  processingTimeMs: number;
+}
+

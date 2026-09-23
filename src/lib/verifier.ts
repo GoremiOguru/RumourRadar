@@ -37,8 +37,17 @@ export function verifyClaimWithEvidence(
   let reasoning = 'No authoritative regulatory statements or primary news items confirm this specific claim. In the absence of corroboration, Rumor Radar classifies this as Unverified to prevent false assumptions.';
   let keyQuote: string | undefined = undefined;
 
-  // 1. If existing fact-check is found
-  if (factCheck) {
+  // 0. Satire & Parody Detection
+  if (claim.isSatireOrParody || queryLower.includes('satire') || queryLower.includes('parody') || queryLower.includes('joke') || queryLower.includes('comedy skit') || queryLower.includes('cruise')) {
+    verdict = 'SATIRE_PARODY';
+    confidence = 'HIGH';
+    confidenceScore = 92;
+    shortExplanation = 'This content is political satire, comedy, or social media banter, not intended as a factual statement.';
+    pidginExplanation = 'Dis one na just cruise and comedy! Dem dey play play, no take am serious like say na official news.';
+    reasoning = 'The claim originates from a satire/parody context or comedic hyperbole rather than an intentional disinformation campaign.';
+    keyQuote = 'Identified as satire/parody content.';
+  } else if (factCheck) {
+
     const rLower = factCheck.rating.toLowerCase();
     if (rLower.includes('false') || rLower.includes('disputed') || rLower.includes('fake') || rLower.includes('incorrect')) {
       verdict = 'CONTRADICTED';
