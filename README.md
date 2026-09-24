@@ -180,4 +180,4 @@ Executes the 5-stage verification pipeline for any submitted claim.
 
 ## 👥 Built for NACOS National Hackathon
 **Track:** AI & Public Good  
-**Team:** Rumor Radar Dev Team
+**Team:** Topfaith Ultras

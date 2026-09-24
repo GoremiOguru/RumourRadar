@@ -14,7 +14,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL || 
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://rumour-radar.vercel.app')
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://rumourradar.vercel.app')
   ),
   title: {
     default: 'Rumor Radar • Nigeria-First AI Fact-Checking & Evidence Engine',
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   applicationName: 'Rumor Radar',
   authors: [{ name: 'Rumor Radar Dev Team' }],
   creator: 'Rumor Radar AI',
-  publisher: 'NACOS National Hackathon',
+  publisher: "BUILDXNACOS '26 Hackathon",
   keywords: [
     'Rumor Radar',
     'Fact Check Nigeria',
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     'OPay Shutdown Hoax',
     'JAMB Cutoff Mark Verification',
     'NCDC Cholera Alert',
-    'NACOS Hackathon AI',
+    "BUILDXNACOS '26 Hackathon",
     'Nigerian Disinformation Engine',
     'Evidence Grounded AI'
   ],

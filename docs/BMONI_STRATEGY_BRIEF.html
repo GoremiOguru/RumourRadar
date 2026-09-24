@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>RumourRadar & BMONI: Executive Strategy & Architecture Whitepaper</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+    :root {
+      --primary: #0F172A;
+      --accent: #10B981;
+      --accent-blue: #2563EB;
+      --accent-gold: #F59E0B;
+      --bg: #FFFFFF;
+      --surface: #F8FAFC;
+      --border: #E2E8F0;
+      --text-main: #1E293B;
+      --text-muted: #64748B;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text-main);
+      background: var(--bg);
+      line-height: 1.65;
+      padding: 40px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    @media print {
+      body { padding: 20px; font-size: 11pt; }
+      .page-break { page-break-before: always; }
+      .no-print { display: none; }
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.1);
+      color: #059669;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 28pt;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--primary);
+      line-height: 1.15;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 14pt;
+      color: var(--text-muted);
+      margin-bottom: 30px;
+      font-weight: 400;
+    }
+
+    .meta-bar {
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 0;
+      margin-bottom: 36px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    h2 {
+      font-size: 16pt;
+      font-weight: 700;
+      color: var(--primary);
+      margin-top: 32px;
+      margin-bottom: 14px;
+      border-bottom: 2px solid #F1F5F9;
+      padding-bottom: 6px;
+    }
+
+    h3 {
+      font-size: 12pt;
+      font-weight: 600;
+      color: var(--primary);
+      margin-top: 18px;
+      margin-bottom: 8px;
+    }
+
+    p { margin-bottom: 14px; font-size: 10.5pt; color: #334155; }
+
+    .callout {
+      background: var(--surface);
+      border-left: 4px solid var(--accent-blue);
+      padding: 16px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 20px 0;
+    }
+
+    .callout-title {
+      font-weight: 700;
+      font-size: 11pt;
+      color: var(--primary);
+      margin-bottom: 6px;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 10pt;
+    }
+
+    .comparison-table th, .comparison-table td {
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      text-align: left;
+    }
+
+    .comparison-table th {
+      background: var(--surface);
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .comparison-table tr:nth-child(even) {
+      background: #F8FAFC;
+    }
+
+    .badge-bad { color: #DC2626; font-weight: 600; }
+    .badge-good { color: #059669; font-weight: 600; }
+
+    .tier-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    .tier-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      background: var(--surface);
+    }
+
+    .tier-title {
+      font-size: 13pt;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .tier-price {
+      font-size: 16pt;
+      font-weight: 800;
+      color: var(--accent-blue);
+      margin: 6px 0 12px 0;
+    }
+
+    .tier-features {
+      list-style: none;
+      font-size: 9.5pt;
+    }
+
+    .tier-features li {
+      margin-bottom: 6px;
+      padding-left: 18px;
+      position: relative;
+    }
+
+    .tier-features li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: bold;
+    }
+
+    .code-box {
+      background: #0F172A;
+      color: #E2E8F0;
+      padding: 14px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9pt;
+      margin: 14px 0;
+      overflow-x: auto;
+    }
+
+    .print-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--accent-blue);
+      color: #FFFFFF;
+      padding: 12px 20px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 13px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+    }
+  </style>
+</head>
+<body>
+
+  <button class="print-btn no-print" onclick="window.print()">📥 Print / Save as PDF</button>
+
+  <div class="header-badge">Strategic Architecture Whitepaper</div>
+  <h1>RumourRadar & BMONI</h1>
+  <div class="subtitle">Fintech-Powered Verification, Enterprise Crisis Radar & Sustainable Media Monetization</div>
+
+  <div class="meta-bar">
+    <div><strong>Target Market:</strong> Nigeria (NGN Rails)</div>
+    <div><strong>Fintech Infrastructure:</strong> BMONI Embedded API</div>
+    <div><strong>Status:</strong> Executive Implementation Spec</div>
+  </div>
+
+  <h2>1. Executive Summary</h2>
+  <p>
+    The standard approach to fintech integration in civic tech—paying citizens token micro-bounties for submitting evidence—creates fatal misaligned incentives. It encourages Sybil attacks, manufactured evidence, and introduces complex KYC obligations for anonymous citizens.
+  </p>
+  <p>
+    <strong>RumourRadar inverts this paradigm.</strong> Rather than paying for evidence, we use BMONI to <em>monetize access, institutional threat intelligence, and verified newsroom support</em>. This preserves 100% evidence integrity while embedding BMONI as an indispensable B2B revenue and micro-donation infrastructure.
+  </p>
+
+  <h2>2. Architectural Paradigm Shift</h2>
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>Dimension</th>
+        <th>❌ Evidence Bounty Model</th>
+        <th>✅ RumourRadar + BMONI Model</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Evidence Integrity</strong></td>
+        <td><span class="badge-bad">High Risk:</span> Users game prompts to farm rewards.</td>
+        <td><span class="badge-good">Pristine:</span> 100% deterministic & LLM-grounded.</td>
+      </tr>
+      <tr>
+        <td><strong>BMONI Usage</strong></td>
+        <td><span class="badge-bad">Forced:</span> Micro-payouts to unverified users.</td>
+        <td><span class="badge-good">Native:</span> NGN Virtual Accounts & Verified Bank Rails.</td>
+      </tr>
+      <tr>
+        <td><strong>Business Model</strong></td>
+        <td><span class="badge-bad">Unsustainable:</span> High cash burn on payouts.</td>
+        <td><span class="badge-good">High MRR:</span> B2B SaaS Subscriptions for Brands & Media.</td>
+      </tr>
+      <tr>
+        <td><strong>Compliance / KYC</strong></td>
+        <td><span class="badge-bad">Complex:</span> Requires citizen BVN registration.</td>
+        <td><span class="badge-good">Streamlined:</span> Institutional onboarding via BMONI.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>3. Core Commercial Offerings Powered by BMONI</h2>
+
+  <div class="tier-grid">
+    <div class="tier-card">
+      <div class="tier-title">Newsroom Pro Tier</div>
+      <div class="tier-price">₦50,000 / month</div>
+      <ul class="tier-features">
+        <li>Dedicated BMONI NGN Virtual Bank Account</li>
+        <li>Priority Verification Queue during breaking news</li>
+        <li>High-throughput Bulk Claim Verification API</li>
+        <li>Exportable Fact-Check WhatsApp Graphics</li>
+        <li>Verified Partner Badge for Newsroom Desks</li>
+      </ul>
+    </div>
+
+    <div class="tier-card" style="border-color: #2563EB;">
+      <div class="tier-title">Enterprise Brand Shield</div>
+      <div class="tier-price">₦250,000 / month</div>
+      <ul class="tier-features">
+        <li>Real-Time Brand Misinformation Surveillance</li>
+        <li>Instant WhatsApp & Webhook Crisis Alerts</li>
+        <li>AI Phishing & Fake Circular Threat Detection</li>
+        <li>1-Click Auto-Generated PR Debunk Kits</li>
+        <li>Dedicated Corporate BMONI Account Manager</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">The "Support Verified Journalism" Ecosystem Rail</div>
+    <p>
+      Accredited fact-checkers (e.g., <em>Premium Times, Dubawa, TheCable</em>) provide the ground-truth journalism our system relies on. Every fact-check result card features a <strong>"Tip this Fact-Check"</strong> button. Using BMONI’s verified bank transfer API (<code>/verify-nigerian-account</code> + <code>/withdrawal-accounts/nigeria</code>), citizens can route ₦500 – ₦5,000 micro-grants directly into accredited journalists' accounts with zero platform fee.
+    </p>
+  </div>
+
+  <div class="page-break"></div>
+
+  <h2>4. Technical API Integration Blueprint</h2>
+
+  <h3>A. Virtual Account Provisioning for Institutional Subscriptions</h3>
+  <p>When an enterprise or newsroom subscribes, RumourRadar initiates the BMONI onboarding and assigns a persistent NGN Virtual Bank Account:</p>
+  <div class="code-box">
+POST /v1/users/{userId}/smart-wallets/{smartWalletId}/onramp/vba/nigeria
+Response:
+{
+  "accountNumber": "9928371822",
+  "bankName": "Wema Bank / Providus",
+  "accountHolder": "RumourRadar - Access Bank PR Desk",
+  "status": "active"
+}
+  </div>
+
+  <h3>B. Verified Newsroom Payout & Tip Settlement</h3>
+  <p>Micro-donations routed to accredited news organizations resolve through BMONI’s three-stage Nigerian bank settlement flow:</p>
+  <div class="code-box">
+// 1. Bank Code Lookup
+GET /v1/users/{userId}/bank-accounts/nigerian-banks
+
+// 2. Account Name Verification
+POST /v1/users/{userId}/bank-accounts/verify-nigerian-account
+{ "accountNumber": "0123456789", "bankCode": "058" }
+
+// 3. Register & Execute Transfer
+POST /v1/users/{userId}/bank-accounts/withdrawal-accounts/nigeria
+  </div>
+
+  <h2>5. Competitive Advantage & Hackathon Pitch Narrative</h2>
+  <p>
+    During the pitch, RumourRadar solves the #1 question judges ask civic-tech founders: <em>"How is this financially sustainable?"</em>
+  </p>
+  <p>
+    <strong>Our Pitch Moment:</strong><br>
+    <em>"Misinformation costs Nigerian banks, telcos, and public agencies billions of Naira in reputational damage and panic runs every year. RumourRadar transforms fact-checking from a donor-dependent charity into a high-margin enterprise threat-intelligence platform, with automated NGN billing and journalist tipping powered directly by BMONI's virtual accounts."</em>
+  </p>
+
+</body>
+</html>
