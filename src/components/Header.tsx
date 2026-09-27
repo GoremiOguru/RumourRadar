@@ -42,10 +42,14 @@ export const Header: React.FC<HeaderProps> = ({ onOpenWhyModal, onOpenBmoniModal
         </div>
 
         {/* Live Router Telemetry (Desktop) */}
-        <div className="hidden xl:flex items-center space-x-2 bg-slate-900/80 border border-slate-800/90 px-3 py-1.5 rounded-xl text-xs font-mono">
-          <Activity className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-          <span className="text-slate-400 text-[11px]">Router:</span>
-          <span className="text-emerald-300 font-bold text-[11px]">CBN • INEC • NCDC • Google FactCheck</span>
+        <div 
+          onClick={onOpenWhyModal}
+          className="hidden xl:flex items-center space-x-2 bg-slate-900/60 hover:bg-slate-900 border border-slate-800/80 px-2.5 py-1 rounded-full text-xs font-mono cursor-pointer transition-colors"
+          title="Connected to CBN, INEC, NCDC & Google Fact Check APIs"
+        >
+          <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-slate-400 text-[11px]">Regulators:</span>
+          <span className="text-emerald-400 font-medium text-[11px]">Live Sync</span>
         </div>
 
         {/* Action Buttons */}
