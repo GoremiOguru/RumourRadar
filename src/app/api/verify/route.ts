@@ -32,6 +32,8 @@ import { verifyClaimWithEvidence } from '@/lib/verifier';
 import { scrapeArticleIfUrl } from '@/lib/url-scraper';
 import { getCachedResult, setCachedResult } from '@/lib/cache';
 import { saveVerificationToDB } from '@/lib/supabase';
+import { checkPaymentRedFlag } from '@/lib/bmoni';
+import { generateMultilingualExplanations } from '@/lib/naijaml';
 import { VerificationResult } from '@/types';
 
 export async function POST(req: NextRequest) {
@@ -63,10 +65,11 @@ export async function POST(req: NextRequest) {
     const claim = geminiClaim || await extractClaim(textToProcess);
 
 
-    // Stage 2: Parallel Dual-Channel Retrieval (Google Fact Check + Nigeria-First Authority Router)
-    const [factCheckMatch, rawEvidence] = await Promise.all([
+    // Stage 2: Parallel Tri-Channel Retrieval (Google Fact Check + Nigeria-First Authority Router + BMONI Bank Rail)
+    const [factCheckMatch, rawEvidence, paymentResult] = await Promise.all([
       lookupGoogleFactCheck(claim.normalizedClaim),
-      searchAuthoritativeEvidence(claim)
+      searchAuthoritativeEvidence(claim),
+      checkPaymentRedFlag(textToProcess)
     ]);
 
     // Stage 3: Multi-Factor Deterministic Ranking Engine (30% Auth, 25% Rel, 20% Rec, 15% Corr, 10% Ctx)
@@ -89,6 +92,11 @@ export async function POST(req: NextRequest) {
         reasoning: geminiSynthesis.reasoning,
         shortExplanation: geminiSynthesis.shortExplanation,
         pidginExplanation: geminiSynthesis.pidginExplanation,
+        multilingualExplanations: generateMultilingualExplanations(
+          geminiSynthesis.verdict,
+          geminiSynthesis.shortExplanation,
+          geminiSynthesis.pidginExplanation
+        ),
         keyQuote: geminiSynthesis.keyQuote,
         evidence: rankedEvidence,
         factCheckFound: !!factCheckMatch,
@@ -96,11 +104,12 @@ export async function POST(req: NextRequest) {
         verifiedAt: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WAT',
         processingTimeMs: duration,
         pipelineStages: [
-          { stage: '1. Live URL & Claim Extraction (Gemini AI)', status: 'completed', durationMs: Math.round(duration * 0.2), details: `Entity: "${claim.entity}" | Category: ${claim.category}` },
-          { stage: '2. Google Fact Check Tools API', status: factCheckMatch ? 'completed' : 'fallback', durationMs: Math.round(duration * 0.2), details: factCheckMatch ? `Match: ${factCheckMatch.publisher}` : 'Checked Global Registry' },
-          { stage: '3. Nigeria-First Authority Search (Serper/Live)', status: 'completed', durationMs: Math.round(duration * 0.3), details: `Scanned ${rankedEvidence.length} Nigerian authoritative sources` },
-          { stage: '4. Multi-Factor Formula Ranking Engine', status: 'completed', durationMs: Math.round(duration * 0.1), details: `Formula: 0.30×Auth + 0.25×Rel + 0.20×Rec + 0.15×Corr + 0.10×Ctx` },
-          { stage: '5. Evidence-Grounded Synthesis (Gemini AI)', status: 'completed', durationMs: Math.round(duration * 0.2), details: `Verdict: ${geminiSynthesis.verdict} (${geminiSynthesis.confidenceScore}% Confidence)` }
+          { stage: '1. Live URL & Claim Extraction (Gemini AI)', status: 'completed', durationMs: Math.round(duration * 0.18), details: `Entity: "${claim.entity}" | Category: ${claim.category}` },
+          { stage: '2. Google Fact Check Tools API', status: factCheckMatch ? 'completed' : 'fallback', durationMs: Math.round(duration * 0.18), details: factCheckMatch ? `Match: ${factCheckMatch.publisher}` : 'Checked Global Registry' },
+          { stage: '3. Nigeria-First Authority Search (Serper/Live)', status: 'completed', durationMs: Math.round(duration * 0.25), details: `Scanned ${rankedEvidence.length} Nigerian authoritative sources` },
+          { stage: '4. BMONI BVN Payment Detail & Fraud Rail', status: paymentResult ? 'completed' : 'skipped', durationMs: Math.round(duration * 0.15), details: paymentResult ? paymentResult.evidenceSummary : 'No NUBAN payment details detected' },
+          { stage: '5. Multi-Factor Formula Ranking Engine', status: 'completed', durationMs: Math.round(duration * 0.08), details: `Formula: 0.30×Auth + 0.25×Rel + 0.20×Rec + 0.15×Corr + 0.10×Ctx` },
+          { stage: '6. Evidence-Grounded Synthesis (Gemini AI)', status: 'completed', durationMs: Math.round(duration * 0.16), details: `Verdict: ${geminiSynthesis.verdict} (${geminiSynthesis.confidenceScore}% Confidence)` }
         ]
       };
     } else {
@@ -112,6 +121,19 @@ export async function POST(req: NextRequest) {
         query,
         startTime
       );
+    }
+
+    // Stage 4.5: Hard Evidence Overrides from BMONI Payment Rail
+    if (paymentResult) {
+      result.paymentVerification = paymentResult;
+      if (paymentResult.status === 'ACCOUNT_VERIFIED_MISMATCH' || paymentResult.status === 'ACCOUNT_NOT_FOUND') {
+        result.verdict = 'CONTRADICTED';
+        result.confidence = 'HIGH';
+        result.confidenceScore = 96;
+        result.shortExplanation = `FINANCIAL FRAUD ALERT: BMONI BVN verification confirms bank account ${paymentResult.detectedNuban} (${paymentResult.detectedBank}) is registered to "${paymentResult.actualAccountHolder || 'unverified holder'}", which conflicts with the claimed official entity.`;
+        result.pidginExplanation = `BEWARE FRAUD SCAM! BMONI bank lookup show say dis account ${paymentResult.detectedNuban} for ${paymentResult.detectedBank} belong to personal holder "${paymentResult.actualAccountHolder}", no be official government agency. No send money!`;
+        result.reasoning = `BMONI Bank Account Verification Rail explicitly confirms an account detail mismatch. ${paymentResult.evidenceSummary}`;
+      }
     }
 
     // Stage 5: Cache & Persist

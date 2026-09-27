@@ -19,6 +19,13 @@ export interface ExtractedClaim {
   dateClaimed?: string;
   rawText: string;
   isSatireOrParody?: boolean;
+  detectedLanguage?: {
+    code: string;
+    name: string;
+    flag: string;
+    isVernacular: boolean;
+    confidenceScore: number;
+  };
 }
 
 export interface EvidenceItem {
@@ -46,6 +53,17 @@ export interface FactCheckMatch {
   reviewDate?: string;
 }
 
+export interface PaymentVerificationResult {
+  detectedNuban: string;
+  detectedBank: string;
+  claimedRecipient?: string;
+  actualAccountHolder?: string;
+  bankCode?: string;
+  status: 'NO_PAYMENT_DETAILS' | 'ACCOUNT_VERIFIED_MATCH' | 'ACCOUNT_VERIFIED_MISMATCH' | 'ACCOUNT_NOT_FOUND' | 'UNRESOLVED_BANK';
+  evidenceSummary: string;
+  riskScore: number; // 0 (Legit) - 100 (High Fraud Risk)
+}
+
 export interface VerificationResult {
   id: string;
   query: string;
@@ -56,10 +74,18 @@ export interface VerificationResult {
   reasoning: string;
   shortExplanation: string;
   pidginExplanation?: string;
+  multilingualExplanations?: {
+    english: string;
+    pidgin: string;
+    yoruba: string;
+    hausa: string;
+    igbo: string;
+  };
   keyQuote?: string;
   evidence: EvidenceItem[];
   factCheckFound: boolean;
   factCheckDetails?: FactCheckMatch;
+  paymentVerification?: PaymentVerificationResult;
   verifiedAt: string;
   processingTimeMs: number;
   pipelineStages: {

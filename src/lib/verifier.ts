@@ -17,6 +17,7 @@
  */
 
 import { EvidenceItem, ExtractedClaim, FactCheckMatch, VerdictType, ConfidenceLevel, VerificationResult } from '@/types';
+import { generateMultilingualExplanations } from '@/lib/naijaml';
 
 export function verifyClaimWithEvidence(
   claim: ExtractedClaim,
@@ -117,6 +118,8 @@ export function verifyClaimWithEvidence(
 
   const duration = Date.now() - startTime;
 
+  const multilingual = generateMultilingualExplanations(verdict, shortExplanation, pidginExplanation);
+
   return {
     id: `check-${Date.now()}`,
     query,
@@ -127,6 +130,7 @@ export function verifyClaimWithEvidence(
     reasoning,
     shortExplanation,
     pidginExplanation,
+    multilingualExplanations: multilingual,
     keyQuote,
     evidence,
     factCheckFound: !!factCheck,

@@ -84,7 +84,11 @@ body {
   color: var(--foreground);
   font-family: var(--font-body);
   overflow-x: hidden;
-  selection-background-color: rgba(0, 135, 81, 0.3);
+}
+
+::selection {
+  background-color: rgba(0, 135, 81, 0.3);
+  color: #a7f3d0;
 }
 
 h1, h2, h3, h4, .font-display {

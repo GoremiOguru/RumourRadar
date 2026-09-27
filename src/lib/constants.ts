@@ -104,5 +104,14 @@ export const DEMO_PRESETS: DemoPreset[] = [
     expectedVerdict: 'UNVERIFIED',
     tag: 'Security & Curfew',
     badgeColor: 'slate'
+  },
+  {
+    id: 'nin-palliative-scam',
+    title: 'FG NIN Palliative Payment Scam (BMONI Rail Check)',
+    category: 'banking_fintech',
+    prompt: 'FG PALLIATIVE ALERT: Send N5,000 verification fee to GTBank account 0581928374 (Federal Ministry of Humanitarian Affairs) to claim your N50,000 NIN palliative grant immediately!',
+    expectedVerdict: 'CONTRADICTED',
+    tag: 'BMONI Fraud Rail',
+    badgeColor: 'rose'
   }
 ];

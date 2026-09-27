@@ -1,4 +1,5 @@
 import { ClaimCategory, ExtractedClaim } from '@/types';
+import { detectNigerianVernacular, restoreNigerianDiacritics } from '@/lib/naijaml';
 
 /**
  * Extracts normalized factual claims from messy social messages or URLs.
@@ -60,12 +61,23 @@ export async function extractClaim(rawInput: string): Promise<ExtractedClaim> {
     }
   }
 
+  // Apply NaijaML Offline Language & Diacritic Engine
+  const langDetection = detectNigerianVernacular(cleanedInput);
+  const normalizedEntity = restoreNigerianDiacritics(entity);
+
   return {
     normalizedClaim: normalized,
-    entity,
+    entity: normalizedEntity,
     category,
     location: lower.includes('lagos') ? 'Lagos, Nigeria' : lower.includes('abuja') ? 'Abuja, Nigeria' : 'Nigeria (National)',
     dateClaimed: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-    rawText: rawInput
+    rawText: rawInput,
+    detectedLanguage: {
+      code: langDetection.code,
+      name: langDetection.name,
+      flag: langDetection.flag,
+      isVernacular: langDetection.isVernacular,
+      confidenceScore: langDetection.confidenceScore
+    }
   };
 }

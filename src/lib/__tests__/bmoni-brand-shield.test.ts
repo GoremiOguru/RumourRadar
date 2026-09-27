@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createBmoniVirtualAccount, verifyNigerianAccount, tipNewsroom, VERIFIED_NEWSROOM_DESKS } from '../bmoni';
+import { createBmoniVirtualAccount, verifyNigerianAccount, tipNewsroom, VERIFIED_NEWSROOM_DESKS, checkPaymentRedFlag } from '../bmoni';
 import { verifyClaimWithEvidence } from '../verifier';
 import { ExtractedClaim, EvidenceItem } from '@/types';
 
@@ -36,6 +36,17 @@ describe('BMONI Fintech Rails & Newsroom Tipping', () => {
     expect(res.reference).toContain('BMONI-TIP');
     expect(res.amountNGN).toBe(2500);
     expect(res.newsroom).toBe(VERIFIED_NEWSROOM_DESKS['premium-times'].name);
+  });
+
+  it('should detect NUBAN payment scam details and flag a payment mismatch', async () => {
+    const scamText = 'FG PALLIATIVE ALERT: Pay N5,000 fee to GTBank 0581928374 (Federal Govt) for N50,000 grant';
+    const result = await checkPaymentRedFlag(scamText);
+
+    expect(result).not.toBeNull();
+    expect(result?.detectedNuban).toBe('0581928374');
+    expect(result?.detectedBank).toContain('Guaranty Trust Bank');
+    expect(['ACCOUNT_VERIFIED_MISMATCH', 'ACCOUNT_NOT_FOUND']).toContain(result?.status);
+    expect(result?.riskScore).toBeGreaterThan(80);
   });
 });
 

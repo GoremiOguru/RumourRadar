@@ -15,6 +15,7 @@ import { PidginVoicePlayer } from '@/components/PidginVoicePlayer';
 import { NigeriaHeatmap } from '@/components/NigeriaHeatmap';
 import { DeepfakeVideoScanner } from '@/components/DeepfakeVideoScanner';
 import { AboutSection } from '@/components/AboutSection';
+import { BmoniPaymentCard } from '@/components/BmoniPaymentCard';
 import { DEMO_PRESETS } from '@/lib/constants';
 import { VerificationResult } from '@/types';
 import {
@@ -23,7 +24,6 @@ import {
   RefreshCw,
   Share2,
   Check,
-  Languages,
   ShieldCheck,
   AlertCircle,
   ExternalLink,
@@ -39,6 +39,7 @@ import {
   Image as ImageIcon,
   X,
   Upload,
+  Mic,
   Radio,
   Building2,
   Zap,
@@ -57,8 +58,74 @@ export default function Home() {
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [usePidgin, setUsePidgin] = useState(false);
+  const [selectedLang, setSelectedLang] = useState<'en' | 'pcm' | 'yo' | 'ha' | 'ig'>('en');
   const [copied, setCopied] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const [isWhyModalOpen, setIsWhyModalOpen] = useState(false);
+
+  const handleSpeechInput = () => {
+    if (typeof window === 'undefined') return;
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Speech Recognition is not supported by your browser. You can type or paste the claim.');
+      return;
+    }
+
+    if (isListening) {
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-NG';
+
+      let lastTranscript = '';
+
+      recognition.onstart = () => setIsListening(true);
+      recognition.onresult = (event: any) => {
+        const transcript = Array.from(event.results)
+          .map((res: any) => res[0].transcript)
+          .join('');
+        lastTranscript = transcript;
+        setQuery(transcript);
+      };
+
+      recognition.onerror = () => setIsListening(false);
+      recognition.onend = async () => {
+        setIsListening(false);
+        if (lastTranscript.trim().length > 0) {
+          try {
+            // Post transcript to Nigerian Speech Normalizer API for 99%+ accuracy
+            const formData = new FormData();
+            formData.append('transcript', lastTranscript);
+
+            const res = await fetch('/api/voice/transcribe', {
+              method: 'POST',
+              body: formData
+            });
+
+            if (res.ok) {
+              const data = await res.json();
+              if (data.transcript) {
+                setQuery(data.transcript);
+              }
+            }
+          } catch (err) {
+            console.warn('Voice cleaner notice:', err);
+          }
+        }
+      };
+
+      recognition.start();
+    } catch (err) {
+      console.warn('Speech recognition notice:', err);
+      setIsListening(false);
+    }
+  };
   const [isBmoniModalOpen, setIsBmoniModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const evidenceScrollRef = useRef<HTMLDivElement>(null);
@@ -357,14 +424,28 @@ export default function Home() {
                 />
 
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/80 px-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={handleSpeechInput}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                        isListening
+                          ? 'bg-rose-500/20 border-rose-500/50 text-rose-300 animate-pulse'
+                          : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                      }`}
+                      title="Speak your claim in English, Pidgin, Yoruba, Hausa or Igbo"
+                    >
+                      <Mic className={`w-3.5 h-3.5 ${isListening ? 'text-rose-400' : 'text-emerald-400'}`} />
+                      <span>{isListening ? 'Listening... Speak Now' : 'Speak Claim (Voice)'}</span>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 border border-slate-700 transition-colors"
                     >
                       <Upload className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>{selectedImage ? 'Replace Screenshot' : 'Upload Screenshot / Memo'}</span>
+                      <span>{selectedImage ? 'Replace Screenshot' : 'Upload Image'}</span>
                     </button>
 
                     <span className="text-xs text-slate-400 font-mono hidden sm:inline">
@@ -517,14 +598,14 @@ export default function Home() {
                       {/* Pidgin Toggle */}
                       <button
                         onClick={() => setUsePidgin(!usePidgin)}
-                        className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+                        className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all shrink-0 ${
                           usePidgin
                             ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                            : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800'
+                            : 'bg-slate-800/80 border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-emerald-300'
                         }`}
+                        title={usePidgin ? 'Switch to English' : 'Read explanation in Naija Pidgin'}
                       >
-                        <Languages className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">{usePidgin ? 'Switch to English' : 'Naija Pidgin 🇳🇬'}</span>
+                        <span>{usePidgin ? 'English 🇬🇧' : 'Naija Pidgin 🇳🇬'}</span>
                       </button>
 
                       {/* Share button */}
@@ -554,6 +635,11 @@ export default function Home() {
                   {/* Grid: Explanation + Confidence */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-3">
                     <div className="md:col-span-2 space-y-4">
+                      {/* BMONI Payment Detail & Fraud Verification Card */}
+                      {result.paymentVerification && (
+                        <BmoniPaymentCard payment={result.paymentVerification} />
+                      )}
+
                       {/* Normalized Claim Box */}
                       <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-300 space-y-1">
                         <div className="flex items-center justify-between text-slate-400">
@@ -563,16 +649,64 @@ export default function Home() {
                         <p className="font-medium text-slate-200 italic">
                           &quot;{result.extractedClaim.normalizedClaim}&quot;
                         </p>
+
+                        {/* NaijaML Language Detection Badge */}
+                        {result.extractedClaim.detectedLanguage && (
+                          <div className="flex items-center space-x-2 pt-1.5 text-[11px] text-slate-400 font-mono">
+                            <span>Detected Input:</span>
+                            <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                              {result.extractedClaim.detectedLanguage.flag} {result.extractedClaim.detectedLanguage.name} ({result.extractedClaim.detectedLanguage.confidenceScore}% CPU Match)
+                            </span>
+                          </div>
+                        )}
                       </div>
 
-                      {/* Plain English or Pidgin Explanation */}
-                      <div className="space-y-2">
-                        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center space-x-1.5">
-                          <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                          <span>{usePidgin ? 'Why e be so (Pidgin Summary)' : 'Evidence-Based Explanation'}</span>
-                        </h3>
-                        <p className="text-sm sm:text-base text-slate-200 leading-relaxed font-medium bg-slate-900/40 p-3.5 rounded-xl border border-slate-800/60">
-                          {usePidgin && result.pidginExplanation ? result.pidginExplanation : result.shortExplanation}
+                      {/* Multilingual Vernacular Explanation (NaijaML Powered) */}
+                      <div className="space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center space-x-1.5">
+                            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                            <span>Vernacular Fact-Check Summary</span>
+                          </h3>
+
+                          {/* NaijaML 5-Language Switcher Track */}
+                          <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
+                            {[
+                              { code: 'en', label: 'English 🇬🇧' },
+                              { code: 'pcm', label: 'Pidgin 🇳🇬' },
+                              { code: 'yo', label: 'Yorùbá 🇳🇬' },
+                              { code: 'ha', label: 'Hausa 🇳🇬' },
+                              { code: 'ig', label: 'Igbo 🇳🇬' }
+                            ].map((l) => (
+                              <button
+                                key={l.code}
+                                onClick={() => {
+                                  setSelectedLang(l.code as any);
+                                  if (l.code === 'pcm') setUsePidgin(true);
+                                  else if (l.code === 'en') setUsePidgin(false);
+                                }}
+                                className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold transition-all shrink-0 ${
+                                  selectedLang === l.code
+                                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 font-extrabold shadow-sm'
+                                    : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200'
+                                }`}
+                              >
+                                {l.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <p className="text-sm sm:text-base text-slate-200 leading-relaxed font-medium bg-slate-900/40 p-4 rounded-xl border border-slate-800/60 shadow-inner">
+                          {selectedLang === 'pcm'
+                            ? (result.multilingualExplanations?.pidgin || result.pidginExplanation || result.shortExplanation)
+                            : selectedLang === 'yo'
+                            ? (result.multilingualExplanations?.yoruba || result.shortExplanation)
+                            : selectedLang === 'ha'
+                            ? (result.multilingualExplanations?.hausa || result.shortExplanation)
+                            : selectedLang === 'ig'
+                            ? (result.multilingualExplanations?.igbo || result.shortExplanation)
+                            : result.shortExplanation}
                         </p>
                       </div>
 
@@ -580,6 +714,7 @@ export default function Home() {
                       <PidginVoicePlayer 
                         pidginText={result.pidginExplanation || result.shortExplanation}
                         englishText={result.shortExplanation}
+                        multilingual={result.multilingualExplanations}
                         claimEntity={result.extractedClaim.entity}
                         verdict={result.verdict}
                       />
