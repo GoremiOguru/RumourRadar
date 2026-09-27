@@ -55,6 +55,7 @@ export const metadata: Metadata = {
     description: 'Verify viral WhatsApp forwards, breaking news, and social claims in Nigeria with real evidence and citations.',
     creator: '@RumorRadarAI'
   },
+  manifest: '/manifest.json',
   robots: {
     index: true,
     follow: true,
@@ -75,8 +76,26 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      </head>
       <body className={`${inter.className} bg-slate-950 text-slate-100 min-h-screen antialiased`}>
         {children}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').catch(function(err) {
+                    console.log('SW registration notice:', err);
+                  });
+                });
+              }
+            `
+          }}
+        />
       </body>
     </html>
   );

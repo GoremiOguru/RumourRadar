@@ -1,0 +1,21 @@
+{
+  "name": "RumourRadar Nigeria — AI Misinformation Shield",
+  "short_name": "RumourRadar",
+  "description": "Offline-first AI fact-checking and financial scam verification for Nigeria",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "/icon",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
