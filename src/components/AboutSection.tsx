@@ -22,7 +22,11 @@ import {
   Compass,
   FileText,
   Users,
-  Award
+  Award,
+  Video,
+  MapPin,
+  TrendingUp,
+  Zap
 } from 'lucide-react';
 
 interface AboutSectionProps {
@@ -33,9 +37,72 @@ interface AboutSectionProps {
 
 export function AboutSection({ onOpenTipModal, onSelectTab, appLanguage = 'en' }: AboutSectionProps) {
   const isPidgin = appLanguage === 'pcm';
-  const [activeTab, setActiveTab] = useState<'market' | 'pipeline' | 'civic'>('market');
+  const [activeTab, setActiveTab] = useState<'features' | 'market' | 'pipeline' | 'civic'>('features');
   const [activeStage, setActiveStage] = useState<number>(1);
   const [hasPledged, setHasPledged] = useState(false);
+
+  const NEW_FEATURES = [
+    {
+      id: 'deepfake',
+      icon: <Video className="w-6 h-6 text-purple-400" />,
+      badge: isPidgin ? 'AI Eye & Audio Ear' : 'Multimodal Vision & Audio',
+      title: isPidgin ? 'Fake Video & AI Voice Catch' : 'Deepfake Video & Voice Clone Detector',
+      desc: isPidgin
+        ? 'Scan uploaded video files, TikTok/YouTube links, or audio notes to catch synthetic facial edits, lip-sync latency, and cloned AI voices of politicians and celebrities.'
+        : 'Analyze video uploads, MP4 clips, TikTok/YouTube URLs, or audio notes for deepfake facial manipulation, lip-sync latency, and synthetic AI voice cloning.',
+      cta: isPidgin ? 'Launch Video Scanner →' : 'Open Video Scanner →',
+      targetTab: 'deepfake' as const,
+      color: 'from-purple-500/20 to-indigo-500/10 border-purple-500/30 text-purple-300'
+    },
+    {
+      id: 'brand_shield',
+      icon: <Building2 className="w-6 h-6 text-emerald-400" />,
+      badge: isPidgin ? 'Live Guard for Brands & People' : 'Real-Time Brand Intelligence',
+      title: isPidgin ? 'Brand, Company & Creator Guard' : 'Brand & Creator Shield',
+      desc: isPidgin
+        ? 'Real-time radar for companies, creators, public figures, and agencies to track viral rumors, verify subject-relevant news, and get clean zero-rumor reports when clear.'
+        : 'Real-time threat monitoring dashboard for corporations, public figures, content creators, and agencies to track brand-targeted misinfo and debunk defamatory claims with non-hallucinating verification.',
+      cta: isPidgin ? 'Open Brand Guard →' : 'Launch Brand Shield →',
+      targetTab: 'brand_shield' as const,
+      color: 'from-emerald-500/20 to-teal-500/10 border-emerald-500/30 text-emerald-300'
+    },
+    {
+      id: 'heatmap',
+      icon: <MapPin className="w-6 h-6 text-amber-400" />,
+      badge: isPidgin ? 'All 36 States & Abuja' : 'Geopolitical Emergency Alert',
+      title: isPidgin ? 'Nigeria State-by-State Rumor Map' : 'Geopolitical Rumor Heatmap',
+      desc: isPidgin
+        ? 'Interactive map across all 36 states and FCT Abuja showing live misinfo hotspot spikes in Elections, Security, Naira/Fuel scarcity, and Health.'
+        : 'Interactive 36-state + FCT map mapping real-time misinformation density, state risk indices, and regional threat hotspots across Nigeria\'s 6 geopolitical zones.',
+      cta: isPidgin ? 'Open Naija Map →' : 'View Geopolitical Map →',
+      targetTab: 'heatmap' as const,
+      color: 'from-amber-500/20 to-orange-500/10 border-amber-500/30 text-amber-300'
+    },
+    {
+      id: 'audio_engine',
+      icon: <Volume2 className="w-6 h-6 text-cyan-400" />,
+      badge: isPidgin ? '5 Native Dialect Accent' : '5-Language Vernacular Audio',
+      title: isPidgin ? 'Native Audio Summary for 5 Dialects' : 'Vernacular Audio & Dialect Engine',
+      desc: isPidgin
+        ? 'Voice playback in authentic Pidgin, Yorùbá, Hausa, and Igbo with natural phonetic pronunciation so everybody fit understand the truth for WhatsApp audio.'
+        : 'Authentic TTS audio summary generation in Nigerian English, Pidgin, Yorùbá, Hausa, and Igbo with custom phonetic accents for instant WhatsApp broadcast.',
+      cta: isPidgin ? 'Try Voice Check →' : 'Try Audio Verification →',
+      targetTab: 'verify' as const,
+      color: 'from-cyan-500/20 to-blue-500/10 border-cyan-500/30 text-cyan-300'
+    },
+    {
+      id: 'dual_rail',
+      icon: <Brain className="w-6 h-6 text-rose-400" />,
+      badge: isPidgin ? 'Zero Lie Formula' : 'Deterministic Evidence Matrix',
+      title: isPidgin ? 'Dual-Rail Grounded AI Engine' : 'Dual-Rail Evidence Pipeline',
+      desc: isPidgin
+        ? 'Gemini 2.5 multimodal intelligence paired with live regulator search (CBN, INEC, NCDC) and mathematical weighting so the AI never guesses or lies.'
+        : 'Google Gemini 2.5 multimodal model integrated with live search across official Nigerian regulatory registries and deterministic mathematical scoring.',
+      cta: isPidgin ? 'Check Claim Now →' : 'Verify Claim Now →',
+      targetTab: 'verify' as const,
+      color: 'from-rose-500/20 to-pink-500/10 border-rose-500/30 text-rose-300'
+    }
+  ];
 
   const PIPELINE_STAGES = [
     {
@@ -100,8 +167,8 @@ export function AboutSection({ onOpenTipModal, onSelectTab, appLanguage = 'en' }
 
             <p className="text-xs sm:text-sm text-slate-400 max-w-3xl leading-relaxed">
               {isPidgin
-                ? 'Rumour Radar na Nigeria number 1 tool wey dey check viral WhatsApp audio, X (Twitter) tweets, TikTok video text, Telegram posts, and fake government memo before e cause trouble.'
-                : 'Rumour Radar is Nigeria\'s premier evidence-first verification engine designed to neutralize viral WhatsApp hoaxes, X (Twitter) tweets, TikTok captions, forged government circulars, and panic threats.'}
+                ? 'Rumour Radar na Nigeria number 1 tool wey dey check viral WhatsApp audio, X (Twitter) tweets, TikTok video text, deepfake video, brand rumors, and state emergency alerts before e cause trouble.'
+                : 'Rumour Radar is Nigeria\'s premier evidence-first verification engine built to neutralize viral WhatsApp hoaxes, deepfake video scams, brand threats, state emergency misinfo, and forged circulars.'}
             </p>
           </div>
 
@@ -120,6 +187,18 @@ export function AboutSection({ onOpenTipModal, onSelectTab, appLanguage = 'en' }
 
         {/* Section Navigation Pills */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-2 border-t border-slate-800/80">
+          <button
+            onClick={() => setActiveTab('features')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 font-display flex items-center gap-1.5 ${
+              activeTab === 'features'
+                ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20'
+                : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            {isPidgin ? '✨ New Features We Build' : '✨ New Features Showcase'}
+          </button>
+
           <button
             onClick={() => setActiveTab('market')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 font-display ${
@@ -154,6 +233,70 @@ export function AboutSection({ onOpenTipModal, onSelectTab, appLanguage = 'en' }
           </button>
         </div>
       </div>
+
+      {/* TAB 0: NEW FEATURES SHOWCASE */}
+      {activeTab === 'features' && (
+        <div className="space-y-6">
+          <div className="text-center space-y-2 max-w-2xl mx-auto">
+            <span className="text-xs font-mono text-emerald-400 font-bold uppercase tracking-wider flex items-center justify-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-emerald-400" />
+              {isPidgin ? 'New Power for Rumour Radar' : 'Platform Expansion & New Capabilities'}
+            </span>
+            <h3 className="text-xl sm:text-3xl font-display font-bold text-white">
+              {isPidgin ? 'Everything Wey We Don Add Give Naija People' : 'Advanced Tools Built for Citizens & Organizations'}
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-400">
+              {isPidgin
+                ? 'From deepfake video scanner to brand protection guard and 36-state heatmap alert, see all our new features below.'
+                : 'Explore our newly launched capabilities spanning deepfake media inspection, enterprise & creator brand protection, geopolitical risk heatmapping, and 5-language vernacular TTS speech.'}
+            </p>
+          </div>
+
+          {/* Grid of New Features */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {NEW_FEATURES.map((feat) => (
+              <div
+                key={feat.id}
+                className="p-6 rounded-2xl bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900/90 border border-slate-800 hover:border-emerald-500/50 transition-all duration-300 flex flex-col justify-between space-y-4 group shadow-xl"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/60 group-hover:scale-110 transition-transform">
+                      {feat.icon}
+                    </div>
+                    <span className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border bg-opacity-20 ${feat.color}`}>
+                      {feat.badge}
+                    </span>
+                  </div>
+
+                  <h4 className="font-display font-bold text-base text-white group-hover:text-emerald-300 transition-colors">
+                    {feat.title}
+                  </h4>
+
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    {feat.desc}
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-slate-800/80">
+                  {onSelectTab ? (
+                    <button
+                      onClick={() => onSelectTab(feat.targetTab)}
+                      className="w-full py-2.5 px-3 rounded-xl bg-slate-800/80 hover:bg-emerald-500 hover:text-slate-950 text-slate-200 text-xs font-bold font-display transition-all flex items-center justify-center gap-1.5 group-hover:shadow-lg group-hover:shadow-emerald-500/10"
+                    >
+                      <span>{feat.cta}</span>
+                    </button>
+                  ) : (
+                    <span className="text-[11px] text-emerald-400 font-mono font-bold flex items-center gap-1">
+                      <span>✓ {isPidgin ? 'Ready for Use' : 'Active Feature'}</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* TAB 1: OUR PLACE IN THE MARKET */}
       {activeTab === 'market' && (
