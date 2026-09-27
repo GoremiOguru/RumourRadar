@@ -54,7 +54,12 @@ const DEEPFAKE_PRESETS = [
   }
 ];
 
-export function DeepfakeVideoScanner() {
+interface DeepfakeVideoScannerProps {
+  appLanguage?: 'en' | 'pcm';
+}
+
+export function DeepfakeVideoScanner({ appLanguage = 'en' }: DeepfakeVideoScannerProps) {
+  const isPidgin = appLanguage === 'pcm';
   const [videoUrl, setVideoUrl] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -145,11 +150,11 @@ export function DeepfakeVideoScanner() {
 
     setLoading(true);
     setResult(null);
-    setScanningStage('Extracting video frames and optical flow...');
+    setScanningStage(isPidgin ? 'We dey extract video picture frame & sound wave...' : 'Extracting video frames and optical flow...');
 
     try {
-      setTimeout(() => setScanningStage('Analyzing neural voice acoustic spectrum & formant jitter...'), 600);
-      setTimeout(() => setScanningStage('Evaluating facial boundary mesh & lip-sync coherence...'), 1200);
+      setTimeout(() => setScanningStage(isPidgin ? 'We dey check voice sound spectrum & clone jitter...' : 'Analyzing neural voice acoustic spectrum & formant jitter...'), 600);
+      setTimeout(() => setScanningStage(isPidgin ? 'We dey check face boundary & lip sync...' : 'Evaluating facial boundary mesh & lip-sync coherence...'), 1200);
 
       const res = await fetch('/api/deepfake/scan', {
         method: 'POST',
@@ -190,15 +195,19 @@ export function DeepfakeVideoScanner() {
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-mono font-bold flex items-center gap-1.5">
               <ScanLine className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
-              LIVE MULTIMODAL VIDEO FORENSICS
+              {isPidgin ? 'LIVE VIDEO & VOICE FAKE SCANNER' : 'LIVE MULTIMODAL VIDEO FORENSICS'}
             </span>
-            <span className="text-xs text-slate-400 font-mono">Frame & Acoustic Scanner</span>
+            <span className="text-xs text-slate-400 font-mono">
+              {isPidgin ? 'Picture Frame & Voice Sound Scanner' : 'Frame & Acoustic Scanner'}
+            </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-white">
-            Detect AI Deepfake Videos & Synthetic Voice Clones
+            {isPidgin ? 'Detect Fake AI Video & Fake Voice Wey Dem Clone' : 'Detect AI Deepfake Videos & Synthetic Voice Clones'}
           </h2>
           <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
-            Real client-side video keyframe extraction and acoustic formant analysis for detecting manipulated Nigerian viral videos, face swaps, and AI voice memos.
+            {isPidgin 
+              ? 'We dey check video picture frames and voice sound wave to catch fake video, face swap, and AI cloned voice for Nigeria.' 
+              : 'Real client-side video keyframe extraction and acoustic formant analysis for detecting manipulated Nigerian viral videos, face swaps, and AI voice memos.'}
           </p>
         </div>
       </div>
@@ -267,7 +276,7 @@ export function DeepfakeVideoScanner() {
             type="text"
             value={videoUrl}
             onChange={(e) => setVideoUrl(e.target.value)}
-            placeholder="Or paste viral video URL from WhatsApp, X (Twitter), TikTok, or YouTube..."
+            placeholder={isPidgin ? "Or copy fake video link from WhatsApp, X (Twitter), TikTok, or YouTube..." : "Or paste viral video URL from WhatsApp, X (Twitter), TikTok, or YouTube..."}
             className="flex-1 px-4 py-3 rounded-xl bg-slate-950/80 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500/50"
           />
 
@@ -285,7 +294,7 @@ export function DeepfakeVideoScanner() {
             className="flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition-all shrink-0 active:scale-95"
           >
             <Upload className="w-4 h-4 text-purple-400" />
-            <span>Upload Video File</span>
+            <span>{isPidgin ? 'Upload Video File' : 'Upload Video File'}</span>
           </button>
 
           <button
@@ -296,12 +305,12 @@ export function DeepfakeVideoScanner() {
             {loading ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Forensics in Progress...</span>
+                <span>{isPidgin ? 'We Dey Check Video...' : 'Forensics in Progress...'}</span>
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                <span>Analyze Deepfake Risk</span>
+                <span>{isPidgin ? 'Check If Video Na Fake' : 'Analyze Deepfake Risk'}</span>
               </>
             )}
           </button>
@@ -311,7 +320,7 @@ export function DeepfakeVideoScanner() {
         {!result && !loading && (
           <div className="space-y-2 pt-2 border-t border-slate-800/80">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              Or test a real Nigerian viral case study:
+              {isPidgin ? 'Or test dis viral fake video case:' : 'Or test a real Nigerian viral case study:'}
             </span>
             <div className="flex flex-wrap gap-2">
               {DEEPFAKE_PRESETS.map((p) => (
@@ -320,11 +329,15 @@ export function DeepfakeVideoScanner() {
                   onClick={() => handleSelectPreset(p)}
                   className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/60 hover:bg-slate-800 hover:border-purple-500/40 text-xs text-slate-300 transition-all flex items-center gap-1.5 group"
                 >
-                  <span className="group-hover:text-purple-300 font-medium">{p.title}</span>
+                  <span className="group-hover:text-purple-300 font-medium">
+                    {isPidgin 
+                      ? (p.id === 'preset-cbn-deepfake' ? 'AI Cloned Voice CBN Governor Video' : p.id === 'preset-inec-ai' ? 'Fake Minister Appointment Video' : 'Real NCDC Health Video')
+                      : p.title}
+                  </span>
                   <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-bold ${
                     p.isFake ? 'bg-rose-950 text-rose-300' : 'bg-emerald-950 text-emerald-300'
                   }`}>
-                    {p.isFake ? '🔥 Viral Fake' : '✅ Verified Real'}
+                    {p.isFake ? (isPidgin ? '🔥 Viral Fake' : '🔥 Viral Fake') : (isPidgin ? '✅ Real Video' : '✅ Verified Real')}
                   </span>
                 </button>
               ))}

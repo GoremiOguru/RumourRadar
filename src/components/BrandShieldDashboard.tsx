@@ -30,6 +30,7 @@ import { VerifiedBrandNewsItem } from '@/app/api/brand-shield/scan/route';
 
 interface BrandShieldDashboardProps {
   onOpenSubscriptionModal: () => void;
+  appLanguage?: 'en' | 'pcm';
 }
 
 const BRAND_PRESETS = [
@@ -44,7 +45,8 @@ const BRAND_PRESETS = [
   'NNPC Limited'
 ];
 
-export function BrandShieldDashboard({ onOpenSubscriptionModal }: BrandShieldDashboardProps) {
+export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'en' }: BrandShieldDashboardProps) {
+  const isPidgin = appLanguage === 'pcm';
   const [brandInput, setBrandInput] = useState('GTBank');
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<(BrandShieldScanResult & { recentWeeklyNews?: VerifiedBrandNewsItem[] }) | null>(null);

@@ -21,6 +21,7 @@ import { LiveRegionalRumour } from '@/app/api/heatmap/live-rumors/route';
 
 interface NigeriaHeatmapProps {
   onSelectClaim?: (claim: string) => void;
+  appLanguage?: 'en' | 'pcm';
 }
 
 const ZONES: Array<GeopoliticalZone | 'ALL'> = [
@@ -126,7 +127,8 @@ const INITIAL_RUMOURS: LiveRegionalRumour[] = [
   }
 ];
 
-export function NigeriaHeatmap({ onSelectClaim }: NigeriaHeatmapProps = {}) {
+export function NigeriaHeatmap({ onSelectClaim, appLanguage = 'en' }: NigeriaHeatmapProps = {}) {
+  const isPidgin = appLanguage === 'pcm';
   const [selectedZone, setSelectedZone] = useState<GeopoliticalZone | 'ALL'>('ALL');
   const [rumours, setRumours] = useState<LiveRegionalRumour[]>(INITIAL_RUMOURS);
   const [loading, setLoading] = useState(false);

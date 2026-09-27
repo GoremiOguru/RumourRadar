@@ -329,15 +329,15 @@ export default function Home() {
         </div>
 
         {activeTab === 'brand_shield' ? (
-          <BrandShieldDashboard onOpenSubscriptionModal={() => setIsBmoniModalOpen(true)} />
+          <BrandShieldDashboard appLanguage={appLanguage} onOpenSubscriptionModal={() => setIsBmoniModalOpen(true)} />
         ) : activeTab === 'heatmap' ? (
-          <NigeriaHeatmap onSelectClaim={(claim) => {
+          <NigeriaHeatmap appLanguage={appLanguage} onSelectClaim={(claim) => {
             setActiveTab('verify');
             setQuery(claim);
             handleVerify(claim);
           }} />
         ) : activeTab === 'deepfake' ? (
-          <DeepfakeVideoScanner />
+          <DeepfakeVideoScanner appLanguage={appLanguage} />
         ) : activeTab === 'about' ? (
           <AboutSection appLanguage={appLanguage} onSelectTab={(tab) => setActiveTab(tab)} />
         ) : (
@@ -350,10 +350,30 @@ export default function Home() {
               </div>
 
               <h1 className="hero-reveal hero-reveal-delay-1 text-3xl sm:text-5xl font-black tracking-tight text-white max-w-3xl mx-auto leading-tight">
-                {t.heroTitleWord1}{' '}
+                {appLanguage === 'pcm' ? 'Stop Lie Lie Tori Before E ' : 'Stop Rumors Before They '}
                 <span className="whitespace-nowrap">
                   <span className="text-[#008751]">
-                    {t.heroTitleWord2}
+                    {'Spread'.split('').map((letter, index, letters) => (
+                      <span
+                        key={`spread-${index}`}
+                        className="hero-letter"
+                        style={{ animationDelay: `${(letters.length - 1 - index) * 70}ms` }}
+                      >
+                        {letter}
+                      </span>
+                    ))}
+                  </span>{' '}
+                  {appLanguage === 'pcm' ? 'for ' : 'in '}
+                  <span className="text-[#008751]">
+                    {'Nigeria'.split('').map((letter, index) => (
+                      <span
+                        key={`nigeria-${index}`}
+                        className="hero-letter"
+                        style={{ animationDelay: `${index * 70}ms` }}
+                      >
+                        {letter}
+                      </span>
+                    ))}
                   </span>
                 </span>
               </h1>
