@@ -1,12 +1,30 @@
 import { ClaimCategory, ExtractedClaim } from '@/types';
 import { detectNigerianVernacular, restoreNigerianDiacritics } from '@/lib/naijaml';
 
+const NON_CLAIM_GREETINGS = [
+  'how are you', 'how r u', 'good morning', 'good afternoon', 'good evening', 'hello', 'hi',
+  'how far', 'how far bro', 'who be this', 'what is your name', 'who are you', 'what do you do',
+  'testing', 'test', '123', 'kedu', 'sannu', 'bawo ni'
+];
+
+function checkNonClaimInput(text: string): boolean {
+  const clean = text.trim().toLowerCase().replace(/[^a-z0-9\s]/g, '');
+  if (clean.length < 4) return true;
+  if (NON_CLAIM_GREETINGS.some(g => clean === g || clean.startsWith(g + ' '))) return true;
+  if (clean.startsWith('how are') || clean.startsWith('how do') || clean.startsWith('what is your') || clean.startsWith('who are')) {
+    const hasNewsEntity = clean.includes('cbn') || clean.includes('opay') || clean.includes('tinubu') || clean.includes('inec') || clean.includes('jamb') || clean.includes('naira');
+    if (!hasNewsEntity) return true;
+  }
+  return false;
+}
+
 /**
- * Extracts normalized factual claims from messy social messages or URLs.
+ * Extracts normalized factual claims from messy social messages, tweets, or URLs.
  * Categorizes and isolates the core testable assertion.
  */
 export async function extractClaim(rawInput: string): Promise<ExtractedClaim> {
   const cleanedInput = rawInput.trim();
+  const isNonClaim = checkNonClaimInput(cleanedInput);
 
   // Heuristic rule-based claim extraction & categorization
   const lower = cleanedInput.toLowerCase();
@@ -72,6 +90,8 @@ export async function extractClaim(rawInput: string): Promise<ExtractedClaim> {
     location: lower.includes('lagos') ? 'Lagos, Nigeria' : lower.includes('abuja') ? 'Abuja, Nigeria' : 'Nigeria (National)',
     dateClaimed: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
     rawText: rawInput,
+    isNonClaim,
+    nonClaimReason: isNonClaim ? 'Greeting or conversational question (not a testable factual claim)' : undefined,
     detectedLanguage: {
       code: langDetection.code,
       name: langDetection.name,

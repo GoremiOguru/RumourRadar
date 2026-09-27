@@ -28,9 +28,11 @@ import {
 interface AboutSectionProps {
   onOpenTipModal?: () => void;
   onSelectTab?: (tab: 'verify' | 'brand_shield' | 'heatmap' | 'deepfake') => void;
+  appLanguage?: 'en' | 'pcm';
 }
 
-export function AboutSection({ onOpenTipModal, onSelectTab }: AboutSectionProps) {
+export function AboutSection({ onOpenTipModal, onSelectTab, appLanguage = 'en' }: AboutSectionProps) {
+  const isPidgin = appLanguage === 'pcm';
   const [activeTab, setActiveTab] = useState<'market' | 'pipeline' | 'civic'>('market');
   const [activeStage, setActiveStage] = useState<number>(1);
   const [hasPledged, setHasPledged] = useState(false);
@@ -38,30 +40,38 @@ export function AboutSection({ onOpenTipModal, onSelectTab }: AboutSectionProps)
   const PIPELINE_STAGES = [
     {
       stage: 1,
-      title: 'Multimodal Vision & Extraction',
-      badge: 'Gemini Vision OCR',
-      desc: 'Parses viral WhatsApp forwards, tweets, circulars, or uploaded screenshot memos. Extracts core factual claims while stripping panic fluff ("Share to 10 groups").',
+      title: isPidgin ? 'Multimodal Vision & Social Media Extract' : 'Multimodal Vision & Social Media Extraction',
+      badge: isPidgin ? 'OCR & Text Scanner' : 'Gemini Vision OCR',
+      desc: isPidgin 
+        ? 'Parses viral WhatsApp messages, X (Twitter) tweets, TikTok video text, Telegram posts, or uploaded screenshots. E dey separate real tori from fake panic text.' 
+        : 'Parses viral WhatsApp forwards, X (Twitter) tweets, TikTok captions, Telegram posts, news links, or uploaded screenshot memos. Extracts core factual claims while stripping panic fluff.',
       icon: <Brain className="w-5 h-5 text-emerald-400" />
     },
     {
       stage: 2,
-      title: 'Nigeria Authority Router',
-      badge: 'Live Registry Search',
-      desc: 'Directly routes claims to official Nigerian regulatory bodies (CBN, INEC, NCDC, JAMB, WAEC, SEC, NPF) and accredited fact-checking desks (Dubawa, Africa Check, FactCheckHub).',
+      title: isPidgin ? 'Claim Guardrail & Nigeria Authority Router' : 'Claim Guardrail & Nigeria Authority Router',
+      badge: isPidgin ? 'Live Guardrail + Registry' : 'Live Registry Search',
+      desc: isPidgin
+        ? 'Intercepts greetings like "how are you doing" so e no go give fake verdict. Directly checks official CBN, INEC, NCDC, JAMB, WAEC, SEC, and NPF registries.'
+        : 'Intercepts casual greetings/banter via Claim Guardrail. Directly routes factual claims to official Nigerian regulatory bodies (CBN, INEC, NCDC, JAMB, WAEC, SEC, NPF) and accredited fact-checking desks (Dubawa, Africa Check, FactCheckHub).',
       icon: <Database className="w-5 h-5 text-blue-400" />
     },
     {
       stage: 3,
-      title: 'Deterministic Scoring Matrix',
-      badge: 'Math Scoring',
-      desc: 'Applies weighted evidence formula: 0.30×Authority + 0.25×Relevance + 0.20×Recency + 0.15×Corroboration + 0.10×Context. Yields Supported, Contradicted, Misleading, Satire, or Unverified.',
+      title: isPidgin ? 'Math Formula Scoring' : 'Deterministic Scoring Matrix',
+      badge: isPidgin ? 'Zero Lie Math' : 'Math Scoring',
+      desc: isPidgin
+        ? 'Uses clear math formula: 0.30×Authority + 0.25×Relevance + 0.20×Recency + 0.15×Corroboration + 0.10×Context. E dey give Supported, Contradicted, Misleading, Satire, or Unverified.'
+        : 'Applies weighted evidence formula: 0.30×Authority + 0.25×Relevance + 0.20×Recency + 0.15×Corroboration + 0.10×Context. Yields Supported, Contradicted, Misleading, Satire, Non-Claim, or Unverified.',
       icon: <Calculator className="w-5 h-5 text-purple-400" />
     },
     {
       stage: 4,
-      title: 'Pidgin Audio & Social Debunk Kit',
-      badge: 'Universal Broadcast',
-      desc: 'Generates authentic Google Maps Nigerian English voice audio, Naija Pidgin translations, and high-res 1080p Canvas PNG debunk cards for 1-click broadcast across WhatsApp, 𝕏, and Instagram.',
+      title: isPidgin ? 'Global Pidgin & 5-Language Audio Kit' : 'Pidgin Audio & Social Debunk Kit',
+      badge: isPidgin ? 'Universal Broadcast' : 'Universal Broadcast',
+      desc: isPidgin
+        ? 'Generates audio in Nigerian accent, full app translation to Naija Pidgin, plus Yorùbá, Hausa, and Igbo summaries for instant share on WhatsApp & X.'
+        : 'Generates authentic Google Maps Nigerian English voice audio, Naija Pidgin translations, 5-language summaries (Pidgin, Yoruba, Hausa, Igbo), and 1-click shareable cards for WhatsApp & X.',
       icon: <Volume2 className="w-5 h-5 text-amber-400" />
     }
   ];
@@ -83,11 +93,15 @@ export function AboutSection({ onOpenTipModal, onSelectTab }: AboutSectionProps)
             </div>
 
             <h2 className="text-2xl sm:text-4xl font-display font-black text-white tracking-tight leading-tight">
-              Stopping Disinformation with Evidence-Grounded AI
+              {isPidgin 
+                ? 'We Dey Stop Lie Lie Tori with Solid Proof from Government & News' 
+                : 'Stopping Disinformation with Evidence-Grounded AI'}
             </h2>
 
             <p className="text-xs sm:text-sm text-slate-400 max-w-3xl leading-relaxed">
-              Rumour Radar is Nigeria&apos;s premier evidence-first verification engine designed to neutralize viral WhatsApp hoaxes, forged government circulars, and panic threats before they cause real-world harm.
+              {isPidgin
+                ? 'Rumour Radar na Nigeria number 1 tool wey dey check viral WhatsApp audio, X (Twitter) tweets, TikTok video text, Telegram posts, and fake government memo before e cause trouble.'
+                : 'Rumour Radar is Nigeria\'s premier evidence-first verification engine designed to neutralize viral WhatsApp hoaxes, X (Twitter) tweets, TikTok captions, forged government circulars, and panic threats.'}
             </p>
           </div>
 
@@ -98,7 +112,7 @@ export function AboutSection({ onOpenTipModal, onSelectTab }: AboutSectionProps)
                 className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-bold text-xs hover:from-emerald-400 hover:to-teal-400 transition-all shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center gap-2"
               >
                 <Radio className="w-3.5 h-3.5" />
-                <span>Tip Newsroom &rarr;</span>
+                <span>{isPidgin ? 'Report to Newsroom →' : 'Tip Newsroom →'}</span>
               </button>
             )}
           </div>
@@ -114,7 +128,7 @@ export function AboutSection({ onOpenTipModal, onSelectTab }: AboutSectionProps)
                 : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
             }`}
           >
-            🎯 Our Place in the Market
+            🎯 {isPidgin ? 'Why We Pass Other AI' : 'Our Place in the Market'}
           </button>
 
           <button
@@ -125,7 +139,7 @@ export function AboutSection({ onOpenTipModal, onSelectTab }: AboutSectionProps)
                 : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
             }`}
           >
-            ⚙️ How We Work (Dual-Rail AI)
+            ⚙️ {isPidgin ? 'How We Dey Work (AI Engine)' : 'How We Work (Dual-Rail AI)'}
           </button>
 
           <button
@@ -136,7 +150,7 @@ export function AboutSection({ onOpenTipModal, onSelectTab }: AboutSectionProps)
                 : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
             }`}
           >
-            🇳🇬 Civic Mission & Citizen Appeal
+            🇳🇬 {isPidgin ? 'Naija People Duty & Promise' : 'Civic Mission & Citizen Appeal'}
           </button>
         </div>
       </div>

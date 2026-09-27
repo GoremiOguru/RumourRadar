@@ -38,8 +38,16 @@ export function verifyClaimWithEvidence(
   let reasoning = 'No authoritative regulatory statements or primary news items confirm this specific claim. In the absence of corroboration, Rumor Radar classifies this as Unverified to prevent false assumptions.';
   let keyQuote: string | undefined = undefined;
 
-  // 0. Satire & Parody Detection
-  if (claim.isSatireOrParody || queryLower.includes('satire') || queryLower.includes('parody') || queryLower.includes('joke') || queryLower.includes('comedy skit') || queryLower.includes('cruise')) {
+  // 0. Non-Claim / Conversational Greeting Guardrail
+  if (claim.isNonClaim) {
+    verdict = 'NON_CLAIM';
+    confidence = 'HIGH';
+    confidenceScore = 98;
+    shortExplanation = 'This input is a greeting or general question, not a testable rumor, social post, or scam claim. Paste a tweet from X (Twitter), WhatsApp forward, TikTok caption, or news headline to verify.';
+    pidginExplanation = 'Dis one na greeting or play question, no be news rumor or scam claim! Copy tweet from X, WhatsApp message, TikTok text, or news link make we check am.';
+    reasoning = 'The system identified conversational banter or greeting syntax without factual claims or named news entities.';
+    keyQuote = 'Non-testable input detected by Claim Guardrail.';
+  } else if (claim.isSatireOrParody || queryLower.includes('satire') || queryLower.includes('parody') || queryLower.includes('joke') || queryLower.includes('comedy skit') || queryLower.includes('cruise')) {
     verdict = 'SATIRE_PARODY';
     confidence = 'HIGH';
     confidenceScore = 92;

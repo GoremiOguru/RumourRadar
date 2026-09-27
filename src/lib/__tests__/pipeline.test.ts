@@ -136,3 +136,25 @@ describe('4. Built-in Humility & Uncertainty Fallback (<60% Rule)', () => {
     expect(result.confidenceScore).toBeLessThan(60);
   });
 });
+
+describe('5. Claim Guardrail (Greetings & Banter Intercept)', () => {
+  it('intercepts casual greetings like "how are you doing" as NON_CLAIM with helpful guidance', () => {
+    const claim: ExtractedClaim = {
+      normalizedClaim: 'how are you doing',
+      entity: 'Casual Conversation',
+      category: 'general',
+      rawText: 'how are you doing',
+      isNonClaim: true,
+      nonClaimReason: 'Greetings, casual chat, or general questions do not contain testable claims or news.'
+    };
+
+    const emptyEvidence: EvidenceItem[] = [];
+    const result = verifyClaimWithEvidence(claim, emptyEvidence, null, claim.rawText, Date.now());
+
+    expect(result.verdict).toBe('NON_CLAIM');
+    expect(result.confidence).toBe('HIGH');
+    expect(result.confidenceScore).toBe(98);
+    expect(result.shortExplanation).toContain('greeting');
+  });
+});
+

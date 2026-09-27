@@ -7,7 +7,7 @@ export type ClaimCategory =
   | 'security_alerts'
   | 'general';
 
-export type VerdictType = 'SUPPORTED' | 'CONTRADICTED' | 'MISLEADING' | 'UNVERIFIED' | 'SATIRE_PARODY';
+export type VerdictType = 'SUPPORTED' | 'CONTRADICTED' | 'MISLEADING' | 'UNVERIFIED' | 'SATIRE_PARODY' | 'NON_CLAIM';
 
 export type ConfidenceLevel = 'HIGH' | 'MEDIUM' | 'LOW';
 
@@ -19,6 +19,8 @@ export interface ExtractedClaim {
   dateClaimed?: string;
   rawText: string;
   isSatireOrParody?: boolean;
+  isNonClaim?: boolean;
+  nonClaimReason?: string;
   detectedLanguage?: {
     code: string;
     name: string;

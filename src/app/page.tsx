@@ -16,9 +16,10 @@ import { NigeriaHeatmap } from '@/components/NigeriaHeatmap';
 import { DeepfakeVideoScanner } from '@/components/DeepfakeVideoScanner';
 import { AboutSection } from '@/components/AboutSection';
 import { BmoniPaymentCard } from '@/components/BmoniPaymentCard';
-import { DEMO_PRESETS } from '@/lib/constants';
 import { VerificationResult } from '@/types';
 import { checkOfflineDatabase } from '@/lib/offline-database';
+import { DICTIONARY, AppLanguage } from '@/lib/i18n';
+import { DEMO_PRESETS } from '@/lib/constants';
 import {
   Search,
   Sparkles,
@@ -239,11 +240,16 @@ export default function Home() {
     setTimeout(() => setCopied(false), 2500);
   };
 
+  const [appLanguage, setAppLanguage] = useState<AppLanguage>('en');
+  const t = DICTIONARY[appLanguage];
+
   return (
     <div className="app-shell min-h-screen text-slate-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-200">
       <Header 
         onOpenWhyModal={() => setIsWhyModalOpen(true)} 
         onOpenBmoniModal={() => setIsBmoniModalOpen(true)}
+        appLanguage={appLanguage}
+        onToggleLanguage={() => setAppLanguage(appLanguage === 'en' ? 'pcm' : 'en')}
       />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8">
@@ -260,8 +266,7 @@ export default function Home() {
             >
               <Radio className="w-3.5 h-3.5 shrink-0" />
               <span className="leading-tight font-display">
-                <span className="sm:hidden">Verify</span>
-                <span className="hidden sm:inline">Claim Verify</span>
+                <span>{t.tabVerify}</span>
               </span>
             </button>
 
@@ -275,8 +280,7 @@ export default function Home() {
             >
               <Building2 className="w-3.5 h-3.5 shrink-0" />
               <span className="leading-tight font-display">
-                <span className="sm:hidden">Shield</span>
-                <span className="hidden sm:inline">Brand Shield</span>
+                <span>{t.tabShield}</span>
               </span>
             </button>
 
@@ -290,8 +294,7 @@ export default function Home() {
             >
               <MapPin className="w-3.5 h-3.5 shrink-0" />
               <span className="leading-tight font-display">
-                <span className="sm:hidden">Heatmap</span>
-                <span className="hidden sm:inline">Geo Heatmap</span>
+                <span>{t.tabHeatmap}</span>
               </span>
             </button>
 
@@ -305,8 +308,7 @@ export default function Home() {
             >
               <Video className="w-3.5 h-3.5 shrink-0" />
               <span className="leading-tight font-display">
-                <span className="sm:hidden">Deepfake</span>
-                <span className="hidden sm:inline">Deepfake Video</span>
+                <span>{t.tabDeepfake}</span>
               </span>
             </button>
 
@@ -320,7 +322,7 @@ export default function Home() {
             >
               <Info className="w-3.5 h-3.5 shrink-0" />
               <span className="leading-tight font-display">
-                <span>About</span>
+                <span>{t.tabAbout}</span>
               </span>
             </button>
           </div>
@@ -337,14 +339,14 @@ export default function Home() {
         ) : activeTab === 'deepfake' ? (
           <DeepfakeVideoScanner />
         ) : activeTab === 'about' ? (
-          <AboutSection onSelectTab={(tab) => setActiveTab(tab)} />
+          <AboutSection appLanguage={appLanguage} onSelectTab={(tab) => setActiveTab(tab)} />
         ) : (
           <>
             {/* Hero Section */}
             <div className="text-center space-y-3 pt-2">
               <div className="hero-reveal inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
                 <Zap className="w-3.5 h-3.5" />
-                <span>Dual-Rail AI Fact-Checking Engine • Powered by BMONI Rails</span>
+                <span>Dual-Rail AI Fact-Checking Engine • Multi-Social Platform Protection</span>
               </div>
 
               <h1 className="hero-reveal hero-reveal-delay-1 text-3xl sm:text-5xl font-black tracking-tight text-white max-w-3xl mx-auto leading-tight">
@@ -377,7 +379,7 @@ export default function Home() {
               </h1>
 
               <p className="hero-reveal hero-reveal-delay-2 text-slate-400 text-sm sm:text-base max-w-2xl mx-auto">
-                Paste any viral WhatsApp message, Twitter headline, news link, or <strong>upload a screenshot</strong>. Rumor Radar checks verified registries, searches official Nigerian authorities, and returns an evidence-grounded verdict in seconds.
+                {t.heroTagline}
               </p>
             </div>
 
@@ -400,7 +402,7 @@ export default function Home() {
                     </span>
                   </div>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Dual-rail failover (Gemini + OpenRouter) • Nigeria Authority Router • 5 verdict categories • BMONI Virtual Accounts
+                    Dual-rail failover (Gemini + OpenRouter) • Nigeria Authority Router • 5 verdict categories • Claim Guardrail
                   </p>
                 </div>
               </div>
@@ -441,7 +443,7 @@ export default function Home() {
                   id="rumor-input"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Paste a viral WhatsApp forward, Twitter headline, news link, or upload an image screenshot..."
+                  placeholder={t.searchPlaceholder}
                   className="w-full h-28 sm:h-32 bg-transparent resize-none p-3 text-sm sm:text-base text-slate-100 placeholder-slate-500 focus:outline-none"
                 />
 
@@ -506,12 +508,12 @@ export default function Home() {
                       {loading ? (
                         <>
                           <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
-                          <span>Scanning Evidence...</span>
+                          <span>{t.scanningText}</span>
                         </>
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4 text-slate-950" />
-                          <span>Check This Claim</span>
+                          <span>{t.checkClaimBtn}</span>
                         </>
                       )}
                     </button>
@@ -524,7 +526,7 @@ export default function Home() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs text-slate-400">
                     <span className="font-semibold uppercase tracking-wider text-slate-300 font-display">
-                      Try a real circulating claim
+                      {t.presetsTitle}
                     </span>
                     <span className="text-[11px] font-mono text-slate-500">← Swipe presets →</span>
                   </div>
@@ -995,6 +997,7 @@ export default function Home() {
       <WhyRumorRadarModal
         isOpen={isWhyModalOpen}
         onClose={() => setIsWhyModalOpen(false)}
+        appLanguage={appLanguage}
       />
 
       {/* BMONI Subscription Modal */}

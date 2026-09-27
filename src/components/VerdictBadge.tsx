@@ -37,6 +37,13 @@ export const VerdictBadge: React.FC<VerdictBadgeProps> = ({ verdict, size = 'md'
       glow: 'shadow-[0_0_20px_rgba(168,85,247,0.25)]',
       desc: 'Humor, social media parody, or comedy banter (not factual news)'
     },
+    NON_CLAIM: {
+      label: 'NOT A NEWS CLAIM / GREETING',
+      icon: HelpCircle,
+      bg: 'bg-cyan-500/10 border-cyan-500/40 text-cyan-300',
+      glow: 'shadow-[0_0_20px_rgba(6,182,212,0.2)]',
+      desc: 'Input is a greeting or question, not a testable news claim'
+    },
     UNVERIFIED: {
       label: 'UNVERIFIED / TOO RECENT',
       icon: HelpCircle,

@@ -17,10 +17,12 @@ import {
 interface WhyRumorRadarModalProps {
   isOpen: boolean;
   onClose: () => void;
+  appLanguage?: 'en' | 'pcm';
 }
 
-export const WhyRumorRadarModal: React.FC<WhyRumorRadarModalProps> = ({ isOpen, onClose }) => {
+export const WhyRumorRadarModal: React.FC<WhyRumorRadarModalProps> = ({ isOpen, onClose, appLanguage = 'en' }) => {
   if (!isOpen) return null;
+  const isPidgin = appLanguage === 'pcm';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
@@ -36,10 +38,10 @@ export const WhyRumorRadarModal: React.FC<WhyRumorRadarModalProps> = ({ isOpen, 
             </div>
             <div>
               <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
-                Why Rumor Radar?
+                {isPidgin ? 'Why Rumour Radar?' : 'Why Rumor Radar?'}
               </h2>
               <p className="text-xs text-slate-400">
-                A practical way to check fast-moving claims with Nigerian evidence.
+                {isPidgin ? 'Clear way to verify viral news tori from X, WhatsApp, TikTok with proof.' : 'A practical way to check fast-moving claims with Nigerian evidence.'}
               </p>
             </div>
           </div>
@@ -55,7 +57,7 @@ export const WhyRumorRadarModal: React.FC<WhyRumorRadarModalProps> = ({ isOpen, 
         <div className="p-6 overflow-y-auto space-y-6 text-sm">
           {/* Executive Summary Banner */}
           <div className="p-4 rounded-xl bg-slate-950/60 border border-emerald-500/20 leading-relaxed text-slate-300">
-            <strong className="text-emerald-300">Why this matters in Nigeria:</strong> A forwarded claim about a bank, election, health warning, school admission, or fuel price can reach thousands of people before an official correction does. Rumor Radar helps you test the claim, find the relevant Nigerian authority, and see clearly when the evidence is not strong enough for a confident verdict.
+            <strong className="text-emerald-300">{isPidgin ? 'Why dis matter for Nigeria:' : 'Why this matters in Nigeria:'}</strong> {isPidgin ? 'Fake tori about bank money, election, fuel price, or exam mark dey spread like wildfire for WhatsApp, X (Twitter), TikTok and Telegram. Rumour Radar dey check official government office, filter out normal greeting banter, and give you true proof in seconds.' : 'A forwarded claim about a bank, election, health warning, school admission, or fuel price can reach thousands of people before an official correction does. Rumor Radar helps you test the claim, find the relevant Nigerian authority, and see clearly when the evidence is not strong enough for a confident verdict.'}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
