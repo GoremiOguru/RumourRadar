@@ -119,18 +119,36 @@ export function PidginVoicePlayer({ pidginText, englishText, multilingual, claim
       .replace(/\bJAMB\b/g, 'Joint Admissions and Matriculation Board')
       .replace(/\bWAEC\b/g, 'West African Examinations Council');
 
-    // Phonetic normalization for browser TTS engines reading vernacular dialects
-    if (mode === 'igbo') {
+    // High-precision phonetic transliteration for English TTS engines reading Nigerian Vernacular Dialects
+    if (mode === 'yoruba') {
       textToSpeak = textToSpeak
-        .replace(/ọ/g, 'o').replace(/Ọ/g, 'O')
-        .replace(/ị/g, 'i').replace(/Ị/g, 'I')
-        .replace(/ụ/g, 'u').replace(/Ụ/g, 'U')
-        .replace(/ṅ/g, 'n').replace(/Ṅ/g, 'N');
-    } else if (mode === 'yoruba') {
-      textToSpeak = textToSpeak
+        .replace(/ọ̀rọ̀/gi, 'aw-raw')
+        .replace(/kò sí/gi, 'koh see')
+        .replace(/irọ̀/gi, 'ee-raw')
+        .replace(/lọ́wọ́/gi, 'law-aw')
+        .replace(/gidi/gi, 'gee-dee')
+        .replace(/otitọ/gi, 'oh-tee-toh')
+        .replace(/ni/gi, 'nee')
         .replace(/ẹ/g, 'e').replace(/Ẹ/g, 'E')
         .replace(/ọ/g, 'o').replace(/Ọ/g, 'O')
-        .replace(/ṣ/g, 's').replace(/Ṣ/g, 'S');
+        .replace(/ṣ/g, 'sh').replace(/Ṣ/g, 'Sh');
+    } else if (mode === 'hausa') {
+      textToSpeak = textToSpeak
+        .replace(/ba gaskiya ba/gi, 'bah gas-kee-yah bah')
+        .replace(/gaskiya/gi, 'gas-kee-yah')
+        .replace(/labarin/gi, 'lah-bah-reen')
+        .replace(/kanzo/gi, 'kahn-zoh')
+        .replace(/kariya/gi, 'kah-ree-yah');
+    } else if (mode === 'igbo') {
+      textToSpeak = textToSpeak
+        .replace(/ọ bụghị eziokwu/gi, 'oh boo-ghee ezzy-oh-kwoo')
+        .replace(/eziokwu/gi, 'ezzy-oh-kwoo')
+        .replace(/asị/gi, 'ah-see')
+        .replace(/ndị/gi, 'ndee')
+        .replace(/ọ/g, 'oh').replace(/Ọ/g, 'Oh')
+        .replace(/ị/g, 'ee').replace(/Ị/g, 'Ee')
+        .replace(/ụ/g, 'oo').replace(/Ụ/g, 'Oo')
+        .replace(/ṅ/g, 'n').replace(/Ṅ/g, 'N');
     }
 
     const prefix = mode === 'pidgin'

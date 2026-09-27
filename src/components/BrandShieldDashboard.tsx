@@ -34,21 +34,16 @@ interface BrandShieldDashboardProps {
   appLanguage?: 'en' | 'pcm';
 }
 
-const BRAND_PRESETS = [
-  'GTBank',
-  'Kuda Bank',
-  'Opay',
-  'Access Bank',
-  'Dangote Group',
-  'MTN Nigeria',
-  'Airtel Nigeria',
-  'Flutterwave',
-  'NNPC Limited'
-];
+const ENTITY_PRESETS = {
+  corporation: ['GTBank', 'Kuda Bank', 'Opay', 'Access Bank', 'Dangote Group', 'Air Peace', 'Flutterwave'],
+  creator: ['Davido', 'Hilda Baci', 'Tony Elumelu', 'Chef Dammy', 'Don Jazzy', 'Innoson Motors'],
+  agency: ['CBN', 'INEC', 'NCDC', 'NNPC Limited', 'EFCC', 'NCAA']
+};
 
 export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'en' }: BrandShieldDashboardProps) {
   const isPidgin = appLanguage === 'pcm';
   const [brandInput, setBrandInput] = useState('GTBank');
+  const [entityCategory, setEntityCategory] = useState<'corporation' | 'creator' | 'agency'>('corporation');
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<(BrandShieldScanResult & { recentWeeklyNews?: VerifiedBrandNewsItem[] }) | null>(null);
   const [activeTab, setActiveTab] = useState<'rumours' | 'weekly_news' | 'debunk_kit'>('rumours');
@@ -174,14 +169,48 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
       </div>
 
       {/* Brand Search Bar & Presets */}
-      <div className="glass-panel p-4 sm:p-5 rounded-2xl border-blue-500/30 space-y-3 shadow-lg">
+      <div className="glass-panel p-4 sm:p-5 rounded-2xl border-blue-500/30 space-y-4 shadow-lg">
+        {/* Entity Type Filter Tabs */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <span className="text-[11px] font-mono text-slate-400 font-bold shrink-0 mr-1">Target Entity Type:</span>
+          {[
+            { id: 'corporation', label: '🏢 Corporations & SMEs' },
+            { id: 'creator', label: '👤 Personal Brands & Creators' },
+            { id: 'agency', label: '🏛️ Public Agencies & Officials' }
+          ].map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => {
+                const nextCat = cat.id as 'corporation' | 'creator' | 'agency';
+                setEntityCategory(nextCat);
+                const firstPreset = ENTITY_PRESETS[nextCat][0];
+                setBrandInput(firstPreset);
+                executeScan(firstPreset);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${
+                entityCategory === cat.id
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 font-black'
+                  : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <input
               type="text"
               value={brandInput}
               onChange={(e) => setBrandInput(e.target.value)}
-              placeholder="Search any Nigerian entity (e.g. GTBank, Kuda, Dangote, Opay, Access Bank)..."
+              placeholder={
+                entityCategory === 'creator'
+                  ? 'Search creator, artist, executive or founder (e.g. Davido, Hilda Baci, Tony Elumelu)...'
+                  : entityCategory === 'agency'
+                  ? 'Search public agency or official (e.g. CBN, INEC, NCDC, NNPC)...'
+                  : 'Search corporation or brand (e.g. GTBank, Kuda, Air Peace, Opay, Access Bank)...'
+              }
               className="w-full px-4 py-3 rounded-xl bg-slate-950/80 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500/50 font-medium"
               onKeyDown={(e) => e.key === 'Enter' && executeScan()}
             />
@@ -200,16 +229,16 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                <span>Scan Brand Threats</span>
+                <span>Scan Entity Rumors</span>
               </>
             )}
           </button>
         </div>
 
-        {/* Quick Presets */}
+        {/* Quick Presets for Selected Category */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-          <span className="text-[11px] font-bold text-slate-400 shrink-0 mr-1">Monitored Brands:</span>
-          {BRAND_PRESETS.map((b) => (
+          <span className="text-[11px] font-bold text-slate-400 shrink-0 mr-1">Popular Presets:</span>
+          {ENTITY_PRESETS[entityCategory].map((b) => (
             <button
               key={b}
               onClick={() => {
@@ -222,6 +251,39 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
             </button>
           ))}
         </div>
+      </div>
+
+      {/* BMONI Pro Automated Sentinel Teaser Lock Banner */}
+      <div 
+        onClick={onOpenSubscriptionModal}
+        className="glass-panel p-4 rounded-2xl border-blue-500/40 bg-gradient-to-r from-blue-950/50 via-slate-900 to-indigo-950/40 hover:border-blue-400 transition-all cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg"
+      >
+        <div className="flex items-center space-x-3">
+          <div className="w-9 h-9 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0">
+            <Lock className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="text-xs sm:text-sm font-bold text-white">24/7 Automated Sentinel & Instant WhatsApp Alerts</h4>
+              <span className="text-[10px] font-mono font-bold bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded border border-blue-500/30">
+                BMONI Pro Feature
+              </span>
+            </div>
+            <p className="text-xs text-slate-400">
+              Get notified immediately on WhatsApp & Telegram when viral rumors mention your brand or entity.
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenSubscriptionModal();
+          }}
+          className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shrink-0 transition-all active:scale-95 shadow-md"
+        >
+          Unlock Automated Sentinel &rarr;
+        </button>
       </div>
 
       {/* Main Results View */}
