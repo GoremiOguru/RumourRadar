@@ -346,34 +346,14 @@ export default function Home() {
             <div className="text-center space-y-3 pt-2">
               <div className="hero-reveal inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
                 <Zap className="w-3.5 h-3.5" />
-                <span>Dual-Rail AI Fact-Checking Engine • Multi-Social Platform Protection</span>
+                <span>{t.heroBadge}</span>
               </div>
 
               <h1 className="hero-reveal hero-reveal-delay-1 text-3xl sm:text-5xl font-black tracking-tight text-white max-w-3xl mx-auto leading-tight">
-                Stop Rumors Before They{' '}
+                {t.heroTitleWord1}{' '}
                 <span className="whitespace-nowrap">
                   <span className="text-[#008751]">
-                    {'Spread'.split('').map((letter, index, letters) => (
-                      <span
-                        key={`spread-${index}`}
-                        className="hero-letter"
-                        style={{ animationDelay: `${(letters.length - 1 - index) * 70}ms` }}
-                      >
-                        {letter}
-                      </span>
-                    ))}
-                  </span>{' '}
-                  in{' '}
-                  <span className="text-[#008751]">
-                    {'Nigeria'.split('').map((letter, index) => (
-                      <span
-                        key={`nigeria-${index}`}
-                        className="hero-letter"
-                        style={{ animationDelay: `${index * 70}ms` }}
-                      >
-                        {letter}
-                      </span>
-                    ))}
+                    {t.heroTitleWord2}
                   </span>
                 </span>
               </h1>
@@ -395,14 +375,14 @@ export default function Home() {
                 <div>
                   <div className="flex items-center space-x-2">
                     <h3 className="font-bold text-sm sm:text-base text-white group-hover:text-emerald-300 transition-colors">
-                      Why Rumour Radar isn&apos;t just &quot;ask an LLM&quot;
+                      {t.whyBannerTitle}
                     </h3>
                     <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                       Zero Hallucination
                     </span>
                   </div>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Dual-rail failover (Gemini + OpenRouter) • Nigeria Authority Router • 5 verdict categories • Claim Guardrail
+                    {t.whyBannerSubtitle}
                   </p>
                 </div>
               </div>
@@ -413,7 +393,7 @@ export default function Home() {
                 }}
                 className="self-end sm:self-center flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold transition-all shrink-0"
               >
-                <span>Compare Architecture</span>
+                <span>{t.whyBannerBtn}</span>
                 <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
               </button>
             </div>
@@ -468,7 +448,7 @@ export default function Home() {
                       title="Speak your claim in English, Pidgin, Yoruba, Hausa or Igbo"
                     >
                       <Mic className={`w-3.5 h-3.5 ${isListening ? 'text-rose-400' : 'text-emerald-400'}`} />
-                      <span>{isListening ? 'Listening... Speak Now' : 'Speak Claim (Voice)'}</span>
+                      <span>{isListening ? t.speakBtnListening : t.speakBtn}</span>
                     </button>
 
                     <button
@@ -477,7 +457,7 @@ export default function Home() {
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 border border-slate-700 transition-colors"
                     >
                       <Upload className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>{selectedImage ? 'Replace Screenshot' : 'Upload Image'}</span>
+                      <span>{selectedImage ? t.uploadBtnReplace : t.uploadBtn}</span>
                     </button>
 
                     <span className="text-xs text-slate-400 font-mono hidden sm:inline">
@@ -496,7 +476,7 @@ export default function Home() {
                         }}
                         className="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors"
                       >
-                        Clear
+                        {t.clearBtn}
                       </button>
                     )}
                     <button
@@ -879,12 +859,12 @@ export default function Home() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-bold text-base text-slate-200 flex items-center gap-2">
-                      <span>The 6 Pillars of Rumour Radar</span>
+                      <span>{t.pillarsTitle}</span>
                       <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                         Zero-Hallucination Architecture
                       </span>
                     </h3>
-                    <p className="text-xs text-slate-400">How our pipeline ensures factual accuracy and zero hallucination</p>
+                    <p className="text-xs text-slate-400">{t.pillarsSubtitle}</p>
                   </div>
 
                   <div className="flex items-center gap-1.5">
@@ -906,7 +886,7 @@ export default function Home() {
                       onClick={() => setIsWhyModalOpen(true)}
                       className="hidden sm:inline-flex text-xs text-emerald-400 hover:text-emerald-300 font-semibold ml-2"
                     >
-                      View Comparison &rarr;
+                      {t.whyBannerBtn} &rarr;
                     </button>
                   </div>
                 </div>
@@ -920,9 +900,9 @@ export default function Home() {
                       <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-bold mb-2">
                         <Brain className="w-4 h-4" />
                       </div>
-                      <h4 className="font-semibold text-sm text-slate-200">Evidence-Grounded</h4>
+                      <h4 className="font-semibold text-sm text-slate-200">{t.pillar1Title}</h4>
                       <p className="text-xs text-slate-400 leading-relaxed mt-1">
-                        Forbidden from using training memory. Synthesizes answers exclusively over live verified sources retrieved for that claim.
+                        {t.pillar1Desc}
                       </p>
                     </div>
                   </div>
@@ -932,9 +912,9 @@ export default function Home() {
                       <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 font-bold mb-2">
                         <Database className="w-4 h-4" />
                       </div>
-                      <h4 className="font-semibold text-sm text-slate-200">Nigeria-First Router</h4>
+                      <h4 className="font-semibold text-sm text-slate-200">{t.pillar2Title}</h4>
                       <p className="text-xs text-slate-400 leading-relaxed mt-1">
-                        Targeted routing to CBN, INEC, NCDC, JAMB, and WAEC databases prevents social media noise from skewing verdicts.
+                        {t.pillar2Desc}
                       </p>
                     </div>
                   </div>
@@ -944,9 +924,9 @@ export default function Home() {
                       <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400 font-bold mb-2">
                         <Calculator className="w-4 h-4" />
                       </div>
-                      <h4 className="font-semibold text-sm text-slate-200">Deterministic Scoring</h4>
+                      <h4 className="font-semibold text-sm text-slate-200">{t.pillar3Title}</h4>
                       <p className="text-xs text-slate-400 leading-relaxed mt-1">
-                        Formula: <span className="text-slate-300 font-mono">0.30×Auth + 0.25×Rel + 0.20×Rec + 0.15×Corr + 0.10×Ctx</span>.
+                        {t.pillar3Desc}
                       </p>
                     </div>
                   </div>
@@ -956,9 +936,9 @@ export default function Home() {
                       <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-400 font-bold mb-2">
                         <Layers className="w-4 h-4" />
                       </div>
-                      <h4 className="font-semibold text-sm text-slate-200">Fixed Verdict Schema</h4>
+                      <h4 className="font-semibold text-sm text-slate-200">{t.pillar4Title}</h4>
                       <p className="text-xs text-slate-400 leading-relaxed mt-1">
-                        Strict schema: Supported, Contradicted, Misleading, Satire, or Unverified with verified source citations & timestamps.
+                        {t.pillar4Desc}
                       </p>
                     </div>
                   </div>
@@ -968,9 +948,9 @@ export default function Home() {
                       <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 font-bold mb-2">
                         <AlertTriangle className="w-4 h-4" />
                       </div>
-                      <h4 className="font-semibold text-sm text-slate-200">Built-in Humility</h4>
+                      <h4 className="font-semibold text-sm text-slate-200">{t.pillar5Title}</h4>
                       <p className="text-xs text-slate-400 leading-relaxed mt-1">
-                        If confidence falls below 60%, it deliberately yields <span className="text-slate-300 font-semibold">Unverified</span> instead of hallucinating.
+                        {t.pillar5Desc}
                       </p>
                     </div>
                   </div>
@@ -980,9 +960,9 @@ export default function Home() {
                       <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-400 font-bold mb-2">
                         <ShieldAlert className="w-4 h-4" />
                       </div>
-                      <h4 className="font-semibold text-sm text-slate-200">Production Hardened</h4>
+                      <h4 className="font-semibold text-sm text-slate-200">{t.pillar6Title}</h4>
                       <p className="text-xs text-slate-400 leading-relaxed mt-1">
-                        Fast cache layer, multi-search provider fallback chains, and adversarial defense against Nigerian satire & jailbreaks.
+                        {t.pillar6Desc}
                       </p>
                     </div>
                   </div>
