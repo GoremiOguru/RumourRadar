@@ -339,7 +339,12 @@ export default function Home() {
         onOpenWhyModal={() => setIsWhyModalOpen(true)} 
         onOpenBmoniModal={() => setIsBmoniModalOpen(true)}
         appLanguage={appLanguage}
-        onToggleLanguage={() => setAppLanguage(appLanguage === 'en' ? 'pcm' : 'en')}
+        onToggleLanguage={() => {
+          const nextLang = appLanguage === 'en' ? 'pcm' : 'en';
+          setAppLanguage(nextLang);
+          setUsePidgin(nextLang === 'pcm');
+          setSelectedLang(nextLang === 'pcm' ? 'pcm' : 'en');
+        }}
       />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8">
@@ -733,7 +738,9 @@ export default function Home() {
                     </div>
                   </div>
                   <p className="line-clamp-2 text-sm leading-relaxed text-slate-300">
-                    {result.shortExplanation}
+                    {(appLanguage === 'pcm' || usePidgin || selectedLang === 'pcm')
+                      ? (result.multilingualExplanations?.pidgin || result.pidginExplanation || result.shortExplanation)
+                      : result.shortExplanation}
                   </p>
                   <button
                     type="button"
@@ -775,15 +782,20 @@ export default function Home() {
 
                       {/* Pidgin Toggle */}
                       <button
-                        onClick={() => setUsePidgin(!usePidgin)}
+                        onClick={() => {
+                          const nextPidgin = !usePidgin;
+                          setUsePidgin(nextPidgin);
+                          setSelectedLang(nextPidgin ? 'pcm' : 'en');
+                          setAppLanguage(nextPidgin ? 'pcm' : 'en');
+                        }}
                         className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all shrink-0 ${
-                          usePidgin
+                          usePidgin || selectedLang === 'pcm' || appLanguage === 'pcm'
                             ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
                             : 'bg-slate-800/80 border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-emerald-300'
                         }`}
-                        title={usePidgin ? 'Switch to English' : 'Read explanation in Naija Pidgin'}
+                        title={usePidgin || selectedLang === 'pcm' ? 'Switch to English' : 'Read explanation in Naija Pidgin'}
                       >
-                        <span>{usePidgin ? 'English 🇬🇧' : 'Naija Pidgin 🇳🇬'}</span>
+                        <span>{(usePidgin || selectedLang === 'pcm' || appLanguage === 'pcm') ? 'English 🇬🇧' : 'Naija Pidgin 🇳🇬'}</span>
                       </button>
 
                       {/* Permalink button */}
@@ -849,9 +861,15 @@ export default function Home() {
                               <button
                                 key={l.code}
                                 onClick={() => {
-                                  setSelectedLang(l.code as any);
-                                  if (l.code === 'pcm') setUsePidgin(true);
-                                  else if (l.code === 'en') setUsePidgin(false);
+                                  const langCode = l.code as any;
+                                  setSelectedLang(langCode);
+                                  if (langCode === 'pcm') {
+                                    setUsePidgin(true);
+                                    setAppLanguage('pcm');
+                                  } else {
+                                    setUsePidgin(false);
+                                    if (langCode === 'en') setAppLanguage('en');
+                                  }
                                 }}
                                 className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold transition-all shrink-0 ${
                                   selectedLang === l.code
