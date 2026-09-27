@@ -12,15 +12,31 @@ export interface VerifiedBrandNewsItem {
   sentiment: 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE';
 }
 
+function isRelevantToSubject(title: string, snippet: string, brandName: string): boolean {
+  const text = `${title} ${snippet}`.toLowerCase();
+  const brandLower = brandName.toLowerCase();
+
+  // Must contain brand name or all core words of brand
+  const words = brandLower.split(/\s+/).filter(w => w.length > 2);
+  const matchesBrand = text.includes(brandLower) || (words.length > 0 && words.every(w => text.includes(w)));
+
+  // Exclude unrelated foreign court cases/police reports that don't mention Nigerian or business context
+  const isUnrelatedForeignCase = 
+    (text.includes('london police') || text.includes('1976 theft') || text.includes('court of appeal') || text.includes('ridge-well')) &&
+    !text.includes('nigeria') && !text.includes('lagos') && !text.includes('restaurant') && !text.includes('uac');
+
+  return matchesBrand && !isUnrelatedForeignCase;
+}
+
 /**
- * Fetches real-time Nigerian news via Google News RSS for a specific brand over the past 7 days
+ * Fetches real-time news via Google News RSS for a specific brand/person over the past 7 days with strict relevance filtering
  */
 async function fetchBrandNewsAndRumours(brandName: string) {
   const brandNews: VerifiedBrandNewsItem[] = [];
   const rawRumours: Array<{ title: string; snippet: string; link: string; date: string; source: string }> = [];
 
   try {
-    const generalQuery = encodeURIComponent(`"${brandName}" when:7d`);
+    const generalQuery = encodeURIComponent(`"${brandName}" (Nigeria OR Nigerian OR business OR restaurant OR bank OR company OR creator OR executive OR Lagos) when:7d`);
     const generalRssUrl = `https://news.google.com/rss/search?q=${generalQuery}&hl=en-NG&gl=NG&ceid=NG:en`;
 
     const rumourQuery = encodeURIComponent(`"${brandName}" (rumour OR fake OR scam OR warning OR circular OR claim OR closure OR fraud OR probe) when:7d`);
@@ -51,7 +67,7 @@ async function fetchBrandNewsAndRumours(brandName: string) {
 
         const cleanSnippet = desc.replace(/<[^>]*>?/gm, '').replace(/https?:\/\/[^\s]+/g, '').trim();
 
-        if (title.length > 5) {
+        if (title.length > 5 && isRelevantToSubject(title, cleanSnippet, brandName)) {
           const lower = title.toLowerCase();
           const sentiment: VerifiedBrandNewsItem['sentiment'] =
             lower.includes('profit') || lower.includes('growth') || lower.includes('award') || lower.includes('expand') ? 'POSITIVE' :
@@ -82,7 +98,7 @@ async function fetchBrandNewsAndRumours(brandName: string) {
 
         const cleanSnippet = desc.replace(/<[^>]*>?/gm, '').replace(/https?:\/\/[^\s]+/g, '').trim();
 
-        if (title) {
+        if (title && isRelevantToSubject(title, cleanSnippet, brandName)) {
           rawRumours.push({
             title,
             snippet: cleanSnippet.slice(0, 180),

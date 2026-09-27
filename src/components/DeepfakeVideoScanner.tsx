@@ -190,26 +190,27 @@ export function DeepfakeVideoScanner({ appLanguage = 'en' }: DeepfakeVideoScanne
 
   return (
     <div className="section-stagger space-y-6">
-      {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-purple-950/30 to-slate-900 border border-purple-500/30 shadow-xl">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-mono font-bold flex items-center gap-1.5">
-              <ScanLine className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
-              {isPidgin ? 'LIVE VIDEO & VOICE FAKE SCANNER' : 'LIVE MULTIMODAL VIDEO FORENSICS'}
-            </span>
-            <span className="text-xs text-slate-400 font-mono">
-              {isPidgin ? 'Picture Frame & Voice Sound Scanner' : 'Frame & Acoustic Scanner'}
-            </span>
+      {/* Compact Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-purple-950/40 to-slate-900 border border-purple-500/30 shadow-lg">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400 shrink-0">
+            <ScanLine className="w-5 h-5 animate-pulse" />
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-white">
-            {isPidgin ? 'Detect Fake AI Video & Fake Voice Wey Dem Clone' : 'Detect AI Deepfake Videos & Synthetic Voice Clones'}
-          </h2>
-          <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
-            {isPidgin 
-              ? 'We dey check video picture frames and voice sound wave to catch fake video, face swap, and AI cloned voice for Nigeria.' 
-              : 'Real client-side video keyframe extraction and acoustic formant analysis for detecting manipulated Nigerian viral videos, face swaps, and AI voice memos.'}
-          </p>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-black text-white">
+                {isPidgin ? 'Detect Fake AI Video & Voice Clones' : 'Detect AI Deepfake Videos & Voice Clones'}
+              </h2>
+              <span className="text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30">
+                Client-Side Forensics
+              </span>
+            </div>
+            <p className="text-xs text-slate-400">
+              {isPidgin 
+                ? 'Check video keyframes & voice soundwaves to catch AI face-swap & cloned audio.' 
+                : 'Keyframe facial mesh alignment & acoustic formant analysis for Nigerian viral videos.'}
+            </p>
+          </div>
         </div>
       </div>
 
