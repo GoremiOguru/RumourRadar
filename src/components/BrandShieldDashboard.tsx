@@ -27,6 +27,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { VerifiedBrandNewsItem } from '@/app/api/brand-shield/scan/route';
+import { ScrollReveal } from '@/components/ScrollReveal';
 
 interface BrandShieldDashboardProps {
   onOpenSubscriptionModal: () => void;
@@ -122,7 +123,7 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
   };
 
   return (
-    <div className="space-y-6">
+    <div className="section-stagger space-y-6">
       {/* Header Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-blue-950/40 to-slate-900 border border-blue-500/30 shadow-2xl">
         <div className="space-y-1">
@@ -328,15 +329,18 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                 </div>
               </div>
 
-              <div 
+                  <ScrollReveal className="min-w-0">
+                  <div
                 ref={signalsScrollRef}
                 className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-slate-700"
               >
                 {scanResult.alerts.map((alert) => (
-                  <div 
+                  <ScrollReveal
                     key={alert.id} 
-                    className="min-w-[300px] sm:min-w-[360px] max-w-[420px] shrink-0 snap-start glass-panel p-4 sm:p-5 rounded-xl border-rose-500/30 flex flex-col justify-between shadow-xl space-y-3 hover:border-rose-500/50 transition-colors"
+                    className="min-w-[300px] sm:min-w-[360px] max-w-[420px] shrink-0 snap-start"
+                    delay={Math.min(scanResult.alerts.indexOf(alert) * 65, 260)}
                   >
+                  <div className="glass-panel p-4 sm:p-5 rounded-xl border-rose-500/30 flex flex-col justify-between shadow-xl space-y-3 hover:border-rose-500/50 transition-colors">
                     <div className="space-y-2.5">
                       <div className="flex items-center justify-between gap-2">
                         <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0">
@@ -379,8 +383,10 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                       </div>
                     </div>
                   </div>
+                  </ScrollReveal>
                 ))}
               </div>
+                  </ScrollReveal>
             </div>
           )}
 

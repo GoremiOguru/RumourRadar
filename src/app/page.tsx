@@ -16,6 +16,7 @@ import { NigeriaHeatmap } from '@/components/NigeriaHeatmap';
 import { DeepfakeVideoScanner } from '@/components/DeepfakeVideoScanner';
 import { AboutSection } from '@/components/AboutSection';
 import { BmoniPaymentCard } from '@/components/BmoniPaymentCard';
+import { ScrollReveal } from '@/components/ScrollReveal';
 import { VerificationResult } from '@/types';
 import { checkOfflineDatabase } from '@/lib/offline-database';
 import { DICTIONARY, AppLanguage } from '@/lib/i18n';
@@ -26,6 +27,8 @@ import {
   RefreshCw,
   Share2,
   Check,
+  Languages,
+  Zap,
   ShieldCheck,
   AlertCircle,
   ExternalLink,
@@ -38,25 +41,40 @@ import {
   ShieldAlert,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
   Image as ImageIcon,
   X,
   Upload,
   Mic,
   Radio,
   Building2,
-  Zap,
   MapPin,
   Video,
   Info
 } from 'lucide-react';
 
+type MainTab = 'verify' | 'brand_shield' | 'heatmap' | 'deepfake' | 'about';
+
+const MAIN_TAB_ORDER: MainTab[] = ['verify', 'brand_shield', 'heatmap', 'deepfake', 'about'];
+const VERIFICATION_STAGES = [
+  'Extracting claim',
+  'Checking fact-checks',
+  'Searching Nigerian sources',
+  'Ranking evidence',
+  'Synthesizing verdict'
+];
+
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'verify' | 'brand_shield' | 'heatmap' | 'deepfake' | 'about'>('verify');
+  const [activeTab, setActiveTab] = useState<MainTab>('verify');
+  const [tabDirection, setTabDirection] = useState<'forward' | 'backward'>('forward');
+  const [tabTravel, setTabTravel] = useState<{ from: number; to: number } | null>(null);
 
   const [query, setQuery] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageFileName, setImageFileName] = useState<string | null>(null);
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [activeVerificationStage, setActiveVerificationStage] = useState(0);
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [usePidgin, setUsePidgin] = useState(false);
@@ -129,9 +147,44 @@ export default function Home() {
     }
   };
   const [isBmoniModalOpen, setIsBmoniModalOpen] = useState(false);
+  const [isResultDetailsOpen, setIsResultDetailsOpen] = useState(false);
+  const [isSocialShareOpen, setIsSocialShareOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const evidenceScrollRef = useRef<HTMLDivElement>(null);
   const pillarsScrollRef = useRef<HTMLDivElement>(null);
+  const tabNavRef = useRef<HTMLDivElement>(null);
+  const tabButtonRefs = useRef<Partial<Record<MainTab, HTMLButtonElement | null>>>({});
+
+  const handleTabChange = (nextTab: MainTab) => {
+    if (nextTab === activeTab) return;
+
+    const fromButton = tabButtonRefs.current[activeTab];
+    const toButton = tabButtonRefs.current[nextTab];
+    const navBounds = tabNavRef.current?.getBoundingClientRect();
+    if (fromButton && toButton && navBounds) {
+      const fromBounds = fromButton.getBoundingClientRect();
+      const toBounds = toButton.getBoundingClientRect();
+      setTabTravel({
+        from: fromBounds.left - navBounds.left + fromBounds.width / 2,
+        to: toBounds.left - navBounds.left + toBounds.width / 2
+      });
+    }
+
+    setTabDirection(
+      MAIN_TAB_ORDER.indexOf(nextTab) > MAIN_TAB_ORDER.indexOf(activeTab) ? 'forward' : 'backward'
+    );
+    setActiveTab(nextTab);
+  };
+
+  React.useEffect(() => {
+    if (!loading) return;
+
+    const intervalId = window.setInterval(() => {
+      setActiveVerificationStage((stage) => (stage + 1) % VERIFICATION_STAGES.length);
+    }, 720);
+
+    return () => window.clearInterval(intervalId);
+  }, [loading]);
 
   // Global Keyboard Navigation (Slash to focus claim search, Esc to close modals)
   React.useEffect(() => {
@@ -150,22 +203,58 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeTab]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleImageFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setError('Choose an image file to attach.');
+      return;
+    }
 
+    setError(null);
     setImageFileName(file.name);
     const reader = new FileReader();
     reader.onload = () => {
       setSelectedImage(reader.result as string);
     };
+    reader.onerror = () => setError('This image could not be loaded. Try another file.');
     reader.readAsDataURL(file);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleImageFile(file);
+  };
+
+  const handleImageDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (Array.from(e.dataTransfer.types).includes('Files')) {
+      e.preventDefault();
+      setIsDraggingImage(true);
+    }
+  };
+
+  const handleImageDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+      setIsDraggingImage(false);
+    }
+  };
+
+  const handleImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!e.dataTransfer.files.length) return;
+
+    e.preventDefault();
+    setIsDraggingImage(false);
+    const image = Array.from(e.dataTransfer.files).find((file) => file.type.startsWith('image/'));
+    if (image) {
+      handleImageFile(image);
+    } else {
+      setError('Drop an image file to attach it.');
+    }
   };
 
   const handleVerify = async (textToVerify?: string) => {
     const text = textToVerify || query;
     if ((!text || text.trim().length === 0) && !selectedImage) return;
 
+    setActiveVerificationStage(0);
     setLoading(true);
     setError(null);
     if (textToVerify) setQuery(textToVerify);
@@ -177,7 +266,7 @@ export default function Home() {
         body: JSON.stringify({
           query: text,
           imageBase64: selectedImage || undefined,
-          mimeType: selectedImage ? 'image/jpeg' : undefined
+          mimeType: selectedImage?.match(/^data:([^;]+);base64,/)?.[1]
         })
       });
 
@@ -187,6 +276,8 @@ export default function Home() {
 
       const data: VerificationResult = await response.json();
       setResult(data);
+      setIsResultDetailsOpen(false);
+      setIsSocialShareOpen(false);
     } catch (err) {
       console.warn('Network / live API error, attempting offline local database check...', err);
       const offlineMatch = checkOfflineDatabase(text);
@@ -242,7 +333,6 @@ export default function Home() {
 
   const [appLanguage, setAppLanguage] = useState<AppLanguage>('en');
   const t = DICTIONARY[appLanguage];
-
   return (
     <div className="app-shell min-h-screen text-slate-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-200">
       <Header 
@@ -255,9 +345,23 @@ export default function Home() {
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8">
         {/* Navigation Tabs - Mobile Optimized 5-Tab Control */}
         <div className="w-full flex justify-center">
-          <div className="w-full sm:w-auto grid grid-cols-5 sm:flex items-center gap-1 sm:gap-1.5 p-1 sm:p-1.5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-2xl backdrop-blur-md">
+          <div
+            ref={tabNavRef}
+            className="relative w-full sm:w-auto grid grid-cols-5 sm:flex items-center gap-1 sm:gap-1.5 p-1 sm:p-1.5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-2xl backdrop-blur-md"
+          >
+            {tabTravel && (
+              <span
+                key={`${activeTab}-${tabTravel.from}-${tabTravel.to}`}
+                aria-hidden="true"
+                className="tab-race-streak"
+                style={{ '--race-from': `${tabTravel.from}px`, '--race-to': `${tabTravel.to}px` } as React.CSSProperties}
+                onAnimationEnd={() => setTabTravel(null)}
+              />
+            )}
             <button
-              onClick={() => setActiveTab('verify')}
+              ref={(element) => { tabButtonRefs.current.verify = element; }}
+              onClick={() => handleTabChange('verify')}
+              aria-pressed={activeTab === 'verify'}
               className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 sm:py-2.5 rounded-xl text-center text-[10px] sm:text-xs font-bold transition-all ${
                 activeTab === 'verify'
                   ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-black shadow-lg shadow-emerald-500/20 font-black'
@@ -271,7 +375,9 @@ export default function Home() {
             </button>
 
             <button
-              onClick={() => setActiveTab('brand_shield')}
+              ref={(element) => { tabButtonRefs.current.brand_shield = element; }}
+              onClick={() => handleTabChange('brand_shield')}
+              aria-pressed={activeTab === 'brand_shield'}
               className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 sm:py-2.5 rounded-xl text-center text-[10px] sm:text-xs font-bold transition-all ${
                 activeTab === 'brand_shield'
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 font-black'
@@ -285,7 +391,9 @@ export default function Home() {
             </button>
 
             <button
-              onClick={() => setActiveTab('heatmap')}
+              ref={(element) => { tabButtonRefs.current.heatmap = element; }}
+              onClick={() => handleTabChange('heatmap')}
+              aria-pressed={activeTab === 'heatmap'}
               className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 sm:py-2.5 rounded-xl text-center text-[10px] sm:text-xs font-bold transition-all ${
                 activeTab === 'heatmap'
                   ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-black shadow-lg shadow-amber-500/20 font-black'
@@ -299,7 +407,9 @@ export default function Home() {
             </button>
 
             <button
-              onClick={() => setActiveTab('deepfake')}
+              ref={(element) => { tabButtonRefs.current.deepfake = element; }}
+              onClick={() => handleTabChange('deepfake')}
+              aria-pressed={activeTab === 'deepfake'}
               className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 sm:py-2.5 rounded-xl text-center text-[10px] sm:text-xs font-bold transition-all ${
                 activeTab === 'deepfake'
                   ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20 font-black'
@@ -313,7 +423,9 @@ export default function Home() {
             </button>
 
             <button
-              onClick={() => setActiveTab('about')}
+              ref={(element) => { tabButtonRefs.current.about = element; }}
+              onClick={() => handleTabChange('about')}
+              aria-pressed={activeTab === 'about'}
               className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 sm:py-2.5 rounded-xl text-center text-[10px] sm:text-xs font-bold transition-all ${
                 activeTab === 'about'
                   ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20 font-black'
@@ -328,18 +440,19 @@ export default function Home() {
           </div>
         </div>
 
+        <div key={activeTab} className={`tab-section-enter tab-section-enter-${tabDirection} section-stagger space-y-8`}>
         {activeTab === 'brand_shield' ? (
           <BrandShieldDashboard appLanguage={appLanguage} onOpenSubscriptionModal={() => setIsBmoniModalOpen(true)} />
         ) : activeTab === 'heatmap' ? (
           <NigeriaHeatmap appLanguage={appLanguage} onSelectClaim={(claim) => {
-            setActiveTab('verify');
+            handleTabChange('verify');
             setQuery(claim);
             handleVerify(claim);
           }} />
         ) : activeTab === 'deepfake' ? (
           <DeepfakeVideoScanner appLanguage={appLanguage} />
         ) : activeTab === 'about' ? (
-          <AboutSection appLanguage={appLanguage} onSelectTab={(tab) => setActiveTab(tab)} />
+          <AboutSection appLanguage={appLanguage} onSelectTab={handleTabChange} />
         ) : (
           <>
             {/* Hero Section */}
@@ -420,7 +533,22 @@ export default function Home() {
 
             {/* Input Form & Demo Pills */}
             <div className="space-y-4">
-              <div className="glass-panel relative rounded-2xl p-2 sm:p-3 focus-within:border-emerald-500/50 transition-all">
+              <div
+                onDragOver={handleImageDragOver}
+                onDragLeave={handleImageDragLeave}
+                onDrop={handleImageDrop}
+                className={`glass-panel relative rounded-2xl p-2 sm:p-3 focus-within:border-emerald-500/50 transition-all ${
+                  isDraggingImage ? 'border-emerald-400 ring-2 ring-emerald-400/30' : ''
+                }`}
+              >
+                {isDraggingImage && (
+                  <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-2xl border-2 border-dashed border-emerald-400 bg-slate-950/85 text-emerald-200">
+                    <div className="flex items-center gap-2 text-sm font-semibold">
+                      <Upload className="h-4 w-4" />
+                      <span>Drop screenshot to attach</span>
+                    </div>
+                  </div>
+                )}
                 {selectedImage && (
                   <div className="mb-2 p-2 rounded-xl bg-slate-800/80 border border-emerald-500/40 flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -583,19 +711,27 @@ export default function Home() {
                       Routing to official Nigerian regulators • Google Fact Check database • Synthesizing authoritative evidence...
                     </p>
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-3">
-                    {['Extracting claim', 'Checking Nigerian sources', 'Ranking evidence'].map((stage, index) => (
+                  <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-5">
+                    {VERIFICATION_STAGES.map((stage, index) => {
+                      const isActive = activeVerificationStage === index;
+                      return (
                       <div
                         key={stage}
-                        className="glass-panel-subtle rounded-lg p-3 text-center text-xs text-slate-300"
+                        aria-current={isActive ? 'step' : undefined}
+                        className={`glass-panel-subtle rounded-lg p-3 text-center text-xs text-slate-300 transition-all duration-300 ${
+                          isActive ? 'scale-[1.02] border-emerald-400/60 bg-emerald-500/10 shadow-lg shadow-emerald-500/10' : 'opacity-60'
+                        }`}
                         style={{ animationDelay: `${index * 140}ms` }}
                       >
-                        <span className="mb-2 mx-auto flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-300 font-mono">
+                        <span className={`mb-2 mx-auto flex h-6 w-6 items-center justify-center rounded-full font-mono transition-colors duration-300 ${
+                          isActive ? 'animate-pulse bg-emerald-400 text-slate-950' : 'bg-emerald-500/15 text-emerald-300'
+                        }`}>
                           {index + 1}
                         </span>
                         {stage}
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -604,9 +740,43 @@ export default function Home() {
             {/* Verification Result Showcase */}
             {result && !loading && (
               <div
-                key={result.extractedClaim.normalizedClaim}
-                className="space-y-6 animate-result-enter"
+                key={result.id}
+                className="space-y-4 animate-result-enter"
               >
+                <div className="glass-panel animate-verdict-arrive space-y-3 rounded-2xl p-4 sm:p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 space-y-1.5">
+                      <span className="text-xs font-semibold text-slate-400">Verification result</span>
+                      <p className="break-words text-base font-semibold leading-snug text-white sm:text-lg">
+                        {result.extractedClaim.normalizedClaim}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1.5">
+                      <VerdictBadge verdict={result.verdict} size="md" />
+                      <span className="text-xs font-mono text-slate-400">{result.confidenceScore}% confidence</span>
+                    </div>
+                  </div>
+                  <p className="line-clamp-2 text-sm leading-relaxed text-slate-300">
+                    {result.shortExplanation}
+                  </p>
+                  <button
+                    type="button"
+                    aria-expanded={isResultDetailsOpen}
+                    aria-controls={`result-details-${result.id}`}
+                    onClick={() => {
+                      const opening = !isResultDetailsOpen;
+                      setIsResultDetailsOpen(opening);
+                      if (!opening) setIsSocialShareOpen(false);
+                    }}
+                    className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-700 bg-slate-900/70 px-3.5 text-sm font-semibold text-emerald-300 transition-colors hover:border-emerald-500/50 hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+                  >
+                    <span>Details</span>
+                    <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isResultDetailsOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                </div>
+
+                {isResultDetailsOpen && (
+                <div id={`result-details-${result.id}`} className="space-y-6 animate-details-reveal">
                 {/* Main Verdict Card */}
                 <div className="glass-panel rounded-2xl p-5 sm:p-6 space-y-6">
                   {/* Header with Badges & Share */}
@@ -638,16 +808,6 @@ export default function Home() {
                         title={usePidgin ? 'Switch to English' : 'Read explanation in Naija Pidgin'}
                       >
                         <span>{usePidgin ? 'English 🇬🇧' : 'Naija Pidgin 🇳🇬'}</span>
-                      </button>
-
-                      {/* Share button */}
-                      <button
-                        onClick={handleShareWhatsApp}
-                        className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-800 text-xs font-semibold text-slate-300 hover:text-emerald-300 transition-all"
-                        title="Copy WhatsApp formatted summary"
-                      >
-                        {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
-                        <span className="hidden sm:inline">{copied ? 'Copied!' : 'Share WhatsApp'}</span>
                       </button>
 
                       {/* Permalink button */}
@@ -815,8 +975,23 @@ export default function Home() {
                     </div>
                   )}
 
-                  {/* WhatsApp Status Export Card */}
-                  <WhatsAppShareCard result={result} />
+                  <div className="border-t border-slate-800 pt-4">
+                    <button
+                      type="button"
+                      aria-expanded={isSocialShareOpen}
+                      aria-controls={`social-share-${result.id}`}
+                      onClick={() => setIsSocialShareOpen(!isSocialShareOpen)}
+                      className="flex min-h-10 w-full items-center justify-between gap-3 rounded-lg px-2 text-left text-sm font-semibold text-slate-200 transition-colors hover:text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+                    >
+                      <span>Share on social media</span>
+                      <ChevronDown className={`h-4 w-4 text-emerald-300 transition-transform duration-200 ${isSocialShareOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {isSocialShareOpen && (
+                      <div id={`social-share-${result.id}`} className="pt-4 animate-details-reveal">
+                        <WhatsAppShareCard result={result} />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Horizontal Ranked Authoritative Evidence Section */}
@@ -857,19 +1032,21 @@ export default function Home() {
                     className="flex items-stretch gap-4 overflow-x-auto pb-3 pt-1 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-slate-700"
                   >
                     {result.evidence.map((item, idx) => (
-                      <div
+                      <ScrollReveal
                         key={item.id}
                         className="min-w-[280px] sm:min-w-[340px] max-w-[380px] shrink-0 snap-start animate-result-enter flex flex-col"
-                        style={{ animationDelay: `${idx * 80}ms` }}
+                        delay={Math.min(idx * 65, 260)}
                       >
                         <EvidenceCard evidence={item} rank={idx + 1} />
-                      </div>
+                      </ScrollReveal>
                     ))}
                   </div>
                 </div>
 
                 {/* Pipeline Transparency Inspector */}
                 <PipelineInspector result={result} />
+                </div>
+                )}
               </div>
             )}
 
@@ -911,6 +1088,7 @@ export default function Home() {
                   </div>
                 </div>
 
+                <ScrollReveal className="min-w-0">
                 <div 
                   ref={pillarsScrollRef}
                   className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-slate-700"
@@ -987,10 +1165,12 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
+                </ScrollReveal>
               </div>
             )}
           </>
         )}
+        </div>
       </main>
 
       {/* Why Not ChatGPT / Why Rumor Radar Modal */}
