@@ -296,7 +296,7 @@ export function DeepfakeVideoScanner({ appLanguage = 'en' }: DeepfakeVideoScanne
             className="flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition-all shrink-0 active:scale-95"
           >
             <Upload className="w-4 h-4 text-purple-400" />
-            <span>{isPidgin ? 'Upload Video File' : 'Upload Video File'}</span>
+            <span>{isPidgin ? 'Upload Video' : 'Upload Video File'}</span>
           </button>
 
           <button
@@ -322,7 +322,7 @@ export function DeepfakeVideoScanner({ appLanguage = 'en' }: DeepfakeVideoScanne
         {!result && !loading && (
           <div className="space-y-2 pt-2 border-t border-slate-800/80">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              {isPidgin ? 'Or test dis viral fake video case:' : 'Or test a real Nigerian viral case study:'}
+              {isPidgin ? 'Or test dis viral fake video tori:' : 'Or test a real Nigerian viral case study:'}
             </span>
             <div className="flex flex-wrap gap-2">
               {DEEPFAKE_PRESETS.map((p, index) => (
@@ -339,7 +339,7 @@ export function DeepfakeVideoScanner({ appLanguage = 'en' }: DeepfakeVideoScanne
                   <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-bold ${
                     p.isFake ? 'bg-rose-950 text-rose-300' : 'bg-emerald-950 text-emerald-300'
                   }`}>
-                    {p.isFake ? (isPidgin ? '🔥 Viral Fake' : '🔥 Viral Fake') : (isPidgin ? '✅ Real Video' : '✅ Verified Real')}
+                    {p.isFake ? (isPidgin ? '🔥 Lie Lie Video' : '🔥 Viral Fake') : (isPidgin ? '✅ Real Video' : '✅ Verified Real')}
                   </span>
                 </button>
                 </ScrollReveal>
