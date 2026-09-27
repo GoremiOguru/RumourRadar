@@ -10,14 +10,10 @@ export const Header: React.FC<HeaderProps> = ({ onOpenWhyModal, onOpenBmoniModal
   return (
     <header className="w-full border-b border-emerald-500/20 bg-slate-950/95 backdrop-blur-xl sticky top-0 z-50 transition-colors">
       <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
-        {/* Brand & National Emblem Indicator */}
+        {/* Brand mark */}
         <div className="flex items-center space-x-2.5 sm:space-x-3.5 shrink-0">
           <div className="relative flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 shadow-sm shadow-emerald-500/20">
             <Radio className="w-4 h-4 sm:w-4.5 sm:h-4.5 animate-pulse text-emerald-400" />
-            <span className="absolute -top-1 -right-1 flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
           </div>
 
           <div className="flex flex-col justify-center">

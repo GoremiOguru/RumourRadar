@@ -23,6 +23,7 @@ import {
   ScanLine
 } from 'lucide-react';
 import { DeepfakeScanResult } from '@/app/api/deepfake/scan/route';
+import { ScrollReveal } from '@/components/ScrollReveal';
 
 const DEEPFAKE_PRESETS = [
   {
@@ -183,7 +184,7 @@ export function DeepfakeVideoScanner() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="section-stagger space-y-6">
       {/* Header Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-purple-950/30 to-slate-900 border border-purple-500/30 shadow-xl">
         <div className="space-y-1">
@@ -314,9 +315,9 @@ export function DeepfakeVideoScanner() {
               Or test a real Nigerian viral case study:
             </span>
             <div className="flex flex-wrap gap-2">
-              {DEEPFAKE_PRESETS.map((p) => (
+              {DEEPFAKE_PRESETS.map((p, index) => (
+                <ScrollReveal key={p.id} className="inline-flex" delay={index * 65}>
                 <button
-                  key={p.id}
                   onClick={() => handleSelectPreset(p)}
                   className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/60 hover:bg-slate-800 hover:border-purple-500/40 text-xs text-slate-300 transition-all flex items-center gap-1.5 group"
                 >
@@ -327,6 +328,7 @@ export function DeepfakeVideoScanner() {
                     {p.isFake ? '🔥 Viral Fake' : '✅ Verified Real'}
                   </span>
                 </button>
+                </ScrollReveal>
               ))}
             </div>
           </div>

@@ -143,6 +143,7 @@ export function NigeriaMapSvg({
             const isHovered = hoveredZone === zone.id;
             const threatCount = zoneThreatCounts[zone.id] || 0;
             const criticalCount = zoneCriticalCounts[zone.id] || 0;
+            const hasFocusedCriticalAlert = criticalCount > 0 && (selectedZone === 'ALL' || isSelected);
 
             return (
               <g
@@ -162,7 +163,9 @@ export function NigeriaMapSvg({
                   strokeLinejoin="round"
                   strokeLinecap="round"
                   filter={isSelected ? 'url(#glow)' : undefined}
-                  className="transition-all duration-300 hover:scale-[1.01] transform-gpu origin-center"
+                  className={`transition-all duration-300 hover:scale-[1.01] transform-gpu origin-center ${
+                    hasFocusedCriticalAlert ? 'zone-alert-pulse' : ''
+                  }`}
                 />
 
                 {/* Zone Center Label Pill (Compact, translucent so map geometry is never blocked) */}

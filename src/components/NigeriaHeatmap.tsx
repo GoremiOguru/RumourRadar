@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { NigeriaMapSvg, GeopoliticalZone } from './NigeriaMapSvg';
 import { LiveRegionalRumour } from '@/app/api/heatmap/live-rumors/route';
+import { ScrollReveal } from '@/components/ScrollReveal';
 
 interface NigeriaHeatmapProps {
   onSelectClaim?: (claim: string) => void;
@@ -205,7 +206,7 @@ export function NigeriaHeatmap({ onSelectClaim }: NigeriaHeatmapProps = {}) {
   const activeFocus = selectedRumour || filteredRumours[0] || rumours[0];
 
   return (
-    <div className="space-y-6">
+    <div className="section-stagger space-y-6">
       {/* Top Header Card */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-amber-950/30 to-slate-900 border border-amber-500/30 shadow-xl">
         <div className="space-y-1">
@@ -295,9 +296,15 @@ export function NigeriaHeatmap({ onSelectClaim }: NigeriaHeatmapProps = {}) {
               {filteredRumours.map((item) => {
                 const isSelected = activeFocus?.id === item.id;
                 return (
-                  <div
+                  <ScrollReveal
                     key={item.id}
-                    onClick={() => setSelectedRumour(item)}
+                    delay={Math.min(filteredRumours.indexOf(item) * 55, 220)}
+                  >
+                    <div
+                      onClick={() => {
+                        setSelectedRumour(item);
+                        setSelectedZone(item.zone);
+                      }}
                     className={`p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer text-left ${
                       isSelected
                         ? 'bg-slate-900/95 border-amber-500 shadow-lg shadow-amber-500/15 ring-1 ring-amber-500/50 scale-[1.01]'
@@ -329,6 +336,7 @@ export function NigeriaHeatmap({ onSelectClaim }: NigeriaHeatmapProps = {}) {
                       <span className="font-mono text-slate-300">{item.verifiedCount.toLocaleString()} queries</span>
                     </div>
                   </div>
+                  </ScrollReveal>
                 );
               })}
             </div>

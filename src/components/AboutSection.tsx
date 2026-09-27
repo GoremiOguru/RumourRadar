@@ -67,7 +67,7 @@ export function AboutSection({ onOpenTipModal, onSelectTab }: AboutSectionProps)
   ];
 
   return (
-    <div className="space-y-8 animate-result-enter">
+    <div className="section-stagger space-y-8 animate-result-enter">
       {/* Top Banner & Tab Navigation */}
       <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-slate-900/90 via-slate-950 to-slate-900/90 border border-slate-800 shadow-2xl space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

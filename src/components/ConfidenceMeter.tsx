@@ -1,4 +1,6 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect, useState } from 'react';
 import { ConfidenceLevel } from '@/types';
 import { ShieldCheck, ShieldAlert, Shield } from 'lucide-react';
 
@@ -8,6 +10,32 @@ interface ConfidenceMeterProps {
 }
 
 export const ConfidenceMeter: React.FC<ConfidenceMeterProps> = ({ confidence, score }) => {
+  const [animatedScore, setAnimatedScore] = useState(0);
+
+  useEffect(() => {
+    const targetScore = Math.min(100, Math.max(0, score));
+    let frameId = 0;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      frameId = window.requestAnimationFrame(() => setAnimatedScore(targetScore));
+      return () => window.cancelAnimationFrame(frameId);
+    }
+
+    const duration = 900;
+    let startTime: number | null = null;
+    const animateScore = (time: number) => {
+      if (startTime === null) startTime = time;
+      const progress = Math.min(1, (time - startTime) / duration);
+      const easedProgress = 1 - (1 - progress) ** 3;
+      setAnimatedScore(Math.round(targetScore * easedProgress));
+
+      if (progress < 1) frameId = window.requestAnimationFrame(animateScore);
+    };
+
+    frameId = window.requestAnimationFrame(animateScore);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [score]);
+
   const getColors = () => {
     switch (confidence) {
       case 'HIGH':
@@ -48,15 +76,15 @@ export const ConfidenceMeter: React.FC<ConfidenceMeterProps> = ({ confidence, sc
           </span>
         </div>
         <span className={`text-xs font-mono font-bold ${style.text}`}>
-          {confidence} ({score}%)
+          {confidence} ({animatedScore}%)
         </span>
       </div>
 
       {/* Progress Bar */}
       <div className="w-full bg-slate-950/80 rounded-full h-2 overflow-hidden border border-slate-800">
         <div
-          className={`h-full ${style.bar} transition-all duration-700 ease-out`}
-          style={{ width: `${Math.min(100, Math.max(10, score))}%` }}
+          className={`h-full ${style.bar}`}
+          style={{ width: `${Math.min(100, Math.max(10, animatedScore))}%` }}
         />
       </div>
 
