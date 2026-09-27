@@ -124,40 +124,31 @@ export async function POST(req: NextRequest) {
           confidenceScore: 92
         });
       });
-    } else {
-      alerts.push({
-        id: 'alert-std-1',
-        title: `Phishing & Impersonation Social Handles Targeting ${cleanBrand}`,
-        summary: `Social listening desks detected cloned customer care pages targeting ${cleanBrand} retail customers.`,
-        sourceUrl: `https://news.google.com/search?q=${encodeURIComponent(cleanBrand)}`,
-        sourceName: 'Brand Shield Social Listening',
-        publishedDate: 'Past 48h',
-        severity: 'HIGH',
-        category: 'PHISHING_SCAM',
-        verdictRecommendation: 'CONTRADICTED',
-        confidenceScore: 95
-      });
     }
+
+    const overallThreat: BrandShieldScanResult['threatLevel'] = alerts.length === 0
+      ? 'CLEAR'
+      : alerts.some(a => a.severity === 'CRITICAL')
+      ? 'CRITICAL'
+      : 'ELEVATED';
 
     const debunkKit: DebunkKit = {
       brandName: cleanBrand,
-      targetRumour: alerts[0]?.title || `Unverified claims and social circulars circulating regarding ${cleanBrand}.`,
-      officialStatementDraft: `LAGOS, NIGERIA — The Management of ${cleanBrand} wishes to inform our esteemed customers and the general public that all official services remain 100% active and secure. Please disregard malicious rumors and phishing links circulating on unofficial social media handles.`,
+      targetRumour: alerts[0]?.title || `No active rumors currently detected for ${cleanBrand}.`,
+      officialStatementDraft: `LAGOS, NIGERIA — Official surveillance scans confirm that ${cleanBrand} operations and public reputation remain 100% clear. Please disregard any unverified social media forwards.`,
       bulletPoints: [
-        'All digital banking and customer portals are 100% operational.',
-        'Never share your OTP, PIN, or banking passwords with unofficial accounts.',
+        'All official services and customer channels remain 100% secure.',
+        'Never share OTPs, PINs, or confidential passwords on unofficial handles.',
         'Official notices are exclusively published on our verified domain.'
       ],
-      suggestedAction: 'Issue immediate social debunk across X and Instagram handles.',
-      twitterPost: `🚨 OFFICIAL NOTICE: Disregard unverified posts circulating about ${cleanBrand}. All our operations are 100% normal and secure. Report suspicious handles to our verified channels. #BrandShield #${cleanBrand.replace(/\s+/g, '')}`,
+      suggestedAction: 'No immediate PR debunk required. Monitor 24/7 automated alerts.',
+      twitterPost: `🚨 PUBLIC NOTICE: Official surveillance scans confirm that ${cleanBrand} operates with 100% security. No active rumors detected. #BrandShield #${cleanBrand.replace(/\s+/g, '')}`,
       whatsappBroadcastTemplate: `⚠️ *OFFICIAL PUBLIC NOTICE FROM ${cleanBrand.toUpperCase()}*\n\n` +
-        `Please disregard viral forwards claiming disruptions in our services. All platforms are operating normally.\n\n` +
-        `🔐 Never share your OTP, PIN, or banking passwords with anyone.`,
-      linkedInStatement: `${cleanBrand} Public Advisory: We are aware of misleading information circulating across unauthorized digital channels. We assure our corporate partners and stakeholders that all infrastructure remains fully operational.`,
-      facebookInstagramCaption: `PUBLIC NOTICE: Don't fall for fake news or unauthorized giveaway links! All ${cleanBrand} operations are fully active and secure. 🛡️`
+        `Our public surveillance scanners confirm that all services are 100% active and no official disruptions have occurred.\n\n` +
+        `🔐 Always rely on verified channels for official updates.`,
+      linkedInStatement: `${cleanBrand} Public Advisory: Recent digital surveillance confirms that all operations, infrastructure, and institutional channels remain completely clear and secure.`,
+      facebookInstagramCaption: `PUBLIC NOTICE: All ${cleanBrand} operations are fully active, verified, and secure. 🛡️`
     };
-
-    const overallThreat: BrandShieldScanResult['threatLevel'] = alerts.some(a => a.severity === 'CRITICAL') ? 'CRITICAL' : 'ELEVATED';
 
     const scanResult: BrandShieldScanResult & { recentWeeklyNews: VerifiedBrandNewsItem[] } = {
       brandName: cleanBrand,

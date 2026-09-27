@@ -366,91 +366,111 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
               <div className="flex items-center justify-between px-1">
                 <div>
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-300 font-display flex items-center gap-2">
-                    <span>Detected Misinformation Signals ({scanResult.alerts.length})</span>
+                    <span>{isPidgin ? `Detected Rumor Signals (${scanResult.alerts.length})` : `Detected Misinformation Signals (${scanResult.alerts.length})`}</span>
                     <span className="text-[10px] font-mono text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
                       Horizontal Stream
                     </span>
                   </span>
-                  <p className="text-[11px] font-mono text-slate-500">Auto-prioritized by enterprise risk level</p>
+                  <p className="text-[11px] font-mono text-slate-500">{isPidgin ? 'Auto-ranked by risk level' : 'Auto-prioritized by enterprise risk level'}</p>
                 </div>
 
                 {/* Arrow navigation buttons */}
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => signalsScrollRef.current?.scrollBy({ left: -360, behavior: 'smooth' })}
-                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700 active:scale-95"
-                    title="Scroll left"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => signalsScrollRef.current?.scrollBy({ left: 360, behavior: 'smooth' })}
-                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700 active:scale-95"
-                    title="Scroll right"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-                  <ScrollReveal className="min-w-0">
-                  <div
-                ref={signalsScrollRef}
-                className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-slate-700"
-              >
-                {scanResult.alerts.map((alert) => (
-                  <ScrollReveal
-                    key={alert.id} 
-                    className="min-w-[300px] sm:min-w-[360px] max-w-[420px] shrink-0 snap-start"
-                    delay={Math.min(scanResult.alerts.indexOf(alert) * 65, 260)}
-                  >
-                  <div className="glass-panel p-4 sm:p-5 rounded-xl border-rose-500/30 flex flex-col justify-between shadow-xl space-y-3 hover:border-rose-500/50 transition-colors">
-                    <div className="space-y-2.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0">
-                          {alert.severity}
-                        </span>
-                        <span className="text-[11px] font-mono text-slate-400 font-semibold">{alert.publishedDate}</span>
-                      </div>
-
-                      <h4 className="font-bold text-sm text-white line-clamp-2 leading-snug">{alert.title}</h4>
-
-                      <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/60 p-3 rounded-lg border border-slate-800">
-                        {alert.summary}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800 text-xs">
-                      <span className="text-slate-400 font-mono">
-                        Source: <strong className="text-slate-200">{alert.sourceName}</strong>
-                      </span>
-
-                      <div className="flex items-center gap-2">
-                        {alert.sourceUrl && (
-                          <a
-                            href={alert.sourceUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 text-xs font-semibold border border-slate-700 transition-colors"
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                            <span>View Source Article</span>
-                          </a>
-                        )}
-
-                        <button
-                          onClick={() => setActiveTab('debunk_kit')}
-                          className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-colors"
-                        >
-                          Generate PR Debunk Kit &rarr;
-                        </button>
-                      </div>
-                    </div>
+                {scanResult.alerts.length > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => signalsScrollRef.current?.scrollBy({ left: -360, behavior: 'smooth' })}
+                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700 active:scale-95"
+                      title="Scroll left"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => signalsScrollRef.current?.scrollBy({ left: 360, behavior: 'smooth' })}
+                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700 active:scale-95"
+                      title="Scroll right"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
                   </div>
-                  </ScrollReveal>
-                ))}
+                )}
               </div>
-                  </ScrollReveal>
+
+              {scanResult.alerts.length === 0 ? (
+                <div className="glass-panel p-8 text-center rounded-2xl border-emerald-500/40 bg-emerald-950/20 space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center mx-auto text-emerald-400">
+                    <CheckCircle2 className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-base font-bold text-white">
+                    {isPidgin 
+                      ? `Everything Clean! We don scan everywhere and no lie-lie tori or fake news dey about ${scanResult.brandName}.`
+                      : `Surveillance Scan Complete: No active rumors, fake news, or circulars detected for ${scanResult.brandName}.`}
+                  </h3>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto font-mono">
+                    {isPidgin
+                      ? `Status: ALL CLEAR (0 Rumor Found in past 7 days)`
+                      : `Threat Status: ALL CLEAR (0 Monitored Rumors Found)`}
+                  </p>
+                </div>
+              ) : (
+                <ScrollReveal className="min-w-0">
+                  <div
+                    ref={signalsScrollRef}
+                    className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-slate-700"
+                  >
+                    {scanResult.alerts.map((alert) => (
+                      <ScrollReveal
+                        key={alert.id} 
+                        className="min-w-[300px] sm:min-w-[360px] max-w-[420px] shrink-0 snap-start"
+                        delay={Math.min(scanResult.alerts.indexOf(alert) * 65, 260)}
+                      >
+                      <div className="glass-panel p-4 sm:p-5 rounded-xl border-rose-500/30 flex flex-col justify-between shadow-xl space-y-3 hover:border-rose-500/50 transition-colors">
+                        <div className="space-y-2.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0">
+                              {alert.severity}
+                            </span>
+                            <span className="text-[11px] font-mono text-slate-400 font-semibold">{alert.publishedDate}</span>
+                          </div>
+
+                          <h4 className="font-bold text-sm text-white line-clamp-2 leading-snug">{alert.title}</h4>
+
+                          <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/60 p-3 rounded-lg border border-slate-800">
+                            {alert.summary}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800 text-xs">
+                          <span className="text-slate-400 font-mono">
+                            Source: <strong className="text-slate-200">{alert.sourceName}</strong>
+                          </span>
+
+                          <div className="flex items-center gap-2">
+                            {alert.sourceUrl && (
+                              <a
+                                href={alert.sourceUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 text-xs font-semibold border border-slate-700 transition-colors"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                <span>{isPidgin ? 'View News' : 'View Source Article'}</span>
+                              </a>
+                            )}
+
+                            <button
+                              onClick={() => setActiveTab('debunk_kit')}
+                              className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-colors"
+                            >
+                              {isPidgin ? 'PR Debunk Kit &rarr;' : 'Generate PR Debunk Kit &rarr;'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      </ScrollReveal>
+                    ))}
+                  </div>
+                </ScrollReveal>
+              )}
             </div>
           )}
 
