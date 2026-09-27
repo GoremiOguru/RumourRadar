@@ -101,6 +101,28 @@ export function PidginVoicePlayer({ pidginText, englishText, multilingual, claim
     window.speechSynthesis.cancel();
 
     const rawText = getTextForMode();
+    let textToSpeak = rawText
+      .replace(/₦\s*([0-9,]+)/g, '$1 Naira')
+      .replace(/\bCBN\b/g, 'Central Bank of Nigeria')
+      .replace(/\bINEC\b/g, 'Independent National Electoral Commission')
+      .replace(/\bNCDC\b/g, 'Nigeria Centre for Disease Control')
+      .replace(/\bJAMB\b/g, 'Joint Admissions and Matriculation Board')
+      .replace(/\bWAEC\b/g, 'West African Examinations Council');
+
+    // Phonetic normalization for browser TTS engines reading vernacular dialects
+    if (mode === 'igbo') {
+      textToSpeak = textToSpeak
+        .replace(/ọ/g, 'o').replace(/Ọ/g, 'O')
+        .replace(/ị/g, 'i').replace(/Ị/g, 'I')
+        .replace(/ụ/g, 'u').replace(/Ụ/g, 'U')
+        .replace(/ṅ/g, 'n').replace(/Ṅ/g, 'N');
+    } else if (mode === 'yoruba') {
+      textToSpeak = textToSpeak
+        .replace(/ẹ/g, 'e').replace(/Ẹ/g, 'E')
+        .replace(/ọ/g, 'o').replace(/Ọ/g, 'O')
+        .replace(/ṣ/g, 's').replace(/Ṣ/g, 'S');
+    }
+
     const prefix = mode === 'pidgin'
       ? 'Rumour Radar Naija voice report. '
       : mode === 'yoruba'
@@ -108,13 +130,10 @@ export function PidginVoicePlayer({ pidginText, englishText, multilingual, claim
       : mode === 'hausa'
       ? 'Bayanin Rumour Radar a harshen Hausa. '
       : mode === 'igbo'
-      ? 'Nkọwa Rumour Radar na asụsụ Igbo. '
+      ? 'Nkowa Rumour Radar na asusu Igbo. '
       : 'Rumour Radar Nigeria verification verdict. ';
 
-    const speechScript = `${prefix}${rawText
-      .replace(/₦\s*([0-9,]+)/g, '$1 Naira')
-      .replace(/\bCBN\b/g, 'Central Bank of Nigeria')
-      .replace(/\bINEC\b/g, 'INEC')}`;
+    const speechScript = `${prefix}${textToSpeak}`;
 
     const utterance = new SpeechSynthesisUtterance(speechScript);
     utteranceRef.current = utterance;
@@ -125,8 +144,9 @@ export function PidginVoicePlayer({ pidginText, englishText, multilingual, claim
       utterance.lang = currentVoice.lang.includes('NG') ? currentVoice.lang : 'en-NG';
     }
 
-    utterance.rate = 0.96;
-    utterance.pitch = 1.02;
+    // Slightly slower rate for vernacular enunciation clarity
+    utterance.rate = (mode === 'igbo' || mode === 'yoruba' || mode === 'hausa') ? 0.90 : 0.95;
+    utterance.pitch = 1.0;
 
     utterance.onstart = () => setIsPlaying(true);
     utterance.onend = () => setIsPlaying(false);

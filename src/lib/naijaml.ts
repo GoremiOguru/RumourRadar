@@ -167,35 +167,54 @@ export function generateMultilingualExplanations(
   const isSupported = verdict === 'SUPPORTED';
   const isMisleading = verdict === 'MISLEADING';
 
+  const isNonClaim = verdict === 'NON_CLAIM';
+  const isSatire = verdict === 'SATIRE_PARODY';
+
   // Pidgin
   const pidgin = pidginExplanation || (
-    isFalse 
-      ? 'Dis news na fake talk! Authorities don confirm say na lie. No share am.'
+    isNonClaim
+      ? 'Dis text na greeting or play question, no be news rumor or scam. Paste real tweet or news link make we check am.'
+      : isSatire
+      ? 'Dis one na just cruise and comedy skit! Dem dey play play, no take am like official news.'
+      : isFalse 
+      ? 'Dis news na fake talk! Authorities don confirm say na lie. No share am give anybody.'
       : isSupported
-      ? 'Dis matter na true talk! Government and news desks don confirm am.'
+      ? 'Dis matter na true talk! Government and news desks don confirm am say e legit.'
       : 'Dis talk get small truth but dem twist the story. Check well before you believe.'
   );
 
   // Yoruba
-  const yoruba = isFalse
-    ? 'Ọ̀rọ̀ yìí jẹ́ ìròyìn èke (fake news)! Awọn alaṣẹ ati awọn ajọ fact-check ti fidi rẹ̀ mulẹ pe irọ́ ni.'
+  const yoruba = isNonClaim
+    ? 'Ọ̀rọ̀ yìí jẹ́ ìkíni tabi ìbéèrè lásán, kì í ṣe ìròyìn èke. Jọ̀wọ́ fi ìròyìn tabi tweet gidi ránṣẹ́.'
+    : isSatire
+    ? 'Ọ̀rọ̀ yìí jẹ́ àwàdà àti àwòran ìfeṣèwé gbe (comedy/cruise), kì í ṣe ìròyìn aṣẹ ìjọba.'
+    : isFalse
+    ? 'Ọ̀rọ̀ yìí jẹ́ ìròyìn èke (fake news)! Awọn alaṣẹ ati awọn ajọ fact-check ti fidi rẹ̀ mulẹ pe irọ́ ni. Ẹ ma ṣe tan an kálẹ̀.'
     : isSupported
-    ? 'Ọ̀rọ̀ yìí jẹ́ otitọ pátápátá! Awọn alaṣẹ ti fọwọ́ sí i pe otitọ ni.'
-    : 'Ọ̀rọ̀ yìí nira láti gbà gbọ́ patapata, atunṣe wa ninu itan naa.';
+    ? 'Ọ̀rọ̀ yìí jẹ́ otitọ pátápátá! Awọn alaṣẹ ati ajọ ìròyìn ti fọwọ́ sí i pe otitọ ni.'
+    : 'Ọ̀rọ̀ yìí nira láti gbà gbọ́ patapata, atunṣe ati àyẹ̀wò wa ninu itan naa.';
 
   // Hausa
-  const hausa = isFalse
-    ? 'Wannan labarin bashi da inganci (fake news)! Hukumomi da ma\'aikatan fact-check sun tabbatar karya ne.'
+  const hausa = isNonClaim
+    ? 'Wannan sakon gaisuwa ne kawai ko tambaya, ba jita-jita ba ne. Da fatan zaka saka ainihin labarin da kake son dubawa.'
+    : isSatire
+    ? 'Wannan magana ta wasan barkwanci ce (comedy/cruise), ba labarin gwamnati ba ne.'
+    : isFalse
+    ? 'Wannan labarin bashi da inganci (fake news)! Hukumomi da ma\'aikatan fact-check sun tabbatar karya ne. Kar a yada ta.'
     : isSupported
-    ? 'Wannan labarin gaskiya ne! Hukumomi sun tabbatar da haka.'
-    : 'Wannan magana tana da rudani, a kiyaye kafin a yada ta.';
+    ? 'Wannan labarin gaskiya ne palla-palla! Hukumomi da ma\'aikatan jarida sun tabbatar da haka.'
+    : 'Wannan magana tana da rudani da rance, a kiyaye sosai kafin a yada ta.';
 
   // Igbo
-  const igbo = isFalse
-    ? 'Ozi a bụ okwu asị (fake news)! Ndị ọchịchị na ndị fact-checker kwadoro na ọ bụ asị.'
+  const igbo = isNonClaim
+    ? 'Ozi a bụ naanị ekele ma ọ bụ ajụjụ nkịtị, ọ bụghị okwu asị ma ọ bụ akụkọ a ga-enyocha. Biko zipụ ozi akụkọ ka anyị nyochaa.'
+    : isSatire
+    ? 'Ozi a bụ naanị ihe ọchị na egwuregwu, ọ bụghị okwu sitere n\'aka ndị ọchịchị.'
+    : isFalse
+    ? 'Ozi a bụ okwu asị na okwu ụgha! Ndị ọchịchị na ndị nta akụkọ nyocha kwadoro na ọ bụ okwu asị. Biko zere ikesa ozi a.'
     : isSupported
-    ? 'Ozi a bụ eziokwu ncha! Ndị nyocha na ndị ọchịchị kwadoro ya.'
-    : 'Ozi a nwere obere eziokwu mana ahaziri ya n\'ụzọ na-eduhie eduhie.';
+    ? 'Ozi a bụ eziokwu zuru ezu! Ndị ọchịchị na ndị nta akụkọ nyocha kwadoro na ọ bụ eziokwu doro anya.'
+    : 'Ozi a nwere okwu na-eduhie eduhie. E nwere obere eziokwu mana a kọwara ya n\'ụzọ na-ezighi ezi. Nyochaa nke ọma.';
 
   return {
     english: shortExplanation,
