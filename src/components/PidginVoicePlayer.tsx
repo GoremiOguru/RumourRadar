@@ -10,16 +10,26 @@ interface PidginVoicePlayerProps {
   multilingual?: MultilingualExplanations;
   claimEntity?: string;
   verdict?: string;
+  selectedLang?: 'en' | 'pcm' | 'yo' | 'ha' | 'ig';
 }
 
-export function PidginVoicePlayer({ pidginText, englishText, multilingual, claimEntity, verdict }: PidginVoicePlayerProps) {
+export function PidginVoicePlayer({ pidginText, englishText, multilingual, claimEntity, verdict, selectedLang = 'en' }: PidginVoicePlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isSupported, setIsSupported] = useState(true);
-  const [mode, setMode] = useState<'english' | 'pidgin' | 'yoruba' | 'hausa' | 'igbo'>('english');
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoiceIndex, setSelectedVoiceIndex] = useState<number>(0);
   const [voiceLabel, setVoiceLabel] = useState<string>('Google Maps Nigeria Voice');
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  const langToModeMap: Record<string, 'english' | 'pidgin' | 'yoruba' | 'hausa' | 'igbo'> = {
+    en: 'english',
+    pcm: 'pidgin',
+    yo: 'yoruba',
+    ha: 'hausa',
+    ig: 'igbo'
+  };
+
+  const mode = langToModeMap[selectedLang] || 'english';
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
@@ -210,38 +220,6 @@ export function PidginVoicePlayer({ pidginText, englishText, multilingual, claim
               <span>Listen Now</span>
             </button>
           )}
-        </div>
-      </div>
-
-      {/* 5-Dialect Voice Audio Selector */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-emerald-900/30 text-[11px]">
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
-          <span className="text-[10px] font-mono text-slate-400 font-semibold mr-1">Voice Dialect:</span>
-          {[
-            { code: 'english', label: 'English 🇬🇧' },
-            { code: 'pidgin', label: 'Pidgin 🇳🇬' },
-            { code: 'yoruba', label: 'Yorùbá 🇳🇬' },
-            { code: 'hausa', label: 'Hausa 🇳🇬' },
-            { code: 'igbo', label: 'Igbo 🇳🇬' }
-          ].map((item) => (
-            <button
-              key={item.code}
-              onClick={() => {
-                setMode(item.code as any);
-                if (isPlaying) {
-                  window.speechSynthesis.cancel();
-                  setIsPlaying(false);
-                }
-              }}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
-                mode === item.code
-                  ? 'bg-emerald-500 text-black shadow-sm font-black'
-                  : 'bg-slate-950/80 border border-slate-800 text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
         </div>
       </div>
     </div>

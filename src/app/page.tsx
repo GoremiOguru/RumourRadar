@@ -780,24 +780,6 @@ export default function Home() {
                         domain={result.evidence[0]?.domain} 
                       />
 
-                      {/* Pidgin Toggle */}
-                      <button
-                        onClick={() => {
-                          const nextPidgin = !usePidgin;
-                          setUsePidgin(nextPidgin);
-                          setSelectedLang(nextPidgin ? 'pcm' : 'en');
-                          setAppLanguage(nextPidgin ? 'pcm' : 'en');
-                        }}
-                        className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all shrink-0 ${
-                          usePidgin || selectedLang === 'pcm' || appLanguage === 'pcm'
-                            ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                            : 'bg-slate-800/80 border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-emerald-300'
-                        }`}
-                        title={usePidgin || selectedLang === 'pcm' ? 'Switch to English' : 'Read explanation in Naija Pidgin'}
-                      >
-                        <span>{(usePidgin || selectedLang === 'pcm' || appLanguage === 'pcm') ? 'English 🇬🇧' : 'Naija Pidgin 🇳🇬'}</span>
-                      </button>
-
                       {/* Permalink button */}
                       <a
                         href={`/check/${result.id}`}
@@ -903,6 +885,7 @@ export default function Home() {
                         multilingual={result.multilingualExplanations}
                         claimEntity={result.extractedClaim.entity}
                         verdict={result.verdict}
+                        selectedLang={selectedLang}
                       />
 
                       {/* Key Quote Callout (if available) */}
