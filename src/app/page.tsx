@@ -737,7 +737,7 @@ export default function Home() {
                       <span className="text-xs font-mono text-slate-400">{result.confidenceScore}% confidence</span>
                     </div>
                   </div>
-                  <p className="line-clamp-2 text-sm leading-relaxed text-slate-300">
+                  <p className="text-sm sm:text-base leading-relaxed text-slate-200 font-medium bg-slate-900/40 p-3.5 rounded-xl border border-slate-800/60 shadow-inner">
                     {(appLanguage === 'pcm' || usePidgin || selectedLang === 'pcm')
                       ? (result.multilingualExplanations?.pidgin || result.pidginExplanation || result.shortExplanation)
                       : result.shortExplanation}

@@ -125,10 +125,10 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
           <div className="flex items-center gap-2 flex-wrap">
             <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-mono font-bold flex items-center gap-1.5">
               <Building2 className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
-              BMONI ENTERPRISE RADAR
+              {isPidgin ? 'BMONI BRAND & ENTITY SHIELD' : 'BMONI ENTERPRISE RADAR'}
             </span>
             <span className="text-xs text-slate-400 font-mono">
-              Live Weekly Ingestion & PR Debunk Kits
+              {isPidgin ? 'Live Rumor Monitoring & PR Debunk Kit' : 'Live Weekly Ingestion & PR Debunk Kits'}
             </span>
             {lastScannedTime && (
               <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
@@ -138,10 +138,12 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
           </div>
 
           <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-            Brand Shield: Real-Time Crisis & Misinformation Radar
+            {isPidgin ? 'Brand Shield: Live Misinformation & Crisis Radar for Brands & People' : 'Brand Shield: Real-Time Crisis & Misinformation Radar'}
           </h2>
           <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
-            Surveillance for Nigerian institutions. Monitors viral WhatsApp forwards, fake circulars, and all weekly brand news with auto-generated PR Debunk Kits.
+            {isPidgin
+              ? 'Real-time surveillance for companies, creators, executives & public entities for Nigeria. Monitors viral WhatsApp forwards, fake news & generates 1-click PR Debunk Kits.'
+              : 'Surveillance for Nigerian institutions & entities. Monitors viral WhatsApp forwards, fake circulars, and all weekly brand news with auto-generated PR Debunk Kits.'}
           </p>
         </div>
 
