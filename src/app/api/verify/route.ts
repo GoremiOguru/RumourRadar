@@ -38,25 +38,30 @@ export async function POST(req: NextRequest) {
   const startTime = Date.now();
   try {
     const body = await req.json();
-    const { query } = body;
+    const { query, imageBase64, mimeType } = body;
 
-    if (!query || typeof query !== 'string' || query.trim().length === 0) {
-      return NextResponse.json({ error: 'Query text is required' }, { status: 400 });
+    if ((!query || typeof query !== 'string' || query.trim().length === 0) && !imageBase64) {
+      return NextResponse.json({ error: 'Query text or image is required' }, { status: 400 });
     }
 
-    // Stage 0: Check SHA-256 Claim Cache for instant (<100ms) repeat response
-    const cached = getCachedResult(query);
-    if (cached) {
-      return NextResponse.json(cached);
+    const effectiveQuery = query || 'Image/Screenshot claim analysis';
+
+    // Stage 0: Check SHA-256 Claim Cache for instant (<100ms) repeat response (text-only)
+    if (!imageBase64) {
+      const cached = getCachedResult(effectiveQuery);
+      if (cached) {
+        return NextResponse.json(cached);
+      }
     }
 
     // Stage 0.5: Live Web URL Scraping (if user pasted a news link)
-    const scraped = await scrapeArticleIfUrl(query);
-    const textToProcess = scraped.isUrl && scraped.extractedQuery ? scraped.extractedQuery : query;
+    const scraped = await scrapeArticleIfUrl(effectiveQuery);
+    const textToProcess = scraped.isUrl && scraped.extractedQuery ? scraped.extractedQuery : effectiveQuery;
 
-    // Stage 1: Claim Extraction & Normalization (Gemini AI with heuristic fallback)
-    const geminiClaim = await extractClaimWithGemini(textToProcess);
+    // Stage 1: Claim Extraction & Normalization (Dual-Rail AI with multimodal vision)
+    const geminiClaim = await extractClaimWithGemini(textToProcess, imageBase64, mimeType);
     const claim = geminiClaim || await extractClaim(textToProcess);
+
 
     // Stage 2: Parallel Dual-Channel Retrieval (Google Fact Check + Nigeria-First Authority Router)
     const [factCheckMatch, rawEvidence] = await Promise.all([

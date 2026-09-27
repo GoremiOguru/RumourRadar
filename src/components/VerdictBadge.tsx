@@ -30,16 +30,24 @@ export const VerdictBadge: React.FC<VerdictBadgeProps> = ({ verdict, size = 'md'
       glow: 'shadow-[0_0_20px_rgba(245,158,11,0.25)]',
       desc: 'Contains distorted context or conflated policies'
     },
+    SATIRE_PARODY: {
+      label: 'SATIRE / PARODY / JOKE',
+      icon: AlertTriangle,
+      bg: 'bg-purple-500/10 border-purple-500/40 text-purple-400',
+      glow: 'shadow-[0_0_20px_rgba(168,85,247,0.25)]',
+      desc: 'Humor, social media parody, or comedy banter (not factual news)'
+    },
     UNVERIFIED: {
-      label: 'UNVERIFIED / INSUFFICIENT EVIDENCE',
+      label: 'UNVERIFIED / TOO RECENT',
       icon: HelpCircle,
       bg: 'bg-slate-500/10 border-slate-500/40 text-slate-300',
       glow: 'shadow-[0_0_20px_rgba(148,163,184,0.15)]',
-      desc: 'No official announcements or credible reporting found'
+      desc: 'Too recent to confirm or no primary regulatory bulletin found'
     }
   };
 
   const current = configs[verdict] || configs.UNVERIFIED;
+
   const Icon = current.icon;
 
   const sizeClasses = {

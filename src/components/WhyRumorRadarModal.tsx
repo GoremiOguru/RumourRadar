@@ -277,7 +277,7 @@ export const WhyRumorRadarModal: React.FC<WhyRumorRadarModalProps> = ({ isOpen, 
 
         {/* Modal Footer */}
         <div className="px-6 py-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between text-xs text-slate-400">
-          <span>NACOS National Hackathon • AI Track</span>
+          <span>BUILDXNACOS &apos;26 Hackathon • AI Track</span>
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold transition-colors"

@@ -229,7 +229,7 @@ export default async function CheckPage({ params }: Props) {
 
       <footer className="w-full border-t border-slate-900 bg-slate-950 py-6 text-center text-xs text-slate-500">
         <div className="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>Rumor Radar • NACOS National Hackathon</span>
+          <span>Rumour Radar • BUILDXNACOS &apos;26 Hackathon</span>
           <Link href="/" className="text-emerald-400 hover:underline">
             Launch Radar Scanner
           </Link>
