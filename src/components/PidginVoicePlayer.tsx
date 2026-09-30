@@ -114,7 +114,7 @@ export function PidginVoicePlayer({ pidginText, englishText, multilingual, claim
     let textToSpeak = rawText
       .replace(/₦\s*([0-9,]+)/g, '$1 Naira')
       .replace(/\bCBN\b/g, 'Central Bank of Nigeria')
-      .replace(/\bINEC\b/g, 'Independent National Electoral Commission')
+      .replace(/\bINEC\b/g, 'Eye-neck (Independent National Electoral Commission)')
       .replace(/\bNCDC\b/g, 'Nigeria Centre for Disease Control')
       .replace(/\bJAMB\b/g, 'Joint Admissions and Matriculation Board')
       .replace(/\bWAEC\b/g, 'West African Examinations Council');

@@ -94,7 +94,14 @@ export function SectionHelpModal({ isOpen, onClose, section, appLanguage = 'en' 
       return;
     }
 
-    const speechText = `Step ${currentStepObj.step}: ${currentStepObj.title}. ${currentStepObj.desc}`;
+    const rawSpeechText = `Step ${currentStepObj.step}: ${currentStepObj.title}. ${currentStepObj.desc}`;
+    const speechText = rawSpeechText
+      .replace(/\bINEC\b/g, 'Eye-neck')
+      .replace(/\bCBN\b/g, 'C B N')
+      .replace(/\bNCDC\b/g, 'N C D C')
+      .replace(/\bWAEC\b/g, 'Why-eck')
+      .replace(/\bJAMB\b/g, 'Jamb')
+      .replace(/\bGTBank\b/g, 'G T Bank');
 
     const utterance = new SpeechSynthesisUtterance(speechText);
     utterance.rate = 0.90; // Clear, relaxed pace
