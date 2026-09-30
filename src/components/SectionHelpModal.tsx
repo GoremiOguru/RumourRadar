@@ -166,10 +166,10 @@ export function SectionHelpModal({ isOpen, onClose, section, appLanguage = 'en' 
       } else {
         // Voice finished - animate progress bar from 70% -> 100% during the 4-second reading delay
         const postElapsed = now - (speechEndTime || startTime);
-        const postProgress = useVoice 
+        const postProgress = useVoice
           ? 70 + Math.min((postElapsed / postSpeechBufferMs) * 30, 30)
           : Math.min((postElapsed / postSpeechBufferMs) * 100, 100);
-        
+
         setStepProgress(postProgress);
 
         if (postElapsed >= postSpeechBufferMs) {
@@ -226,7 +226,7 @@ export function SectionHelpModal({ isOpen, onClose, section, appLanguage = 'en' 
             },
             {
               step: 2,
-              title: isPidgin ? 'Upload Screenshot (Optional)' : 'Upload Media Screenshot',
+              title: isPidgin ? 'Upload Screenshot (Optional)' : 'Upload Media Screenshot (Optional)',
               desc: isPidgin
                 ? 'You fit also upload picture screenshot of WhatsApp memo or tweet. Our AI Vision go read all the text automatically.'
                 : 'Attach a PNG or JPG screenshot of a viral broadcast or social post. Gemini Vision OCR extracts the text automatically.',
@@ -549,16 +549,16 @@ export function SectionHelpModal({ isOpen, onClose, section, appLanguage = 'en' 
 
   const modalElement = (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in overflow-y-auto"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in overflow-y-auto"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-2xl p-6 sm:p-8 rounded-3xl bg-slate-900 border border-slate-700 shadow-2xl text-slate-100 max-h-[92vh] overflow-y-auto my-auto space-y-6"
+        className="relative w-full max-w-2xl p-4 sm:p-6 rounded-3xl bg-slate-900 border border-slate-700 shadow-2xl text-slate-100 max-h-[92vh] overflow-y-auto overflow-x-hidden my-auto space-y-5 box-border"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full bg-slate-800 text-slate-400 hover:text-white transition-colors z-40"
+          className="absolute top-4 right-4 p-2 rounded-full bg-slate-800 text-slate-400 hover:text-white transition-colors z-40"
           title="Close help modal"
         >
           <X className="w-5 h-5" />
@@ -566,19 +566,19 @@ export function SectionHelpModal({ isOpen, onClose, section, appLanguage = 'en' 
 
         {/* Modal Header */}
         <div className={`flex items-center gap-3 pr-8 transition-all duration-500 ${isPlayingDemo ? 'filter blur-[3px] opacity-40 scale-[0.98] pointer-events-none' : 'filter blur-none opacity-100'}`}>
-          <div className="p-3 rounded-2xl bg-slate-800 border border-slate-700 shrink-0">
+          <div className="p-2.5 sm:p-3 rounded-2xl bg-slate-800 border border-slate-700 shrink-0">
             {data.icon}
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase">
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase truncate">
                 {isPidgin ? 'Interactive Tool Guide' : 'Interactive Tool Guide'}
               </span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-display font-extrabold text-white leading-tight mt-0.5">
+            <h2 className="text-lg sm:text-2xl font-display font-extrabold text-white leading-tight mt-0.5 truncate">
               {data.title}
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-400 line-clamp-2">
               {data.subtitle}
             </p>
           </div>
@@ -760,47 +760,47 @@ export function SectionHelpModal({ isOpen, onClose, section, appLanguage = 'en' 
                       window.speechSynthesis.cancel();
                     }
                   }}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-2 relative overflow-hidden active:scale-95 ${isOtherAndPlaying
+                  className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer space-y-2 relative overflow-hidden box-border active:scale-95 ${isOtherAndPlaying
                     ? 'filter blur-[3px] opacity-30 scale-[0.97] pointer-events-none bg-slate-950/40 border-slate-800'
                     : isActive
-                      ? 'bg-slate-900 border-emerald-400 ring-4 ring-emerald-500/50 shadow-2xl shadow-emerald-500/30 scale-[1.02] z-30'
+                      ? 'bg-slate-900 border-emerald-400 ring-4 ring-emerald-500/50 shadow-2xl shadow-emerald-500/30 scale-[1.01] sm:scale-[1.02] z-30'
                       : 'bg-slate-950/80 border-slate-800 hover:border-slate-700 filter blur-none opacity-100'
                     }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <span className={`w-7 h-7 rounded-full text-xs font-mono font-bold flex items-center justify-center border transition-all duration-300 ${isActive
-                        ? 'bg-emerald-400 text-slate-950 border-emerald-300 font-black scale-110 shadow-lg shadow-emerald-500/50 ring-4 ring-emerald-400/40 animate-pulse'
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full text-xs font-mono font-bold flex items-center justify-center border shrink-0 transition-all duration-300 ${isActive
+                        ? 'bg-emerald-400 text-slate-950 border-emerald-300 font-black scale-105 sm:scale-110 shadow-lg shadow-emerald-500/50 ring-2 sm:ring-4 ring-emerald-400/40 animate-pulse'
                         : 'bg-slate-900 text-slate-400 border-slate-800'
                         }`}>
                         {s.step}
                       </span>
-                      <h4 className="font-bold text-xs text-white font-display">{s.title}</h4>
+                      <h4 className="font-bold text-xs text-white font-display truncate">{s.title}</h4>
                     </div>
                     {isActive && (
-                      <span className="text-[9px] font-mono text-emerald-400 font-extrabold uppercase bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/40 flex items-center gap-1">
+                      <span className="text-[9px] font-mono text-emerald-400 font-extrabold uppercase bg-emerald-500/20 px-1.5 py-0.5 rounded border border-emerald-500/40 flex items-center gap-1 shrink-0">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                         ACTIVE
                       </span>
                     )}
                   </div>
 
-                  <p className="text-[11px] text-slate-300 leading-relaxed pl-9">
+                  <p className="text-[11px] text-slate-300 leading-relaxed sm:pl-7 pl-0 break-words">
                     {s.desc}
                   </p>
 
                   {/* Step Action Visual Screenshot UI Preview */}
                   {s.mockup && (
-                    <div className="pt-2 pl-9">
+                    <div className="pt-1 sm:pl-7 pl-0 w-full overflow-hidden">
                       {s.mockup}
                     </div>
                   )}
 
                   {/* Individual Live Step Progress Bar (Shown during Auto-Play) */}
                   {isActive && isPlayingDemo && (
-                    <div className="pt-2 pl-9 space-y-1">
+                    <div className="pt-1.5 sm:pl-7 pl-0 space-y-1 w-full overflow-hidden">
                       <div className="flex items-center justify-between text-[10px] font-mono text-emerald-300">
-                        <span>Step Demo Progress</span>
+                        <span>Step Progress</span>
                         <span>{Math.round(stepProgress)}%</span>
                       </div>
                       <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-emerald-500/30">
