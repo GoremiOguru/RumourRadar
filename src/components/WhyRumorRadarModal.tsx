@@ -21,21 +21,34 @@ interface WhyRumorRadarModalProps {
 }
 
 export const WhyRumorRadarModal: React.FC<WhyRumorRadarModalProps> = ({ isOpen, onClose, appLanguage = 'en' }) => {
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
   const isPidgin = appLanguage === 'pcm';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div 
+      <div
         className="glass-panel relative w-full max-w-4xl rounded-2xl overflow-hidden my-8 text-slate-100 max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
         <div className="px-6 py-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60 sticky top-0 z-10">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
+            <img
+              src="/images/logowhite.jpeg"
+              alt="RumourRadar Logo"
+              className="w-10 h-10 rounded-xl object-cover border border-emerald-500/40 shadow-sm shrink-0"
+            />
             <div>
               <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
                 {isPidgin ? 'Why Rumour Radar?' : 'Why Rumor Radar?'}
@@ -57,7 +70,7 @@ export const WhyRumorRadarModal: React.FC<WhyRumorRadarModalProps> = ({ isOpen, 
         <div className="p-6 overflow-y-auto space-y-6 text-sm">
           {/* Executive Summary Banner */}
           <div className="p-4 rounded-xl bg-slate-950/60 border border-emerald-500/20 leading-relaxed text-slate-300">
-            <strong className="text-emerald-300">{isPidgin ? 'Why dis matter for Nigeria:' : 'Why this matters in Nigeria:'}</strong> {isPidgin ? 'Fake tori about bank money, election, fuel price, or exam mark dey spread like wildfire for WhatsApp, X (Twitter), TikTok and Telegram. Rumour Radar dey check official government office, filter out normal greeting banter, and give you true proof in seconds.' : 'A forwarded claim about a bank, election, health warning, school admission, or fuel price can reach thousands of people before an official correction does. Rumor Radar helps you test the claim, find the relevant Nigerian authority, and see clearly when the evidence is not strong enough for a confident verdict.'}
+            <strong className="text-emerald-300">{isPidgin ? 'Why dis matter for Nigeria:' : 'Why this matters in Nigeria:'}</strong> {isPidgin ? 'Fake tori about bank money, election, fuel price, or exam mark dey spread like wildfire for WhatsApp, X (Twitter), TikTok and Telegram. Rumour Radar dey check official government office, filter out normal naija banter, and give you true proof in seconds.' : 'A forwarded claim about a bank, election, health warning, school admission, or fuel price can reach thousands of people before an official correction does. Rumor Radar helps you test the claim, find the relevant Nigerian authority, and see clearly when the evidence is not strong enough for a confident verdict.'}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

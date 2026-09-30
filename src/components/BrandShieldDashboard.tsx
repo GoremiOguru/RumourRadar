@@ -24,14 +24,17 @@ import {
   Activity,
   Newspaper,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  HelpCircle
 } from 'lucide-react';
 import { VerifiedBrandNewsItem } from '@/app/api/brand-shield/scan/route';
 import { ScrollReveal } from '@/components/ScrollReveal';
+import { SectionHelpModal } from '@/components/SectionHelpModal';
 
 interface BrandShieldDashboardProps {
   onOpenSubscriptionModal: () => void;
   appLanguage?: 'en' | 'pcm';
+  initialBrand?: string;
 }
 
 const ENTITY_PRESETS = {
@@ -40,9 +43,9 @@ const ENTITY_PRESETS = {
   agency: ['CBN', 'INEC', 'NCDC', 'NNPC Limited', 'EFCC', 'NCAA']
 };
 
-export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'en' }: BrandShieldDashboardProps) {
+export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'en', initialBrand }: BrandShieldDashboardProps) {
   const isPidgin = appLanguage === 'pcm';
-  const [brandInput, setBrandInput] = useState('GTBank');
+  const [brandInput, setBrandInput] = useState(initialBrand || 'GTBank');
   const [entityCategory, setEntityCategory] = useState<'corporation' | 'creator' | 'agency'>('corporation');
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<(BrandShieldScanResult & { recentWeeklyNews?: VerifiedBrandNewsItem[] }) | null>(null);
@@ -51,7 +54,15 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isAutoUpdating, setIsAutoUpdating] = useState(true);
   const [lastScannedTime, setLastScannedTime] = useState<string>('');
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const signalsScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (initialBrand && initialBrand.trim().length > 0) {
+      setBrandInput(initialBrand);
+      executeScan(initialBrand);
+    }
+  }, [initialBrand]);
 
   const executeScan = async (targetBrand?: string) => {
     const brand = targetBrand || brandInput;
@@ -149,6 +160,15 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
 
         {/* Action Controls */}
         <div className="flex flex-wrap items-center gap-2 self-start md:self-auto shrink-0">
+          <button
+            onClick={() => setIsHelpOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500/15 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300 text-xs font-bold transition-all shadow-sm active:scale-95"
+            title={isPidgin ? 'How to use Brand Shield' : 'How to use Brand Shield'}
+          >
+            <HelpCircle className="w-4 h-4 text-blue-400" />
+            <span>{isPidgin ? 'How to Use?' : 'How to Use?'}</span>
+          </button>
+
           <button
             onClick={() => setIsAutoUpdating(!isAutoUpdating)}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
@@ -639,6 +659,14 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
           )}
         </div>
       )}
+
+      {/* Brand Shield Section Help Modal */}
+      <SectionHelpModal 
+        isOpen={isHelpOpen} 
+        onClose={() => setIsHelpOpen(false)} 
+        section="brand_shield" 
+        appLanguage={appLanguage} 
+      />
     </div>
   );
 }

@@ -84,6 +84,31 @@ export default function RootLayout({
       <body className={`${inter.className} bg-slate-950 text-slate-100 min-h-screen antialiased`}>
         {children}
         <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebApplication",
+              "name": "RumourRadar Nigeria",
+              "alternateName": "Rumor Radar",
+              "applicationCategory": "FactCheckingApplication",
+              "operatingSystem": "All",
+              "description": "Evidence-first AI disinformation verification engine designed for Nigeria. Verifies viral WhatsApp forwards, breaking headlines, and financial scam claims against CBN, INEC, NCDC, and certified fact-checkers.",
+              "url": "https://rumourradar.vercel.app",
+              "provider": {
+                "@type": "Organization",
+                "name": "RumourRadar AI Labs",
+                "url": "https://rumourradar.vercel.app"
+              },
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "NGN"
+              }
+            })
+          }}
+        />
+        <script
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {

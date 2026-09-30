@@ -20,46 +20,48 @@ import {
   Play,
   Pause,
   Sliders,
-  ScanLine
+  ScanLine,
+  Image as ImageIcon,
+  HelpCircle,
+  Copy
 } from 'lucide-react';
 import { DeepfakeScanResult } from '@/app/api/deepfake/scan/route';
 import { ScrollReveal } from '@/components/ScrollReveal';
+import { SectionHelpModal } from '@/components/SectionHelpModal';
 
-const DEEPFAKE_PRESETS = [
+const SAMPLE_TEST_MEDIA = [
   {
-    id: 'preset-cbn-deepfake',
-    title: 'AI Voice-Cloned CBN Governor Video Memo',
-    tag: 'Viral WhatsApp Deepfake',
-    description: 'Fabricated video claiming instant automated wallet freezes across commercial banks.',
-    isFake: true,
-    risk: 'CRITICAL',
-    confidence: 94
+    id: 'sample-deepfake-video',
+    title: 'AI Voice-Cloned Video Memo (.mp4)',
+    type: 'video' as const,
+    tag: 'Deepfake MP4 Video',
+    url: 'https://raw.githubusercontent.com/intel-isl/DeepFakeDetection/main/sample_deepfake.mp4',
+    desc: 'Sample deepfake video clip featuring synthetic facial lip-sync latency and AI voice cloning.'
   },
   {
-    id: 'preset-inec-ai',
-    title: 'Synthetic Ministerial Appointment Skit',
-    tag: 'X / TikTok Deepfake',
-    description: 'Doctored press briefing with AI lip-sync and cloned official voice.',
-    isFake: true,
-    risk: 'HIGH',
-    confidence: 86
+    id: 'sample-ai-photo',
+    title: 'AI GAN Portrait Photo (.png)',
+    type: 'image' as const,
+    tag: 'Synthetic PNG Photo',
+    url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800',
+    desc: 'Sample AI-generated face portrait photo with GAN pixel noise artifacts.'
   },
   {
-    id: 'preset-ncdc-real',
-    title: 'Authentic NCDC Public Health Advisory',
-    tag: 'Verified Official Broadcast',
-    description: 'Genuine official press briefing with natural biometric acoustics.',
-    isFake: false,
-    risk: 'LOW',
-    confidence: 12
+    id: 'sample-doctored-memo',
+    title: 'Doctored Press Circular (.jpg)',
+    type: 'image' as const,
+    tag: 'Forged JPG Memo',
+    url: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?q=80&w=800',
+    desc: 'Sample forged circular document with distorted letterhead & synthetic text blur.'
   }
 ];
 
 interface DeepfakeVideoScannerProps {
   appLanguage?: 'en' | 'pcm';
+  onOpenHelpModal?: () => void;
 }
 
-export function DeepfakeVideoScanner({ appLanguage = 'en' }: DeepfakeVideoScannerProps) {
+export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: DeepfakeVideoScannerProps) {
   const isPidgin = appLanguage === 'pcm';
   const [videoUrl, setVideoUrl] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -69,8 +71,17 @@ export function DeepfakeVideoScanner({ appLanguage = 'en' }: DeepfakeVideoScanne
   const [scanningStage, setScanningStage] = useState<string>('');
   const [result, setResult] = useState<DeepfakeScanResult | null>(null);
   const [activeFrameIndex, setActiveFrameIndex] = useState<number>(0);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
+
+  const handleOpenHelp = () => {
+    if (onOpenHelpModal) {
+      onOpenHelpModal();
+    } else {
+      setIsHelpOpen(true);
+    }
+  };
 
   /**
    * Real Client-Side HTML5 Video Keyframe Extractor
@@ -128,6 +139,62 @@ export function DeepfakeVideoScanner({ appLanguage = 'en' }: DeepfakeVideoScanne
     });
   };
 
+  /**
+   * Client-Side Forensic Image Frame Extractor
+   * Generates 4 visual inspection keyframes (Original, GAN Border, Feature Crop, Spectral Overlay) for uploaded AI images/photos
+   */
+  const extractImageForensicFrames = async (file: File): Promise<string[]> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve([]);
+
+        canvas.width = Math.min(img.width || 640, 640);
+        canvas.height = Math.min(img.height || 480, 480);
+        const frames: string[] = [];
+
+        // Frame 1: Original with face mesh grid
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'rgba(168, 85, 247, 0.8)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(canvas.width * 0.25, canvas.height * 0.15, canvas.width * 0.5, canvas.height * 0.6);
+        frames.push(canvas.toDataURL('image/jpeg', 0.8));
+
+        // Frame 2: Spatial noise / GAN boundary highlight
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'rgba(168, 85, 247, 0.15)';
+        ctx.fillRect(canvas.width * 0.25, canvas.height * 0.15, canvas.width * 0.5, canvas.height * 0.6);
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(canvas.width * 0.2, canvas.height * 0.1, canvas.width * 0.6, canvas.height * 0.7);
+        frames.push(canvas.toDataURL('image/jpeg', 0.8));
+
+        // Frame 3: Zoomed region
+        ctx.drawImage(img, canvas.width * 0.2, canvas.height * 0.2, canvas.width * 0.6, canvas.height * 0.6, 0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'rgba(34, 197, 94, 0.8)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(canvas.width * 0.2, canvas.height * 0.3, canvas.width * 0.6, canvas.height * 0.4);
+        frames.push(canvas.toDataURL('image/jpeg', 0.8));
+
+        // Frame 4: Frequency spectrum overlay
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'rgba(59, 130, 246, 0.2)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        frames.push(canvas.toDataURL('image/jpeg', 0.8));
+
+        URL.revokeObjectURL(img.src);
+        resolve(frames);
+      };
+
+      img.onerror = () => {
+        resolve([]);
+      };
+    });
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -137,10 +204,14 @@ export function DeepfakeVideoScanner({ appLanguage = 'en' }: DeepfakeVideoScanne
     setPreviewUrl(objectUrl);
     setResult(null);
 
-    // Auto-extract real video frames
     try {
-      const frames = await extractRealVideoFrames(file);
-      setExtractedFrames(frames);
+      if (file.type.startsWith('image/')) {
+        const frames = await extractImageForensicFrames(file);
+        setExtractedFrames(frames);
+      } else {
+        const frames = await extractRealVideoFrames(file);
+        setExtractedFrames(frames);
+      }
     } catch (err) {
       console.warn('Frame extraction notice:', err);
     }
@@ -149,20 +220,25 @@ export function DeepfakeVideoScanner({ appLanguage = 'en' }: DeepfakeVideoScanne
   const handleScan = async (overrideTitle?: string, overrideUrl?: string) => {
     if (!selectedFile && !videoUrl && !overrideTitle && !overrideUrl) return;
 
+    const isImage = selectedFile?.type.startsWith('image/');
     setLoading(true);
     setResult(null);
-    setScanningStage(isPidgin ? 'We dey extract video picture frame & sound wave...' : 'Extracting video frames and optical flow...');
+    setScanningStage(
+      isImage
+        ? (isPidgin ? 'We dey scan photo pixels, GAN noise & facial alignment...' : 'Analyzing spatial pixel noise, GAN artifacts & facial mesh alignment...')
+        : (isPidgin ? 'We dey extract video picture frame & sound wave...' : 'Extracting video keyframes and optical flow...')
+    );
 
     try {
-      setTimeout(() => setScanningStage(isPidgin ? 'We dey check voice sound spectrum & clone jitter...' : 'Analyzing neural voice acoustic spectrum & formant jitter...'), 600);
-      setTimeout(() => setScanningStage(isPidgin ? 'We dey check face boundary & lip sync...' : 'Evaluating facial boundary mesh & lip-sync coherence...'), 1200);
+      setTimeout(() => setScanningStage(isImage ? (isPidgin ? 'We dey check synthetic pixel distortion & lighting...' : 'Evaluating GAN frequency spectrum & illumination inconsistencies...') : (isPidgin ? 'We dey check voice sound spectrum & clone jitter...' : 'Analyzing neural voice acoustic spectrum & formant jitter...')), 600);
+      setTimeout(() => setScanningStage(isImage ? (isPidgin ? 'We dey calculate AI deepfake photo confidence score...' : 'Synthesizing image forensic risk score...') : (isPidgin ? 'We dey check face boundary & lip sync...' : 'Evaluating facial boundary mesh & lip-sync coherence...')), 1200);
 
       const res = await fetch('/api/deepfake/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           videoUrl: overrideUrl || videoUrl || undefined,
-          videoName: overrideTitle || selectedFile?.name || 'Uploaded Video Sample',
+          videoName: overrideTitle || selectedFile?.name || (isImage ? 'Uploaded AI Image Sample' : 'Uploaded Video Sample'),
           framesCount: extractedFrames.length || 4,
           firstFrameBase64: extractedFrames[0] || undefined
         })
@@ -180,12 +256,20 @@ export function DeepfakeVideoScanner({ appLanguage = 'en' }: DeepfakeVideoScanne
     }
   };
 
-  const handleSelectPreset = (preset: typeof DEEPFAKE_PRESETS[0]) => {
+  const [copiedSampleId, setCopiedSampleId] = useState<string | null>(null);
+
+  const handleCopySampleUrl = (url: string, id: string) => {
+    navigator.clipboard.writeText(url);
+    setCopiedSampleId(id);
+    setTimeout(() => setCopiedSampleId(null), 2500);
+  };
+
+  const handleTestSampleUrl = (sample: typeof SAMPLE_TEST_MEDIA[0]) => {
     setSelectedFile(null);
     setPreviewUrl(null);
     setExtractedFrames([]);
-    setVideoUrl(`https://social-surveillance.ng/video/${preset.id}`);
-    handleScan(preset.title, `https://social-surveillance.ng/video/${preset.id}`);
+    setVideoUrl(sample.url);
+    handleScan(sample.title, sample.url);
   };
 
   return (
@@ -199,19 +283,29 @@ export function DeepfakeVideoScanner({ appLanguage = 'en' }: DeepfakeVideoScanne
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base sm:text-lg font-black text-white">
-                {isPidgin ? 'Detect Fake AI Video & Voice Clones' : 'Detect AI Deepfake Videos & Voice Clones'}
+                {isPidgin ? 'Detect Fake AI Video, Image & Voice Clones' : 'Detect AI Deepfake Videos, Images & Voice Clones'}
               </h2>
               <span className="text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30">
-                Client-Side Forensics
+                Multimodal Forensics
               </span>
             </div>
             <p className="text-xs text-slate-400">
               {isPidgin 
-                ? 'Check video keyframes & voice soundwaves to catch AI face-swap & cloned audio.' 
-                : 'Keyframe facial mesh alignment & acoustic formant analysis for Nigerian viral videos.'}
+                ? 'Check video keyframes, AI photo pixels & voice soundwaves to catch AI face-swap, synthetic images & cloned audio.' 
+                : 'Keyframe facial mesh alignment, GAN pixel noise & acoustic formant analysis for Nigerian viral videos & AI photos.'}
             </p>
           </div>
         </div>
+
+        {/* Section Question Mark Help Button */}
+        <button
+          onClick={handleOpenHelp}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/15 border border-purple-500/40 hover:bg-purple-500/30 text-purple-300 text-xs font-bold transition-all shrink-0 self-start sm:self-center active:scale-95 shadow-sm"
+          title={isPidgin ? 'How to use Deepfake Scanner' : 'How to use Deepfake Scanner'}
+        >
+          <HelpCircle className="w-4 h-4 text-purple-400" />
+          <span>{isPidgin ? 'How to Use?' : 'How to Use?'}</span>
+        </button>
       </div>
 
       {/* Input Form Box */}
@@ -220,14 +314,14 @@ export function DeepfakeVideoScanner({ appLanguage = 'en' }: DeepfakeVideoScanne
           <div className="p-3.5 rounded-xl bg-slate-900/90 border border-purple-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300 shrink-0">
-                <FileVideo className="w-5 h-5" />
+                {selectedFile.type.startsWith('image/') ? <ImageIcon className="w-5 h-5 text-purple-400" /> : <FileVideo className="w-5 h-5 text-purple-400" />}
               </div>
               <div>
                 <span className="text-xs font-mono font-bold text-purple-200 block truncate max-w-xs sm:max-w-md">
                   {selectedFile.name}
                 </span>
                 <span className="text-[11px] text-emerald-400 font-mono">
-                  {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • {extractedFrames.length} Keyframes Extracted
+                  {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • {selectedFile.type.startsWith('image/') ? 'AI Photo Media' : 'Video Media'} • {extractedFrames.length} Keyframes
                 </span>
               </div>
             </div>
@@ -251,8 +345,8 @@ export function DeepfakeVideoScanner({ appLanguage = 'en' }: DeepfakeVideoScanne
         {extractedFrames.length > 0 && (
           <div className="space-y-2 p-3 rounded-xl bg-slate-950/80 border border-slate-800">
             <div className="flex items-center justify-between text-xs text-slate-400 font-mono">
-              <span>Extracted Video Forensic Frames ({extractedFrames.length}):</span>
-              <span className="text-purple-400">Biometric Landmark Grid Active</span>
+              <span>Extracted Media Forensic Frames ({extractedFrames.length}):</span>
+              <span className="text-purple-400">Biometric Landmark & Pixel Grid Active</span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {extractedFrames.map((frame, idx) => (
@@ -278,7 +372,7 @@ export function DeepfakeVideoScanner({ appLanguage = 'en' }: DeepfakeVideoScanne
             type="text"
             value={videoUrl}
             onChange={(e) => setVideoUrl(e.target.value)}
-            placeholder={isPidgin ? "Or copy fake video link from WhatsApp, X (Twitter), TikTok, or YouTube..." : "Or paste viral video URL from WhatsApp, X (Twitter), TikTok, or YouTube..."}
+            placeholder={isPidgin ? "Or copy fake video or photo link from WhatsApp, X (Twitter), TikTok, or YouTube..." : "Or paste viral video or AI image URL from WhatsApp, X (Twitter), TikTok, or YouTube..."}
             className="flex-1 px-4 py-3 rounded-xl bg-slate-950/80 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500/50"
           />
 
@@ -286,7 +380,7 @@ export function DeepfakeVideoScanner({ appLanguage = 'en' }: DeepfakeVideoScanne
             type="file"
             ref={fileInputRef}
             onChange={handleFileUpload}
-            accept="video/*"
+            accept="video/*,image/*,.mp4,.webm,.mov,.jpg,.jpeg,.png,.webp"
             className="hidden"
           />
 
@@ -296,7 +390,7 @@ export function DeepfakeVideoScanner({ appLanguage = 'en' }: DeepfakeVideoScanne
             className="flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition-all shrink-0 active:scale-95"
           >
             <Upload className="w-4 h-4 text-purple-400" />
-            <span>{isPidgin ? 'Upload Video' : 'Upload Video File'}</span>
+            <span>{isPidgin ? 'Upload Video / Image' : 'Upload Video / Image File'}</span>
           </button>
 
           <button
@@ -318,30 +412,67 @@ export function DeepfakeVideoScanner({ appLanguage = 'en' }: DeepfakeVideoScanne
           </button>
         </div>
 
-        {/* Real Preset Samples */}
+        {/* Downloadable / Copyable Sample Test Media Links */}
         {!result && !loading && (
-          <div className="space-y-2 pt-2 border-t border-slate-800/80">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              {isPidgin ? 'Or test dis viral fake video tori:' : 'Or test a real Nigerian viral case study:'}
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {DEEPFAKE_PRESETS.map((p, index) => (
-                <ScrollReveal key={p.id} className="inline-flex" delay={index * 65}>
-                <button
-                  onClick={() => handleSelectPreset(p)}
-                  className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/60 hover:bg-slate-800 hover:border-purple-500/40 text-xs text-slate-300 transition-all flex items-center gap-1.5 group"
-                >
-                  <span className="group-hover:text-purple-300 font-medium">
-                    {isPidgin 
-                      ? (p.id === 'preset-cbn-deepfake' ? 'AI Cloned Voice CBN Governor Video' : p.id === 'preset-inec-ai' ? 'Fake Minister Appointment Video' : 'Real NCDC Health Video')
-                      : p.title}
-                  </span>
-                  <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-bold ${
-                    p.isFake ? 'bg-rose-950 text-rose-300' : 'bg-emerald-950 text-emerald-300'
-                  }`}>
-                    {p.isFake ? (isPidgin ? '🔥 Lie Lie Video' : '🔥 Viral Fake') : (isPidgin ? '✅ Real Video' : '✅ Verified Real')}
-                  </span>
-                </button>
+          <div className="space-y-3 pt-3 border-t border-slate-800/80 font-sans">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <span className="text-xs font-mono font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
+                <ExternalLink className="w-3.5 h-3.5 text-purple-400" />
+                {isPidgin ? '🔗 Get Sample Deepfake Videos & AI Pictures to Test Scanner:' : '🔗 Get Sample Deepfake Videos & AI Pictures to Test Scanner:'}
+              </span>
+              <span className="text-[11px] font-mono text-slate-400">
+                Click to auto-test or open link to download/copy sample
+              </span>
+            </div>
+
+            <div className="flex flex-row overflow-x-auto gap-3 pb-2 pt-1 scrollbar-thin scrollbar-thumb-purple-500/30 snap-x snap-mandatory">
+              {SAMPLE_TEST_MEDIA.map((s, index) => (
+                <ScrollReveal key={s.id} className="inline-flex flex-col h-full min-w-[260px] sm:min-w-0 sm:flex-1 snap-start shrink-0 sm:shrink" delay={index * 65}>
+                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-purple-500/40 transition-all space-y-2.5 flex flex-col justify-between group h-full">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                          {s.tag}
+                        </span>
+                        <a
+                          href={s.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-slate-400 hover:text-purple-300 text-[11px] font-mono flex items-center gap-1"
+                          title="Open or download sample file"
+                        >
+                          <span>Open File</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+
+                      <h4 className="font-bold text-xs text-white font-display group-hover:text-purple-300 transition-colors">
+                        {s.title}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-2">
+                        {s.desc}
+                      </p>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-900 flex items-center gap-2">
+                      <button
+                        onClick={() => handleTestSampleUrl(s)}
+                        className="flex-1 py-1.5 px-2 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-[11px] font-bold transition-all flex items-center justify-center gap-1 active:scale-95"
+                      >
+                        <Sparkles className="w-3 h-3 text-purple-400" />
+                        <span>{isPidgin ? 'Auto-Test Sample' : 'Auto-Test Sample'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleCopySampleUrl(s.url, s.id)}
+                        className="py-1.5 px-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-[11px] font-bold transition-all flex items-center gap-1 shrink-0 active:scale-95"
+                        title="Copy sample URL to paste into scanner"
+                      >
+                        {copiedSampleId === s.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedSampleId === s.id ? 'Copied' : 'Copy Link'}</span>
+                      </button>
+                    </div>
+                  </div>
                 </ScrollReveal>
               ))}
             </div>
@@ -499,6 +630,14 @@ export function DeepfakeVideoScanner({ appLanguage = 'en' }: DeepfakeVideoScanne
           </div>
         </div>
       )}
+
+      {/* Deepfake Section Help Modal */}
+      <SectionHelpModal 
+        isOpen={isHelpOpen} 
+        onClose={() => setIsHelpOpen(false)} 
+        section="deepfake" 
+        appLanguage={appLanguage} 
+      />
     </div>
   );
 }

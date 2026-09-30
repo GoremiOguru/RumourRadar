@@ -416,3 +416,23 @@ code, kbd, samp, pre, .font-mono {
     will-change: auto;
   }
 }
+
+@keyframes scanner-sweep {
+  0% { transform: translateY(-100%); opacity: 0.3; }
+  50% { opacity: 0.9; }
+  100% { transform: translateY(100%); opacity: 0.3; }
+}
+
+.animate-scanner-sweep {
+  animation: scanner-sweep 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes audio-wave {
+  0%, 100% { height: 4px; }
+  50% { height: 16px; }
+}
+
+.animate-audio-wave-1 { animation: audio-wave 500ms ease-in-out infinite; }
+.animate-audio-wave-2 { animation: audio-wave 500ms ease-in-out 120ms infinite; }
+.animate-audio-wave-3 { animation: audio-wave 500ms ease-in-out 240ms infinite; }
+.animate-audio-wave-4 { animation: audio-wave 500ms ease-in-out 360ms infinite; }

@@ -2,23 +2,23 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { 
-  ShieldCheck, 
-  Brain, 
-  Database, 
-  Calculator, 
-  Radio, 
-  Sparkles, 
-  CheckCircle2, 
-  XCircle, 
-  AlertTriangle, 
-  ArrowRight, 
-  Layers, 
-  Volume2, 
-  Share2, 
-  Heart, 
-  Flame, 
-  Building2, 
+import {
+  ShieldCheck,
+  Brain,
+  Database,
+  Calculator,
+  Radio,
+  Sparkles,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  ArrowRight,
+  Layers,
+  Volume2,
+  Share2,
+  Heart,
+  Flame,
+  Building2,
   Compass,
   FileText,
   Users,
@@ -26,20 +26,36 @@ import {
   Video,
   MapPin,
   TrendingUp,
-  Zap
+  Zap,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
+import { BmoniAppDownloadButton } from '@/components/BmoniAppDownloadButton';
 
 interface AboutSectionProps {
   onOpenTipModal?: () => void;
   onSelectTab?: (tab: 'verify' | 'brand_shield' | 'heatmap' | 'deepfake') => void;
+  onOpenBmoniModal?: () => void;
   appLanguage?: 'en' | 'pcm';
 }
 
-export function AboutSection({ onOpenTipModal, onSelectTab, appLanguage = 'en' }: AboutSectionProps) {
+export function AboutSection({ onOpenTipModal, onSelectTab, onOpenBmoniModal, appLanguage = 'en' }: AboutSectionProps) {
   const isPidgin = appLanguage === 'pcm';
-  const [activeTab, setActiveTab] = useState<'features' | 'market' | 'pipeline' | 'civic'>('features');
+  const [activeTab, setActiveTab] = useState<'features' | 'bmoni' | 'market' | 'pipeline' | 'civic'>('features');
   const [activeStage, setActiveStage] = useState<number>(1);
   const [hasPledged, setHasPledged] = useState(false);
+  const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const bmoniScrollRef = React.useRef<HTMLDivElement>(null);
+
+  const scrollBmoniCards = (direction: 'left' | 'right') => {
+    if (!bmoniScrollRef.current) return;
+    const container = bmoniScrollRef.current;
+    const scrollAmount = container.clientWidth * 0.75;
+    container.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth'
+    });
+  };
 
   const NEW_FEATURES = [
     {
@@ -109,8 +125,8 @@ export function AboutSection({ onOpenTipModal, onSelectTab, appLanguage = 'en' }
       stage: 1,
       title: isPidgin ? 'Multimodal Vision & Social Media Extract' : 'Multimodal Vision & Social Media Extraction',
       badge: isPidgin ? 'OCR & Text Scanner' : 'Gemini Vision OCR',
-      desc: isPidgin 
-        ? 'Parses viral WhatsApp messages, X (Twitter) tweets, TikTok video text, Telegram posts, or uploaded screenshots. E dey separate real tori from fake panic text.' 
+      desc: isPidgin
+        ? 'Parses viral WhatsApp messages, X (Twitter) tweets, TikTok video text, Telegram posts, or uploaded screenshots. E dey separate real tori from fake panic text.'
         : 'Parses viral WhatsApp forwards, X (Twitter) tweets, TikTok captions, Telegram posts, news links, or uploaded screenshot memos. Extracts core factual claims while stripping panic fluff.',
       icon: <Brain className="w-5 h-5 text-emerald-400" />
     },
@@ -148,28 +164,35 @@ export function AboutSection({ onOpenTipModal, onSelectTab, appLanguage = 'en' }
       {/* Top Banner & Tab Navigation */}
       <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-slate-900/90 via-slate-950 to-slate-900/90 border border-slate-800 shadow-2xl space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold flex items-center gap-1.5">
-                <Compass className="w-3.5 h-3.5 text-emerald-400" />
-                ABOUT RUMOUR RADAR NIGERIA
-              </span>
-              <span className="text-xs font-mono text-slate-400">
-                BUILDXNACOS &apos;26 Hackathon AI Track
-              </span>
+          <div className="flex items-start sm:items-center gap-4">
+            <img
+              src="/images/logowhite.jpeg"
+              alt="RumourRadar Logo"
+              className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl object-cover border border-emerald-500/40 shadow-lg shrink-0"
+            />
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold flex items-center gap-1.5">
+                  <Compass className="w-3.5 h-3.5 text-emerald-400" />
+                  ABOUT RUMOUR RADAR NIGERIA
+                </span>
+                <span className="text-xs font-mono text-slate-400">
+                  BUILDXNACOS &apos;26 Hackathon AI Track
+                </span>
+              </div>
+
+              <h2 className="text-2xl sm:text-4xl font-display font-black text-white tracking-tight leading-tight">
+                {isPidgin
+                  ? 'We Dey Stop Lie Lie Tori with Solid Proof from Government & News'
+                  : 'Stopping Disinformation with Evidence-Grounded AI'}
+              </h2>
+
+              <p className="text-xs sm:text-sm text-slate-400 max-w-3xl leading-relaxed">
+                {isPidgin
+                  ? 'Rumour Radar na Nigeria number 1 tool wey dey check viral WhatsApp audio, X (Twitter) tweets, TikTok video text, deepfake video, brand rumors, and state emergency alerts before e cause trouble.'
+                  : 'Rumour Radar is Nigeria\'s premier evidence-first verification engine built to neutralize viral WhatsApp hoaxes, deepfake video scams, brand threats, state emergency misinfo, and forged circulars.'}
+              </p>
             </div>
-
-            <h2 className="text-2xl sm:text-4xl font-display font-black text-white tracking-tight leading-tight">
-              {isPidgin 
-                ? 'We Dey Stop Lie Lie Tori with Solid Proof from Government & News' 
-                : 'Stopping Disinformation with Evidence-Grounded AI'}
-            </h2>
-
-            <p className="text-xs sm:text-sm text-slate-400 max-w-3xl leading-relaxed">
-              {isPidgin
-                ? 'Rumour Radar na Nigeria number 1 tool wey dey check viral WhatsApp audio, X (Twitter) tweets, TikTok video text, deepfake video, brand rumors, and state emergency alerts before e cause trouble.'
-                : 'Rumour Radar is Nigeria\'s premier evidence-first verification engine built to neutralize viral WhatsApp hoaxes, deepfake video scams, brand threats, state emergency misinfo, and forged circulars.'}
-            </p>
           </div>
 
           <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
@@ -189,45 +212,51 @@ export function AboutSection({ onOpenTipModal, onSelectTab, appLanguage = 'en' }
         <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-2 border-t border-slate-800/80">
           <button
             onClick={() => setActiveTab('features')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 font-display flex items-center gap-1.5 ${
-              activeTab === 'features'
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 font-display flex items-center gap-1.5 ${activeTab === 'features'
                 ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20'
                 : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
-            }`}
+              }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
             {isPidgin ? '✨ New Features We Build' : '✨ New Features Showcase'}
           </button>
 
           <button
+            onClick={() => setActiveTab('bmoni')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 font-display flex items-center gap-1.5 ${activeTab === 'bmoni'
+                ? 'bg-blue-500 text-slate-950 shadow-lg shadow-blue-500/20'
+                : 'bg-slate-900/80 text-blue-400 hover:text-white border border-blue-500/30'
+              }`}
+          >
+            💳 {isPidgin ? 'BMoni Bank Rail & Hackathon API' : 'BMoni API & Hackathon Role'}
+          </button>
+
+          <button
             onClick={() => setActiveTab('market')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 font-display ${
-              activeTab === 'market'
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 font-display ${activeTab === 'market'
                 ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20'
                 : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
-            }`}
+              }`}
           >
             🎯 {isPidgin ? 'Why We Pass Other AI' : 'Our Place in the Market'}
           </button>
 
           <button
             onClick={() => setActiveTab('pipeline')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 font-display ${
-              activeTab === 'pipeline'
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 font-display ${activeTab === 'pipeline'
                 ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20'
                 : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
-            }`}
+              }`}
           >
             ⚙️ {isPidgin ? 'How We Dey Work (AI Engine)' : 'How We Work (Dual-Rail AI)'}
           </button>
 
           <button
             onClick={() => setActiveTab('civic')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 font-display ${
-              activeTab === 'civic'
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 font-display ${activeTab === 'civic'
                 ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20'
                 : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
-            }`}
+              }`}
           >
             🇳🇬 {isPidgin ? 'Naija People Duty & Promise' : 'Civic Mission & Citizen Appeal'}
           </button>
@@ -294,6 +323,200 @@ export function AboutSection({ onOpenTipModal, onSelectTab, appLanguage = 'en' }
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* TAB BMONI: BMONI API & HACKATHON ROLE */}
+      {activeTab === 'bmoni' && (
+        <div className="space-y-6">
+          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-blue-950/40 via-slate-950 to-blue-950/40 border border-blue-500/40 shadow-2xl space-y-6">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+              <div className="space-y-2">
+                <span className="text-xs font-mono text-blue-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Zap className="w-4 h-4 text-blue-400" />
+                  {isPidgin ? 'BMoni Bank Rail API • Core Hackathon Criteria' : 'BMoni Payment API • Essential Hackathon Foundation'}
+                </span>
+                <h3 className="text-xl sm:text-3xl font-display font-extrabold text-white">
+                  {isPidgin
+                    ? 'How BMoni Financial API Dey Power RumourRadar Subscription'
+                    : 'How BMoni Financial API Powers RumourRadar Institutional Rails'}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
+                  {isPidgin
+                    ? 'Building with BMoni API na key criteria for dis BUILDXNACOS \'26 Hackathon. RumourRadar dey use BMoni NGN Virtual Account API to give newsroom and company instant bank transfer account with zero card error.'
+                    : 'Building with BMoni\'s API is a critical rubric requirement for the BUILDXNACOS \'26 Hackathon. RumourRadar integrates BMoni\'s financial infrastructure to enable zero-friction B2B payments, instant NGN virtual bank accounts, and BVN identity verification.'}
+                </p>
+              </div>
+
+              <div className="px-4 py-2 rounded-xl bg-blue-500/20 border border-blue-500/40 text-blue-300 font-mono text-xs font-bold shrink-0">
+                ⚡ 10-Second Webhook Settlement
+              </div>
+            </div>
+
+            {/* Mobile App Download Promotion Banner */}
+            <BmoniAppDownloadButton appLanguage={appLanguage} />
+
+            {/* 3 Pillar Cards Header & Control Bar */}
+            <div className="flex items-center justify-between pt-2 pb-1">
+              <span className="text-xs font-mono font-bold text-blue-400 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-blue-400" />
+                {isPidgin ? 'Swipe or tap arrows to view our 3 BMoni rails:' : 'Swipe or tap arrows to view our 3 BMoni rails:'}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => scrollBmoniCards('left')}
+                  className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-blue-500/50 transition-all active:scale-95"
+                  aria-label="Previous BMoni card"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollBmoniCards('right')}
+                  className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-blue-500/50 transition-all active:scale-95"
+                  aria-label="Next BMoni card"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* 3 Pillar Cards for BMoni Role — Horizontal Scrollable Carousel with Visible Peek */}
+            <div
+              ref={bmoniScrollRef}
+              className="flex flex-row overflow-x-auto gap-3.5 pb-4 pt-1 scrollbar-thin scrollbar-thumb-blue-500/30 snap-x snap-mandatory scroll-smooth"
+            >
+              <div className="w-[80%] max-w-[270px] sm:w-[85%] md:w-full md:flex-1 shrink-0 snap-start p-4 sm:p-5 rounded-2xl bg-slate-900/95 border border-slate-800 space-y-3 flex flex-col justify-between group hover:border-blue-500/40 transition-all">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400 w-fit">
+                      <Building2 className="w-5 h-5" />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedCard(expandedCard === 1 ? null : 1)}
+                      className="text-[11px] font-mono text-blue-400 hover:text-blue-300 underline"
+                    >
+                      {expandedCard === 1 ? 'Hide ▲' : 'Details ▼'}
+                    </button>
+                  </div>
+
+                  <h4 className="font-bold text-xs sm:text-sm text-white font-display">
+                    {isPidgin ? '1. Instant NGN Virtual Accounts' : '1. Instant Dynamic NGN Virtual Accounts'}
+                  </h4>
+                  <p className="text-[11px] sm:text-xs text-slate-300 leading-relaxed">
+                    {isPidgin
+                      ? 'When newsroom or company want to subscribe, BMoni API dey generate unique virtual bank account instantly. You fit transfer money from GTBank, Access, Zenith, or Kuda.'
+                      : 'Every enterprise brand or newsroom tier generates a dedicated NGN virtual bank account via BMoni API. Subscriptions can be paid directly from any Nigerian banking app without card failures.'}
+                  </p>
+
+                  {expandedCard === 1 && (
+                    <div className="p-2.5 rounded-xl bg-slate-950/90 border border-blue-500/30 text-[10px] text-slate-300 space-y-1 animate-in fade-in">
+                      <span className="font-bold text-blue-400 block">⚡ Virtual Account Details:</span>
+                      <p className="text-[10px] text-slate-300 leading-relaxed">
+                        Generates real-time Wema Bank / Providus NUBAN accounts. Bypasses 40%+ card failure rates in Nigeria. Supports zero-friction B2B settlements.
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={onOpenBmoniModal}
+                  className="w-full mt-2 py-2 px-3 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 group/btn"
+                >
+                  <Zap className="w-3.5 h-3.5 text-blue-400 group-hover/btn:scale-110 transition-transform" />
+                  <span>{isPidgin ? 'Test NGN Virtual Account' : 'Explore Virtual Account Rail'}</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-blue-400 group-hover/btn:translate-x-0.5 transition-transform" />
+                </button>
+              </div>
+
+              <div className="w-[80%] max-w-[270px] sm:w-[85%] md:w-full md:flex-1 shrink-0 snap-start p-4 sm:p-5 rounded-2xl bg-slate-900/95 border border-slate-800 space-y-3 flex flex-col justify-between group hover:border-emerald-500/40 transition-all">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 w-fit">
+                      <ShieldCheck className="w-5 h-5" />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedCard(expandedCard === 2 ? null : 2)}
+                      className="text-[11px] font-mono text-emerald-400 hover:text-emerald-300 underline"
+                    >
+                      {expandedCard === 2 ? 'Hide ▲' : 'Details ▼'}
+                    </button>
+                  </div>
+
+                  <h4 className="font-bold text-xs sm:text-sm text-white font-display">
+                    {isPidgin ? '2. Automated Webhook Deployment' : '2. Real-Time Deposit Webhook Listening'}
+                  </h4>
+                  <p className="text-[11px] sm:text-xs text-slate-300 leading-relaxed">
+                    {isPidgin
+                      ? 'Once deposit enter BMoni account, BMoni webhook go trigger within 10 seconds to deploy API key, brand shield dashboard, and breaking news alert.'
+                      : 'The moment a deposit hits the generated BMoni virtual account, automated webhooks provision Newsroom API keys and Brand Shield surveillance nodes within 10 seconds.'}
+                  </p>
+
+                  {expandedCard === 2 && (
+                    <div className="p-2.5 rounded-xl bg-slate-950/90 border border-emerald-500/30 text-[10px] text-slate-300 space-y-1 animate-in fade-in">
+                      <span className="font-bold text-emerald-400 block">⚡ Webhook Settlement:</span>
+                      <p className="text-[10px] text-slate-300 leading-relaxed">
+                        Instant 10-second deposit listening eliminates manual transaction confirmation. Provisions enterprise API keys automatically upon NGN settlement.
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={onOpenBmoniModal}
+                  className="w-full mt-2 py-2 px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 group/btn"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 group-hover/btn:scale-110 transition-transform" />
+                  <span>{isPidgin ? 'Test Webhook & Delivery' : 'Check Deposit Webhook Rail'}</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-emerald-400 group-hover/btn:translate-x-0.5 transition-transform" />
+                </button>
+              </div>
+
+              <div className="w-[80%] max-w-[270px] sm:w-[85%] md:w-full md:flex-1 shrink-0 snap-start p-4 sm:p-5 rounded-2xl bg-slate-900/95 border border-slate-800 space-y-3 flex flex-col justify-between group hover:border-purple-500/40 transition-all">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-400 w-fit">
+                      <Database className="w-5 h-5" />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedCard(expandedCard === 3 ? null : 3)}
+                      className="text-[11px] font-mono text-purple-400 hover:text-purple-300 underline"
+                    >
+                      {expandedCard === 3 ? 'Hide ▲' : 'Details ▼'}
+                    </button>
+                  </div>
+
+                  <h4 className="font-bold text-xs sm:text-sm text-white font-display">
+                    {isPidgin ? '3. BVN & Anti-Scam Identity' : '3. BVN-Linked Newsroom Credentialing'}
+                  </h4>
+                  <p className="text-[11px] sm:text-xs text-slate-300 leading-relaxed">
+                    {isPidgin
+                      ? 'BMoni banking rails ensure say fake anonymous scammers no fit buy enterprise API key. Every account link to verified Nigerian banking identity.'
+                      : 'BMoni\'s regulatory compliance prevents anonymous malicious actors from purchasing high-throughput debunk API access, ensuring verified accountability.'}
+                  </p>
+
+                  {expandedCard === 3 && (
+                    <div className="p-2.5 rounded-xl bg-slate-950/90 border border-purple-500/30 text-[10px] text-slate-300 space-y-1 animate-in fade-in">
+                      <span className="font-bold text-purple-400 block">🛡️ Crime Detection Extent:</span>
+                      <p className="text-[10px] text-slate-300 leading-relaxed">
+                        Verifies real NIBSS account holder names against claims (detecting 90%+ fake grant scams). Enforces BVN identity auditability for all API keys.
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={onOpenBmoniModal}
+                  className="w-full mt-2 py-2 px-3 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 group/btn"
+                >
+                  <Database className="w-3.5 h-3.5 text-purple-400 group-hover/btn:scale-110 transition-transform" />
+                  <span>{isPidgin ? 'Verify BVN Identity Rail' : 'Check BVN Credential Rail'}</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-purple-400 group-hover/btn:translate-x-0.5 transition-transform" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -442,11 +665,10 @@ export function AboutSection({ onOpenTipModal, onSelectTab, appLanguage = 'en' }
               <button
                 key={s.stage}
                 onClick={() => setActiveStage(s.stage)}
-                className={`p-4 rounded-2xl border text-left transition-all ${
-                  activeStage === s.stage
+                className={`p-4 rounded-2xl border text-left transition-all ${activeStage === s.stage
                     ? 'bg-slate-900 border-emerald-500 shadow-xl shadow-emerald-500/10 ring-1 ring-emerald-500/50 scale-[1.02]'
                     : 'bg-slate-900/50 border-slate-800 hover:border-slate-700 hover:bg-slate-900/80'
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300">
@@ -537,7 +759,7 @@ export function AboutSection({ onOpenTipModal, onSelectTab, appLanguage = 'en' }
                   disabled={hasPledged}
                   className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-all shadow-md active:scale-95 disabled:opacity-60"
                 >
-                  {isPidgin 
+                  {isPidgin
                     ? (hasPledged ? '✓ God bless you as you dey stand for truth!' : 'Sign Citizen Promise 🇳🇬')
                     : (hasPledged ? '✓ Thank you for defending truth!' : 'Sign Citizen Pledge 🇳🇬')}
                 </button>

@@ -14,11 +14,13 @@ import {
   Layers,
   ChevronRight,
   TrendingUp,
-  Clock
+  Clock,
+  HelpCircle
 } from 'lucide-react';
 import { NigeriaMapSvg, GeopoliticalZone } from './NigeriaMapSvg';
 import { LiveRegionalRumour } from '@/app/api/heatmap/live-rumors/route';
 import { ScrollReveal } from '@/components/ScrollReveal';
+import { SectionHelpModal } from '@/components/SectionHelpModal';
 
 interface NigeriaHeatmapProps {
   onSelectClaim?: (claim: string) => void;
@@ -136,6 +138,7 @@ export function NigeriaHeatmap({ onSelectClaim, appLanguage = 'en' }: NigeriaHea
   const [lastRefreshed, setLastRefreshed] = useState<string>('Live now');
   const [selectedRumour, setSelectedRumour] = useState<LiveRegionalRumour | null>(INITIAL_RUMOURS[0]);
   const [isAutoRefreshing, setIsAutoRefreshing] = useState(true);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   const fetchLiveRumours = async () => {
     setLoading(true);
@@ -233,6 +236,15 @@ export function NigeriaHeatmap({ onSelectClaim, appLanguage = 'en' }: NigeriaHea
 
         {/* Action Controls */}
         <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+          <button
+            onClick={() => setIsHelpOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-500/40 hover:bg-amber-500/30 text-amber-300 text-xs font-bold transition-all shadow-sm active:scale-95"
+            title={isPidgin ? 'How to use Geo Heatmap' : 'How to use Geo Heatmap'}
+          >
+            <HelpCircle className="w-4 h-4 text-amber-400" />
+            <span>{isPidgin ? 'How to Use?' : 'How to Use?'}</span>
+          </button>
+
           <button
             onClick={() => fetchLiveRumours()}
             disabled={loading}
@@ -430,6 +442,13 @@ export function NigeriaHeatmap({ onSelectClaim, appLanguage = 'en' }: NigeriaHea
           </div>
         )}
       </div>
+      {/* Heatmap Section Help Modal */}
+      <SectionHelpModal 
+        isOpen={isHelpOpen} 
+        onClose={() => setIsHelpOpen(false)} 
+        section="heatmap" 
+        appLanguage={appLanguage} 
+      />
     </div>
   );
 }

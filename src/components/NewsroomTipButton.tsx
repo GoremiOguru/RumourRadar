@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { HeartHandshake, CheckCircle2, ShieldAlert, Sparkles, Building2, ChevronRight, X } from 'lucide-react';
 import { VERIFIED_NEWSROOM_DESKS } from '@/lib/bmoni';
+import { BmoniAppDownloadButton } from '@/components/BmoniAppDownloadButton';
 
 interface NewsroomTipButtonProps {
   sourceName?: string;
@@ -181,6 +182,8 @@ export function NewsroomTipButton({ sourceName, domain }: NewsroomTipButtonProps
                 <span className="text-emerald-400 font-bold">{settlementResult.status}</span>
               </div>
             </div>
+
+            <BmoniAppDownloadButton variant="compact" className="w-full justify-center py-2" />
 
             <button
               onClick={() => {

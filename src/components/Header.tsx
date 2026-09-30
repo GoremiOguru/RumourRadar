@@ -16,9 +16,13 @@ export const Header: React.FC<HeaderProps> = ({ onOpenWhyModal, onOpenBmoniModal
       <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
         {/* Brand & National Emblem Indicator */}
         <div className="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
-          <div className="relative flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 shadow-sm shadow-emerald-500/20">
-            <Radio className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 animate-pulse text-emerald-400" />
-            <span className="absolute -top-1 -right-1 flex h-2 w-2">
+          <div className="relative flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden border border-emerald-500/40 shadow-sm shadow-emerald-500/20 shrink-0">
+            <img 
+              src="/images/logowhite.jpeg" 
+              alt="RumourRadar Logo" 
+              className="w-full h-full object-cover"
+            />
+            <span className="absolute top-0 right-0 flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>

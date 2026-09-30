@@ -402,7 +402,11 @@ export function WhatsAppShareCard({ result }: WhatsAppShareCardProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
         <div>
           <div className="flex items-center gap-2">
-            <Share2 className="w-4 h-4 text-emerald-400" />
+            <img 
+              src="/images/logowhite.jpeg" 
+              alt="RumourRadar Logo" 
+              className="w-6 h-6 rounded-md object-cover border border-emerald-500/40 shadow-sm shrink-0" 
+            />
             <h3 className="text-sm sm:text-base font-black text-white">
               Universal Social Media Debunk & Share Hub
             </h3>

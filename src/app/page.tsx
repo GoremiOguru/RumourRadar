@@ -50,8 +50,10 @@ import {
   Building2,
   MapPin,
   Video,
-  Info
+  Info,
+  HelpCircle
 } from 'lucide-react';
+import { SectionHelpModal } from '@/components/SectionHelpModal';
 
 type MainTab = 'verify' | 'brand_shield' | 'heatmap' | 'deepfake' | 'about';
 
@@ -82,6 +84,14 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isWhyModalOpen, setIsWhyModalOpen] = useState(false);
+  const [isVerifyHelpOpen, setIsVerifyHelpOpen] = useState(false);
+  const [brandShieldTarget, setBrandShieldTarget] = useState<string | undefined>(undefined);
+
+  const handleLaunchBrandShieldFromBmoni = (orgName: string) => {
+    setIsBmoniModalOpen(false);
+    setBrandShieldTarget(orgName);
+    handleTabChange('brand_shield');
+  };
 
   const handleSpeechInput = () => {
     if (typeof window === 'undefined') return;
@@ -447,7 +457,7 @@ export default function Home() {
 
         <div key={activeTab} className={`tab-section-enter tab-section-enter-${tabDirection} section-stagger space-y-8`}>
         {activeTab === 'brand_shield' ? (
-          <BrandShieldDashboard appLanguage={appLanguage} onOpenSubscriptionModal={() => setIsBmoniModalOpen(true)} />
+          <BrandShieldDashboard appLanguage={appLanguage} initialBrand={brandShieldTarget} onOpenSubscriptionModal={() => setIsBmoniModalOpen(true)} />
         ) : activeTab === 'heatmap' ? (
           <NigeriaHeatmap appLanguage={appLanguage} onSelectClaim={(claim) => {
             handleTabChange('verify');
@@ -457,7 +467,7 @@ export default function Home() {
         ) : activeTab === 'deepfake' ? (
           <DeepfakeVideoScanner appLanguage={appLanguage} />
         ) : activeTab === 'about' ? (
-          <AboutSection appLanguage={appLanguage} onSelectTab={handleTabChange} />
+          <AboutSection appLanguage={appLanguage} onSelectTab={handleTabChange} onOpenBmoniModal={() => setIsBmoniModalOpen(true)} />
         ) : (
           <>
             {/* Hero Section */}
@@ -514,6 +524,21 @@ export default function Home() {
 
             {/* Input Form & Demo Pills */}
             <div className="space-y-4">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs font-mono text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  {appLanguage === 'pcm' ? 'Check Dis Tori (Claim Verification Engine)' : 'Claim Verification Engine'}
+                </span>
+                <button
+                  onClick={() => setIsVerifyHelpOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold transition-all shrink-0 active:scale-95 shadow-sm"
+                  title={appLanguage === 'pcm' ? 'How to check tori' : 'How to use Claim Verification'}
+                >
+                  <HelpCircle className="w-4 h-4 text-emerald-400" />
+                  <span>{appLanguage === 'pcm' ? 'How to Use?' : 'How to Use?'}</span>
+                </button>
+              </div>
+
               <div
                 onDragOver={handleImageDragOver}
                 onDragLeave={handleImageDragLeave}
@@ -1161,6 +1186,15 @@ export default function Home() {
       <BmoniSubscriptionModal
         isOpen={isBmoniModalOpen}
         onClose={() => setIsBmoniModalOpen(false)}
+        onLaunchBrandShield={handleLaunchBrandShieldFromBmoni}
+      />
+
+      {/* Claim Verification Help Modal */}
+      <SectionHelpModal
+        isOpen={isVerifyHelpOpen}
+        onClose={() => setIsVerifyHelpOpen(false)}
+        section="verify"
+        appLanguage={appLanguage}
       />
     </div>
   );
