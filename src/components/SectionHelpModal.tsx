@@ -210,28 +210,79 @@ export function SectionHelpModal({ isOpen, onClose, section, appLanguage = 'en' 
               title: isPidgin ? 'Input Your Claim or Link' : 'Enter Text, Link or Speech',
               desc: isPidgin
                 ? 'Copy and paste any message from WhatsApp, tweet from X (Twitter), TikTok post, news URL, or tap the microphone to speak.'
-                : 'Paste viral text, X tweet URL, WhatsApp forward, news headline, or tap the microphone to dictate your claim.'
+                : 'Paste viral text, X tweet URL, WhatsApp forward, news headline, or tap the microphone to dictate your claim.',
+              mockup: (
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-emerald-500/30 space-y-1.5 font-mono text-[10px]">
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span>STEP 1: INPUT CLAIM / LINK</span>
+                    <span className="text-emerald-400">Microphone Active 🎙️</span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 flex items-center justify-between gap-2">
+                    <span className="truncate text-slate-300">"CBN orders immediate shutdown of bank apps..."</span>
+                    <span className="px-2 py-0.5 rounded bg-emerald-500 text-slate-950 font-bold text-[9px] shrink-0">PASTE</span>
+                  </div>
+                </div>
+              )
             },
             {
               step: 2,
               title: isPidgin ? 'Upload Screenshot (Optional)' : 'Upload Media Screenshot',
               desc: isPidgin
                 ? 'You fit also upload picture screenshot of WhatsApp memo or tweet. Our AI Vision go read all the text automatically.'
-                : 'Attach a PNG or JPG screenshot of a viral broadcast or social post. Gemini Vision OCR extracts the text automatically.'
+                : 'Attach a PNG or JPG screenshot of a viral broadcast or social post. Gemini Vision OCR extracts the text automatically.',
+              mockup: (
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-emerald-500/30 space-y-1.5 font-mono text-[10px]">
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span>STEP 2: SCREENSHOT OCR INSPECTOR</span>
+                    <span className="text-emerald-400">Gemini Vision OCR</span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-900 border border-dashed border-emerald-500/40 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-[10px]">🖼️</div>
+                      <span className="text-slate-200 text-[10px]">whatsapp_memo_screenshot.png</span>
+                    </div>
+                    <span className="text-emerald-400 font-bold text-[9px]">OCR 100% READ</span>
+                  </div>
+                </div>
+              )
             },
             {
               step: 3,
               title: isPidgin ? 'Click "Check This Claim"' : 'Trigger Verification Pipeline',
               desc: isPidgin
                 ? 'Our engine go check official database of CBN, INEC, NCDC, JAMB, WAEC, and certified news desks in real time.'
-                : 'RumourRadar queries live regulator databases (CBN, INEC, NCDC) and Google Fact Check APIs using deterministic scoring.'
+                : 'RumourRadar queries live regulator databases (CBN, INEC, NCDC) and Google Fact Check APIs using deterministic scoring.',
+              mockup: (
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-emerald-500/30 space-y-1.5 font-mono text-[10px]">
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span>STEP 3: LIVE REGULATOR CHECK</span>
+                    <span className="text-emerald-400 animate-pulse">CBN • INEC • NCDC Scanned</span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-emerald-500 text-slate-950 font-bold flex items-center justify-between shadow-md">
+                    <span className="flex items-center gap-1.5">⚡ CHECK THIS CLAIM NOW</span>
+                    <span className="text-[9px] bg-slate-950 text-emerald-400 px-2 py-0.5 rounded">RUNNING</span>
+                  </div>
+                </div>
+              )
             },
             {
               step: 4,
               title: isPidgin ? 'Read Verdict & Listen Audio' : 'Review Factual Verdict & Listen',
               desc: isPidgin
                 ? 'See clear verdict badge (Supported, Contradicted, Misleading, Satire, Unverified) with source link & audio summary in 5 Naija dialects.'
-                : 'Examine official verdict badge, source citations, evidence breakdown, and listen to vernacular TTS audio summary.'
+                : 'Examine official verdict badge, source citations, evidence breakdown, and listen to vernacular TTS audio summary.',
+              mockup: (
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-emerald-500/30 space-y-1.5 font-mono text-[10px]">
+                  <div className="flex items-center justify-between">
+                    <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold">CONTRADICTED (96%)</span>
+                    <span className="text-emerald-400 text-[10px]">CBN Official Press Desk</span>
+                  </div>
+                  <div className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 flex items-center justify-between">
+                    <span>🔊 Audio Summary (Pidgin / Hausa / Yoruba)</span>
+                    <span className="text-emerald-400 font-bold">▶ PLAY</span>
+                  </div>
+                </div>
+              )
             }
           ]
         };
@@ -249,28 +300,72 @@ export function SectionHelpModal({ isOpen, onClose, section, appLanguage = 'en' 
               title: isPidgin ? 'Enter Brand / Company Name' : 'Specify Entity Name',
               desc: isPidgin
                 ? 'Type any company name like GTBank, Kuda, Davido, Air Peace, or choose from our quick presets.'
-                : 'Enter any Nigerian corporate brand, public figure, bank, or state agency name in the search bar.'
+                : 'Enter any Nigerian corporate brand, public figure, bank, or state agency name in the search bar.',
+              mockup: (
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-blue-500/30 space-y-1.5 font-mono text-[10px]">
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span>STEP 1: BRAND SEARCH BAR</span>
+                    <span className="text-blue-400">Presets: GTBank, Kuda</span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-white font-bold flex justify-between">
+                    <span>🔍 "GTBank Nigeria"</span>
+                    <span className="text-blue-400">SELECTED</span>
+                  </div>
+                </div>
+              )
             },
             {
               step: 2,
               title: isPidgin ? 'Select Category' : 'Choose Entity Category',
               desc: isPidgin
                 ? 'Select whether e be Corporation & Banks, Content Creator & Celebrity, or Government Agency.'
-                : 'Filter telemetry by Corporation/Bank, Creator/Public Figure, or Government Agency.'
+                : 'Filter telemetry by Corporation/Bank, Creator/Public Figure, or Government Agency.',
+              mockup: (
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-blue-500/30 space-y-1.5 font-mono text-[10px]">
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span>STEP 2: CATEGORY SELECTOR</span>
+                    <span className="text-blue-400">3 Telemetry Pools</span>
+                  </div>
+                  <div className="flex gap-1">
+                    <span className="px-2 py-1 rounded bg-blue-500 text-slate-950 font-bold">Corporation/Bank ✓</span>
+                    <span className="px-2 py-1 rounded bg-slate-900 text-slate-400 border border-slate-800">Creator/Celebrity</span>
+                  </div>
+                </div>
+              )
             },
             {
               step: 3,
               title: isPidgin ? 'Scan Viral Social Signals' : 'Analyze Social Threat Radar',
               desc: isPidgin
                 ? 'Click "Scan Brand Signals". Our radar checks viral X tweets, WhatsApp broadcast groups, and news desks.'
-                : 'Click "Scan Brand Signals" to evaluate sentiment, misinfo velocity, and threat severity index.'
+                : 'Click "Scan Brand Signals" to evaluate sentiment, misinfo velocity, and threat severity index.',
+              mockup: (
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-blue-500/30 space-y-1.5 font-mono text-[10px]">
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span>STEP 3: THREAT & SENTIMENT RADAR</span>
+                    <span className="text-emerald-400">94% Positive (Safe)</span>
+                  </div>
+                  <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
+                    <div className="bg-emerald-400 h-full w-[94%]" />
+                  </div>
+                </div>
+              )
             },
             {
               step: 4,
               title: isPidgin ? 'Generate 1-Click PR Kit' : 'Deploy 1-Click PR Debunk Kit',
               desc: isPidgin
                 ? 'Click PR Debunk Kit to copy ready-made official press release, WhatsApp crisis text, and X thread.'
-                : 'Generate pre-formatted official debunk statements for WhatsApp, X (Twitter), press releases, and LinkedIn.'
+                : 'Generate pre-formatted official debunk statements for WhatsApp, X (Twitter), press releases, and LinkedIn.',
+              mockup: (
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-blue-500/30 space-y-1.5 font-mono text-[10px]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-blue-400 font-bold">✨ 1-CLICK AI PR DEBUNK KIT</span>
+                    <span className="bg-blue-500 text-slate-950 font-bold px-2 py-0.5 rounded">COPY KIT</span>
+                  </div>
+                  <p className="text-slate-300 text-[9.5px]">Pre-written press statements for WhatsApp, Twitter & Press releases.</p>
+                </div>
+              )
             }
           ]
         };
@@ -288,28 +383,72 @@ export function SectionHelpModal({ isOpen, onClose, section, appLanguage = 'en' 
               title: isPidgin ? 'Explore Nigeria Map' : 'Inspect Geopolitical Map',
               desc: isPidgin
                 ? 'Look at the interactive map showing all 6 zones (South West, North Central, South East, etc.).'
-                : 'Examine the interactive vector map spanning all 36 Nigerian states and FCT Abuja.'
+                : 'Examine the interactive vector map spanning all 36 Nigerian states and FCT Abuja.',
+              mockup: (
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-amber-500/30 space-y-1.5 font-mono text-[10px]">
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span>STEP 1: NIGERIA GEOPOLITICAL MAP</span>
+                    <span className="text-amber-400">36 States + FCT</span>
+                  </div>
+                  <div className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-amber-400 font-bold flex items-center justify-between">
+                    <span>🗺️ Interactive Geopolitical Vector Map</span>
+                    <span className="text-slate-400">6 Zones</span>
+                  </div>
+                </div>
+              )
             },
             {
               step: 2,
               title: isPidgin ? 'Filter by Zone or State' : 'Filter Zone or Click State',
               desc: isPidgin
                 ? 'Tap any zone button or click directly on any state on the map to see local rumors for that state.'
-                : 'Select a zone pill or click on a state path to narrow down regional misinfo telemetry.'
+                : 'Select a zone pill or click on a state path to narrow down regional misinfo telemetry.',
+              mockup: (
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-amber-500/30 space-y-1.5 font-mono text-[10px]">
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span>STEP 2: STATE SELECTOR PILLS</span>
+                    <span className="text-amber-400">State Telemetry</span>
+                  </div>
+                  <div className="flex gap-1.5 overflow-x-auto">
+                    <span className="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-bold">📍 Lagos State</span>
+                    <span className="px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800">📍 FCT Abuja</span>
+                  </div>
+                </div>
+              )
             },
             {
               step: 3,
               title: isPidgin ? 'Check Category Risk' : 'Evaluate Category Risk',
               desc: isPidgin
                 ? 'See if rumors dey high for Banking, Education, Elections, Fuel/Naira scarcity, or Public Health.'
-                : 'Monitor domain risk distribution across Elections, Public Health, Banking, and Security.'
+                : 'Monitor domain risk distribution across Elections, Public Health, Banking, and Security.',
+              mockup: (
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-amber-500/30 space-y-1.5 font-mono text-[10px]">
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span>STEP 3: CATEGORY RISK DISTRIBUTION</span>
+                    <span className="text-amber-400">Banking: 85% High</span>
+                  </div>
+                  <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
+                    <div className="bg-amber-400 h-full w-[85%]" />
+                  </div>
+                </div>
+              )
             },
             {
               step: 4,
               title: isPidgin ? 'Verify Regional Claim' : 'Verify Regional Rumor',
               desc: isPidgin
                 ? 'Click "Verify Dis Tori" on any regional rumor card to run full AI evidence check instantly.'
-                : 'Click "Verify Claim" on any rumor card to inspect verified regulator refutations.'
+                : 'Click "Verify Claim" on any rumor card to inspect verified regulator refutations.',
+              mockup: (
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-amber-500/30 space-y-1.5 font-mono text-[10px]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-amber-400 font-bold">VIRAL RUMOR ALERT</span>
+                    <span className="bg-amber-500 text-slate-950 font-bold px-2 py-0.5 rounded">VERIFY CLAIM</span>
+                  </div>
+                  <p className="text-slate-300 text-[9.5px]">"Voice note claiming mobile banking freeze in Lagos..."</p>
+                </div>
+              )
             }
           ]
         };
@@ -328,28 +467,77 @@ export function SectionHelpModal({ isOpen, onClose, section, appLanguage = 'en' 
               title: isPidgin ? 'Upload Video or Image File' : 'Upload Video or AI Image File',
               desc: isPidgin
                 ? 'Drag & drop any video file (MP4, WebM) or photo image (JPG, PNG, WebP) into the dropzone.'
-                : 'Upload MP4/WebM video clips or synthetic AI-generated images (JPG, PNG, WebP).'
+                : 'Upload MP4/WebM video clips or synthetic AI-generated images (JPG, PNG, WebP).',
+              mockup: (
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-purple-500/30 space-y-1.5 font-mono text-[10px]">
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span>STEP 1: MEDIA UPLOAD DROPZONE</span>
+                    <span className="text-purple-400">MP4 / JPG / WebP</span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-900 border border-dashed border-purple-500/40 text-purple-300 font-bold flex justify-between">
+                    <span>📁 drag_drop_fake_video.mp4</span>
+                    <span>READY</span>
+                  </div>
+                </div>
+              )
             },
             {
               step: 2,
               title: isPidgin ? 'Or Paste Video / Image Link' : 'Or Paste Social Link',
               desc: isPidgin
                 ? 'Alternatively, paste a video or photo link from TikTok, X (Twitter), YouTube, or Facebook.'
-                : 'Paste direct URLs to videos or images circulating on social media.'
+                : 'Paste direct URLs to videos or images circulating on social media.',
+              mockup: (
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-purple-500/30 space-y-1.5 font-mono text-[10px]">
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span>STEP 2: SOCIAL URL INPUT</span>
+                    <span className="text-purple-400">TikTok / X / YouTube</span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 flex justify-between">
+                    <span className="truncate text-slate-300">https://tiktok.com/@user/video/7481...</span>
+                    <span className="text-purple-400 font-bold">PASTE</span>
+                  </div>
+                </div>
+              )
             },
             {
               step: 3,
               title: isPidgin ? 'Click "Scan Video & Image"' : 'Initiate Forensic Scan',
               desc: isPidgin
                 ? 'Our AI engine go extract keyframes, check facial landmark grid, spatial GAN noise, and voice lip-sync.'
-                : 'The scanner analyzes spatial GAN pixel anomalies, face-swap borders, temporal frame jumps, and audio spectral biometrics.'
+                : 'The scanner analyzes spatial GAN pixel anomalies, face-swap borders, temporal frame jumps, and audio spectral biometrics.',
+              mockup: (
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-purple-500/30 space-y-1.5 font-mono text-[10px]">
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span>STEP 3: FACIAL MESH & GAN SCANNER</span>
+                    <span className="text-purple-400 animate-pulse">Laser Scan Active</span>
+                  </div>
+                  <div className="p-1.5 rounded-lg bg-purple-950/60 border border-purple-500/40 text-purple-300 font-bold flex justify-between">
+                    <span>⚡ Laser Landmark Spatial GAN Scan</span>
+                    <span>SCANNING</span>
+                  </div>
+                </div>
+              )
             },
             {
               step: 4,
               title: isPidgin ? 'View Deepfake Confidence' : 'Inspect Forensic Verdict',
               desc: isPidgin
                 ? 'See exact confidence percentage (e.g. 94% Deepfake AI), extracted frame timeline, and synthetic facial mesh.'
-                : 'Examine overall risk level, keyframe bounding boxes, spectral frequency analysis, and safety verdict.'
+                : 'Examine overall risk level, keyframe bounding boxes, spectral frequency analysis, and safety verdict.',
+              mockup: (
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-purple-500/30 space-y-1.5 font-mono text-[10px]">
+                  <div className="flex items-center justify-between">
+                    <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold">94% DEEPFAKE DETECTED</span>
+                    <span className="text-purple-400 font-bold">CRITICAL RISK</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    <span className="px-1 py-0.5 rounded bg-slate-900 border border-purple-500/40 text-center text-purple-300">Frame #1</span>
+                    <span className="px-1 py-0.5 rounded bg-purple-950 border border-purple-400 text-center text-purple-200 font-bold">Frame #2 ✓</span>
+                    <span className="px-1 py-0.5 rounded bg-slate-900 border border-purple-500/40 text-center text-purple-300">Frame #3</span>
+                  </div>
+                </div>
+              )
             }
           ]
         };
@@ -600,6 +788,13 @@ export function SectionHelpModal({ isOpen, onClose, section, appLanguage = 'en' 
                   <p className="text-[11px] text-slate-300 leading-relaxed pl-9">
                     {s.desc}
                   </p>
+
+                  {/* Step Action Visual Screenshot UI Preview */}
+                  {s.mockup && (
+                    <div className="pt-2 pl-9">
+                      {s.mockup}
+                    </div>
+                  )}
 
                   {/* Individual Live Step Progress Bar (Shown during Auto-Play) */}
                   {isActive && isPlayingDemo && (
