@@ -61,23 +61,23 @@ export function AboutSection({ onOpenTipModal, onSelectTab, onOpenBmoniModal, ap
     {
       id: 'deepfake',
       icon: <Video className="w-6 h-6 text-purple-400" />,
-      badge: isPidgin ? 'AI Eye & Audio Ear' : 'Multimodal Vision & Audio',
-      title: isPidgin ? 'Fake Video & AI Voice Catch' : 'Deepfake Video & Voice Clone Detector',
+      badge: isPidgin ? 'Photo & Video Check' : 'Photo & Video Check',
+      title: isPidgin ? 'Fake Video & AI Photo Check' : 'AI Photo & Deepfake Video Detector',
       desc: isPidgin
-        ? 'Scan uploaded video files, TikTok/YouTube links, or audio notes to catch synthetic facial edits, lip-sync latency, and cloned AI voices of politicians and celebrities.'
-        : 'Analyze video uploads, MP4 clips, TikTok/YouTube URLs, or audio notes for deepfake facial manipulation, lip-sync latency, and synthetic AI voice cloning.',
-      cta: isPidgin ? 'Launch Video Scanner →' : 'Open Video Scanner →',
+        ? 'Test any video, picture, or voice note to see if e be real human photo or AI deepfake.'
+        : 'Upload any video, picture, or link to test if it is a real photo of humans or an AI deepfake in seconds.',
+      cta: isPidgin ? 'Open Video Scanner →' : 'Open Video Scanner →',
       targetTab: 'deepfake' as const,
       color: 'from-purple-500/20 to-indigo-500/10 border-purple-500/30 text-purple-300'
     },
     {
       id: 'brand_shield',
       icon: <Building2 className="w-6 h-6 text-emerald-400" />,
-      badge: isPidgin ? 'Live Guard for Brands & People' : 'Real-Time Brand Intelligence',
-      title: isPidgin ? 'Brand, Company & Creator Guard' : 'Brand & Creator Shield',
+      badge: isPidgin ? 'Company & Brand Guard' : 'Brand & Creator Guard',
+      title: isPidgin ? 'Company & Brand Guard' : 'Company & Brand Guard',
       desc: isPidgin
-        ? 'Real-time radar for companies, creators, public figures, and agencies to track viral rumors, verify subject-relevant news, and get clean zero-rumor reports when clear.'
-        : 'Real-time threat monitoring dashboard for corporations, public figures, content creators, and agencies to track brand-targeted misinfo and debunk defamatory claims with non-hallucinating verification.',
+        ? 'Track viral rumors, fake promo announcements, and false claims about your company or public figure.'
+        : 'Track viral rumors, fake promotional claims, and false news targeting your business or brand in real time.',
       cta: isPidgin ? 'Open Brand Guard →' : 'Launch Brand Shield →',
       targetTab: 'brand_shield' as const,
       color: 'from-emerald-500/20 to-teal-500/10 border-emerald-500/30 text-emerald-300'
@@ -85,23 +85,23 @@ export function AboutSection({ onOpenTipModal, onSelectTab, onOpenBmoniModal, ap
     {
       id: 'heatmap',
       icon: <MapPin className="w-6 h-6 text-amber-400" />,
-      badge: isPidgin ? 'All 36 States & Abuja' : 'Geopolitical Emergency Alert',
-      title: isPidgin ? 'Nigeria State-by-State Rumor Map' : 'Geopolitical Rumor Heatmap',
+      badge: isPidgin ? 'All 36 States & Abuja' : 'All 36 States & Abuja',
+      title: isPidgin ? 'State-by-State Rumour Map' : 'Nigeria Rumour Map',
       desc: isPidgin
-        ? 'Interactive map across all 36 states and FCT Abuja showing live misinfo hotspot spikes in Elections, Security, Naira/Fuel scarcity, and Health.'
-        : 'Interactive 36-state + FCT map mapping real-time misinformation density, state risk indices, and regional threat hotspots across Nigeria\'s 6 geopolitical zones.',
-      cta: isPidgin ? 'Open Naija Map →' : 'View Geopolitical Map →',
+        ? 'See live rumor alerts across all 36 states and Abuja for security, election, fuel, and bank news.'
+        : 'See real-time rumor updates across all 36 Nigerian states and FCT Abuja for security, elections, and fuel news.',
+      cta: isPidgin ? 'Open State Map →' : 'View State Map →',
       targetTab: 'heatmap' as const,
       color: 'from-amber-500/20 to-orange-500/10 border-amber-500/30 text-amber-300'
     },
     {
       id: 'audio_engine',
       icon: <Volume2 className="w-6 h-6 text-cyan-400" />,
-      badge: isPidgin ? '5 Native Dialect Accent' : '5-Language Vernacular Audio',
-      title: isPidgin ? 'Native Audio Summary for 5 Dialects' : 'Vernacular Audio & Dialect Engine',
+      badge: isPidgin ? 'Voice Audio for 5 Languages' : 'Voice Audio in 5 Languages',
+      title: isPidgin ? 'Voice Notes in Pidgin, Yoruba, Hausa, Igbo' : 'Voice Notes in 5 Local Languages',
       desc: isPidgin
-        ? 'Voice playback in authentic Pidgin, Yorùbá, Hausa, and Igbo with natural phonetic pronunciation so everybody fit understand the truth for WhatsApp audio.'
-        : 'Authentic TTS audio summary generation in Nigerian English, Pidgin, Yorùbá, Hausa, and Igbo with custom phonetic accents for instant WhatsApp broadcast.',
+        ? 'Listen to fact-check reports in clear Nigerian English, Pidgin, Yorùbá, Hausa, or Igbo audio.'
+        : 'Listen to fact-check summaries in clear Nigerian English, Pidgin, Yorùbá, Hausa, or Igbo voice audio.',
       cta: isPidgin ? 'Try Voice Check →' : 'Try Audio Verification →',
       targetTab: 'verify' as const,
       color: 'from-cyan-500/20 to-blue-500/10 border-cyan-500/30 text-cyan-300'
@@ -109,11 +109,11 @@ export function AboutSection({ onOpenTipModal, onSelectTab, onOpenBmoniModal, ap
     {
       id: 'dual_rail',
       icon: <Brain className="w-6 h-6 text-rose-400" />,
-      badge: isPidgin ? 'Zero Lie Formula' : 'Deterministic Evidence Matrix',
-      title: isPidgin ? 'Dual-Rail Grounded AI Engine' : 'Dual-Rail Evidence Pipeline',
+      badge: isPidgin ? 'Official Proof First' : 'Official Proof First',
+      title: isPidgin ? 'Zero-Lie AI Engine' : 'Honest Evidence Engine',
       desc: isPidgin
-        ? 'Gemini 2.5 multimodal intelligence paired with live regulator search (CBN, INEC, NCDC) and mathematical weighting so the AI never guesses or lies.'
-        : 'Google Gemini 2.5 multimodal model integrated with live search across official Nigerian regulatory registries and deterministic mathematical scoring.',
+        ? 'Checks official portals like CBN, INEC, NCDC, and trusted news desks so it never gives fake answers.'
+        : 'Checked directly against official government sources (CBN, INEC, NCDC) and verified news desks so it never makes up facts.',
       cta: isPidgin ? 'Check Claim Now →' : 'Verify Claim Now →',
       targetTab: 'verify' as const,
       color: 'from-rose-500/20 to-pink-500/10 border-rose-500/30 text-rose-300'
@@ -123,38 +123,38 @@ export function AboutSection({ onOpenTipModal, onSelectTab, onOpenBmoniModal, ap
   const PIPELINE_STAGES = [
     {
       stage: 1,
-      title: isPidgin ? 'Multimodal Vision & Social Media Extract' : 'Multimodal Vision & Social Media Extraction',
-      badge: isPidgin ? 'OCR & Text Scanner' : 'Gemini Vision OCR',
+      title: isPidgin ? '1. Read Message or Link' : '1. Read Message, Photo or Link',
+      badge: isPidgin ? 'Text & Image Reader' : 'Text & Image Reader',
       desc: isPidgin
-        ? 'Parses viral WhatsApp messages, X (Twitter) tweets, TikTok video text, Telegram posts, or uploaded screenshots. E dey separate real tori from fake panic text.'
-        : 'Parses viral WhatsApp forwards, X (Twitter) tweets, TikTok captions, Telegram posts, news links, or uploaded screenshot memos. Extracts core factual claims while stripping panic fluff.',
+        ? 'Extracts the core claim from WhatsApp messages, tweets, headlines, or uploaded photos.'
+        : 'Extracts the main claim from WhatsApp messages, tweets from X, news headlines, or uploaded screenshots.',
       icon: <Brain className="w-5 h-5 text-emerald-400" />
     },
     {
       stage: 2,
-      title: isPidgin ? 'Claim Guardrail & Nigeria Authority Router' : 'Claim Guardrail & Nigeria Authority Router',
-      badge: isPidgin ? 'Live Guardrail + Registry' : 'Live Registry Search',
+      title: isPidgin ? '2. Check Official Sources' : '2. Check Official Nigerian Sources',
+      badge: isPidgin ? 'Government & News Search' : 'Official Registry Search',
       desc: isPidgin
-        ? 'Intercepts greetings like "how are you doing" so e no go give fake verdict. Directly checks official CBN, INEC, NCDC, JAMB, WAEC, SEC, and NPF registries.'
-        : 'Intercepts casual greetings/banter via Claim Guardrail. Directly routes factual claims to official Nigerian regulatory bodies (CBN, INEC, NCDC, JAMB, WAEC, SEC, NPF) and accredited fact-checking desks (Dubawa, Africa Check, FactCheckHub).',
+        ? 'Searches official government bodies (CBN, INEC, NCDC, JAMB, WAEC) and verified news desks.'
+        : 'Searches official Nigerian regulators (CBN, INEC, NCDC, JAMB, WAEC) and verified newsrooms.',
       icon: <Database className="w-5 h-5 text-blue-400" />
     },
     {
       stage: 3,
-      title: isPidgin ? 'Math Formula Scoring' : 'Deterministic Scoring Matrix',
-      badge: isPidgin ? 'Zero Lie Math' : 'Math Scoring',
+      title: isPidgin ? '3. Score Source Truth' : '3. Score Evidence Truth',
+      badge: isPidgin ? 'Smart Proof Check' : 'Smart Proof Check',
       desc: isPidgin
-        ? 'Uses clear math formula: 0.30×Authority + 0.25×Relevance + 0.20×Recency + 0.15×Corroboration + 0.10×Context. E dey give Supported, Contradicted, Misleading, Satire, or Unverified.'
-        : 'Applies weighted evidence formula: 0.30×Authority + 0.25×Relevance + 0.20×Recency + 0.15×Corroboration + 0.10×Context. Yields Supported, Contradicted, Misleading, Satire, Non-Claim, or Unverified.',
+        ? 'Checks how official and recent the proof is, giving Supported, Contradicted, Misleading, Satire, or Unverified.'
+        : 'Evaluates source authority, freshness, and relevance to yield a clear verdict.',
       icon: <Calculator className="w-5 h-5 text-purple-400" />
     },
     {
       stage: 4,
-      title: isPidgin ? 'Global Pidgin & 5-Language Audio Kit' : 'Pidgin Audio & Social Debunk Kit',
-      badge: isPidgin ? 'Universal Broadcast' : 'Universal Broadcast',
+      title: isPidgin ? '4. Share Result & Audio' : '4. Instant Audio & Share Card',
+      badge: isPidgin ? 'WhatsApp Broadcast' : 'WhatsApp Broadcast',
       desc: isPidgin
-        ? 'Generates audio in Nigerian accent, full app translation to Naija Pidgin, plus Yorùbá, Hausa, and Igbo summaries for instant share on WhatsApp & X.'
-        : 'Generates authentic Google Maps Nigerian English voice audio, Naija Pidgin translations, 5-language summaries (Pidgin, Yoruba, Hausa, Igbo), and 1-click shareable cards for WhatsApp & X.',
+        ? 'Generates voice audio in 5 Nigerian languages and 1-click share cards for WhatsApp & X.'
+        : 'Generates voice audio in 5 local languages and 1-click shareable cards for WhatsApp & X.',
       icon: <Volume2 className="w-5 h-5 text-amber-400" />
     }
   ];
@@ -183,14 +183,14 @@ export function AboutSection({ onOpenTipModal, onSelectTab, onOpenBmoniModal, ap
 
               <h2 className="text-2xl sm:text-4xl font-display font-black text-white tracking-tight leading-tight">
                 {isPidgin
-                  ? 'We Dey Stop Lie Lie Tori with Solid Proof from Government & News'
-                  : 'Stopping Disinformation with Evidence-Grounded AI'}
+                  ? 'Check Any News or Message with Real Proof in Seconds'
+                  : 'Check Any News or Message with Real Proof in Seconds'}
               </h2>
 
-              <p className="text-xs sm:text-sm text-slate-400 max-w-3xl leading-relaxed">
+              <p className="text-sm text-slate-300 max-w-3xl leading-relaxed">
                 {isPidgin
-                  ? 'Rumour Radar na Nigeria number 1 tool wey dey check viral WhatsApp audio, X (Twitter) tweets, TikTok video text, deepfake video, brand rumors, and state emergency alerts before e cause trouble.'
-                  : 'Rumour Radar is Nigeria\'s premier evidence-first verification engine built to neutralize viral WhatsApp hoaxes, deepfake video scams, brand threats, state emergency misinfo, and forged circulars.'}
+                  ? 'Rumour Radar dey help you check if any WhatsApp message, Twitter post, AI photo, or bank rumor na TRUE or FAKE before you share am.'
+                  : 'Rumour Radar helps you check if any news, WhatsApp forward, AI photo, video, or bank claim in Nigeria is TRUE or FAKE in seconds.'}
               </p>
             </div>
           </div>

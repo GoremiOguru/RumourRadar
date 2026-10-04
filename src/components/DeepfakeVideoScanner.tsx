@@ -283,16 +283,16 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base sm:text-lg font-black text-white">
-                {isPidgin ? 'Detect Fake AI Video, Image & Voice Clones' : 'Detect AI Deepfake Videos, Images & Voice Clones'}
+                {isPidgin ? 'Check AI Videos, Photos & Voice Clones' : 'Check AI Videos, Photos & Voice Clones'}
               </h2>
               <span className="text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30">
-                Multimodal Forensics
+                AI Media Scanner
               </span>
             </div>
             <p className="text-xs text-slate-400">
               {isPidgin 
-                ? 'Check video keyframes, AI photo pixels & voice soundwaves to catch AI face-swap, synthetic images & cloned audio.' 
-                : 'Keyframe facial mesh alignment, GAN pixel noise & acoustic formant analysis for Nigerian viral videos & AI photos.'}
+                ? 'Upload any video, photo, or audio note to test if e be real human photo or AI deepfake.' 
+                : 'Upload any video, picture, or link to test if it is a real photo or an AI deepfake in seconds.'}
             </p>
           </div>
         </div>

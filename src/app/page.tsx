@@ -750,16 +750,16 @@ export default function Home() {
                 className="space-y-4 animate-result-enter"
               >
                 <div className="glass-panel animate-verdict-arrive space-y-3 rounded-2xl p-4 sm:p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 space-y-1.5">
-                      <span className="text-xs font-semibold text-slate-400">Verification result</span>
-                      <p className="break-words text-base font-semibold leading-snug text-white sm:text-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 w-full">
+                    <div className="flex-1 min-w-0 space-y-1.5 text-left">
+                      <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Verification result</span>
+                      <h3 className="break-words text-base font-bold leading-relaxed text-white sm:text-lg text-left">
                         {result.extractedClaim.normalizedClaim}
-                      </p>
+                      </h3>
                     </div>
-                    <div className="flex shrink-0 flex-col items-end gap-1.5">
+                    <div className="flex shrink-0 flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/80 w-full sm:w-auto">
                       <VerdictBadge verdict={result.verdict} size="md" />
-                      <span className="text-xs font-mono text-slate-400">{result.confidenceScore}% confidence</span>
+                      <span className="text-xs font-mono text-slate-400 font-medium">{result.confidenceScore}% confidence</span>
                     </div>
                   </div>
                   <p className="text-sm sm:text-base leading-relaxed text-slate-200 font-medium bg-slate-900/40 p-3.5 rounded-xl border border-slate-800/60 shadow-inner">
