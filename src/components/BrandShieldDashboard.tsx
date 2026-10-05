@@ -369,7 +369,7 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
             title={isPidgin ? 'How to use Brand Shield' : 'How to use Brand Shield'}
           >
             <HelpCircle className="w-4 h-4 text-blue-400" />
-            <span>{isPidgin ? 'How to Use?' : 'How to Use?'}</span>
+            <span>{isPidgin ? 'How to Use & How it Works' : 'How to Use & How it Works'}</span>
           </button>
 
           <button
@@ -392,9 +392,100 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
             }`}
           >
             {isProActive ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Lock className="w-3.5 h-3.5" />}
-            <span>{isProActive ? (proOrgName ? `Pro Active (${proOrgName})` : 'Pro Active Tier') : 'Manage Enterprise Plan (₦250k/mo)'}</span>
+            <span>{isProActive ? (proOrgName ? `Pro Active (${proOrgName})` : 'BMoni Pro Active') : '⚡ Create BMoni Pro Tier Account (₦50k/mo)'}</span>
           </button>
         </div>
+      </div>
+
+      {/* VALUE PROPOSITION & TARGET AUDIENCES OVERVIEW */}
+      <div className="glass-panel p-4 sm:p-5 rounded-2xl border-blue-500/30 bg-gradient-to-br from-slate-900/90 via-blue-950/30 to-slate-950 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800/80">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 font-black text-xs">
+              ⚡
+            </div>
+            <div>
+              <h3 className="text-xs sm:text-sm font-extrabold text-white">
+                {isPidgin ? 'Why Brand Shield & BMoni Pro Tier Dey Important?' : 'Why Brand Shield & BMoni Pro Tier is Critical'}
+              </h3>
+              <p className="text-[11px] text-slate-400 font-mono">
+                Built specifically for 2 core audiences in Nigeria & Africa
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsHelpOpen(true)}
+              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold flex items-center gap-1 border border-slate-700 transition-colors"
+            >
+              <HelpCircle className="w-3.5 h-3.5 text-blue-400" />
+              <span>How it Works</span>
+            </button>
+            {!isProActive && (
+              <button
+                onClick={onOpenSubscriptionModal}
+                className="px-3 py-1 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-[11px] shadow-sm flex items-center gap-1 active:scale-95 transition-all"
+              >
+                <Zap className="w-3 h-3" />
+                <span>Unlock Full Pro Access</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Dual Audience Breakdown Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          {/* Audience 1: Companies, Brands, Executives & Creators */}
+          <div className="p-3.5 rounded-xl bg-slate-950/80 border border-blue-500/20 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🏢</span>
+              <span className="text-xs font-bold text-blue-300 uppercase tracking-wide">
+                Target 1: Companies, Brands & Creators (People)
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Stay ahead of viral defamatory rumors, fabricated memos, fake circulars, and damaging trends across WhatsApp forwards and X quotes before panic hits customers or investors.
+            </p>
+            <div className="text-[11px] text-emerald-400 font-mono flex items-center gap-1.5 pt-1">
+              <span>✓ Auto-generate 1-click PR Debunk Kits for WhatsApp, X, & Press releases in 60s</span>
+            </div>
+          </div>
+
+          {/* Audience 2: Trackers, Fans & Super-Followers */}
+          <div className="p-3.5 rounded-xl bg-slate-950/80 border border-purple-500/20 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-base">⭐</span>
+              <span className="text-xs font-bold text-purple-300 uppercase tracking-wide">
+                Target 2: Brand Trackers, Fans & Followers
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Keep complete real-time tabs on all verified updates, breaking press articles, and viral stories about your favorite celebrities (Davido, Burna Boy), banks (GTBank, Opay), or agencies (CBN, EFCC).
+            </p>
+            <div className="text-[11px] text-purple-300 font-mono flex items-center gap-1.5 pt-1">
+              <span>✓ 24/7 continuous 7-day live news ingestion & instant alert rails</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Free Preview Notice for Non-Pro Users */}
+        {!isProActive && (
+          <div className="p-3 rounded-xl bg-blue-950/40 border border-blue-500/30 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2 text-xs text-slate-300">
+              <Lock className="w-4 h-4 text-blue-400 shrink-0" />
+              <span>
+                <strong>Free Tier Preview:</strong> Showing 1 sample signal/article. <strong>BMoni Pro Tier</strong> unlocks the entire stream, all detected rumors, full 7-day weekly news ingestion, and 1-click PR kits.
+              </span>
+            </div>
+            <button
+              onClick={onOpenSubscriptionModal}
+              className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shrink-0 flex items-center gap-1 shadow-md transition-all active:scale-95"
+            >
+              <span>Create Pro Account &rarr;</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* REAL-TIME ALERT BANNER WHEN NEW ARTICLE OR CRISIS IS DETECTED */}
@@ -802,6 +893,11 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                     <span className="text-[10px] font-mono text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
                       ← Swipe Horizontal Stream →
                     </span>
+                    {!isProActive && scanResult.alerts.length > 1 && (
+                      <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 flex items-center gap-1">
+                        <Lock className="w-2.5 h-2.5" /> Sample Preview (1 of {scanResult.alerts.length})
+                      </span>
+                    )}
                   </span>
                   <p className="text-[11px] font-mono text-slate-500">
                     {isPidgin ? 'Click "Check in Claim Engine" to verify why any tori be rumour' : 'Click "Check in Claim Engine" to inspect grounded evidence for any rumor'}
@@ -850,7 +946,8 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                   ref={signalsScrollRef}
                   className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-slate-700"
                 >
-                  {scanResult.alerts.map((alert) => {
+                  {/* For Free Tier: Only display the first card as sample preview */}
+                  {(isProActive ? scanResult.alerts : scanResult.alerts.slice(0, 1)).map((alert) => {
                     const cleanSummary = cleanHtmlEntities(alert.summary);
                     const cleanTitle = cleanHtmlEntities(alert.title);
                     return (
@@ -914,6 +1011,59 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                       </div>
                     );
                   })}
+
+                  {/* Free Tier: Locked Threat Stream Card appended immediately after the first card */}
+                  {!isProActive && (
+                    <div 
+                      onClick={onOpenSubscriptionModal}
+                      className="w-[85vw] sm:w-[380px] min-w-[300px] max-w-[420px] shrink-0 snap-start glass-panel p-5 rounded-2xl border-2 border-dashed border-blue-500/50 bg-gradient-to-br from-blue-950/60 via-slate-900 to-indigo-950/60 flex flex-col justify-between shadow-2xl space-y-4 hover:border-blue-400 transition-all cursor-pointer group"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
+                            <Lock className="w-5 h-5 text-blue-400" />
+                          </div>
+                          <span className="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40 uppercase">
+                            BMoni Pro Tier Only
+                          </span>
+                        </div>
+
+                        <div>
+                          <h4 className="text-base font-extrabold text-white leading-snug">
+                            {scanResult.alerts.length > 1 
+                              ? `🔒 +${scanResult.alerts.length - 1} More Threat Signals Detected` 
+                              : '🔒 Unlock Continuous Threat Surveillance'}
+                          </h4>
+                          <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                            Upgrade to <strong>BMoni Pro Tier</strong> to unlock the complete threat intelligence stream, all active WhatsApp rumors, TikTok skits, and 24/7 background sentinel alerts.
+                          </p>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-[11px] font-mono text-slate-400 space-y-1">
+                          <div className="text-emerald-400 flex items-center gap-1">
+                            <span>✓</span> <span>All Detected Misinformation Signals</span>
+                          </div>
+                          <div className="text-emerald-400 flex items-center gap-1">
+                            <span>✓</span> <span>WhatsApp & Telegram Sentinel Dispatches</span>
+                          </div>
+                          <div className="text-emerald-400 flex items-center gap-1">
+                            <span>✓</span> <span>Unlimited Multi-Entity Tracking</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenSubscriptionModal();
+                        }}
+                        className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 active:scale-95 transition-all"
+                      >
+                        <Zap className="w-4 h-4" />
+                        <span>⚡ Create BMoni Pro Tier Account (₦50k/mo)</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -929,6 +1079,11 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                     <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                       ← Swipe Horizontal Stream →
                     </span>
+                    {!isProActive && (scanResult.recentWeeklyNews?.length || 0) > 1 && (
+                      <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 flex items-center gap-1">
+                        <Lock className="w-2.5 h-2.5" /> Sample Preview (1 of {scanResult.recentWeeklyNews?.length || 0})
+                      </span>
+                    )}
                   </span>
                   <p className="text-[11px] font-mono text-slate-500">
                     Continuous 7-Day Live Ingestion
@@ -961,7 +1116,8 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                   ref={newsScrollRef}
                   className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-slate-700"
                 >
-                  {scanResult.recentWeeklyNews.map((news) => {
+                  {/* For Free Tier: Only display the first news card as sample preview */}
+                  {(isProActive ? scanResult.recentWeeklyNews : scanResult.recentWeeklyNews.slice(0, 1)).map((news) => {
                     const cleanNewsTitle = cleanHtmlEntities(news.title);
                     const cleanNewsSnippet = cleanHtmlEntities(news.snippet);
                     return (
@@ -1044,6 +1200,54 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                       </div>
                     );
                   })}
+
+                  {/* Free Tier: Locked Weekly News Feed Card appended after first sample */}
+                  {!isProActive && (
+                    <div 
+                      onClick={onOpenSubscriptionModal}
+                      className="w-[85vw] sm:w-[380px] min-w-[300px] max-w-[420px] shrink-0 snap-start glass-panel p-5 rounded-2xl border-2 border-dashed border-emerald-500/50 bg-gradient-to-br from-emerald-950/50 via-slate-900 to-slate-950 flex flex-col justify-between shadow-2xl space-y-4 hover:border-emerald-400 transition-all cursor-pointer group"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+                            <Lock className="w-5 h-5 text-emerald-400" />
+                          </div>
+                          <span className="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase">
+                            BMoni Pro Feed
+                          </span>
+                        </div>
+
+                        <div>
+                          <h4 className="text-base font-extrabold text-white leading-snug">
+                            🔒 +{(scanResult.recentWeeklyNews?.length || 1) - 1} More Articles Ingested
+                          </h4>
+                          <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                            Continuous 7-Day Live Ingestion stream is locked. Upgrade to <strong>BMoni Pro Tier</strong> to monitor all weekly press drops, sentiment indexes, and automated newsroom feeds.
+                          </p>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-[11px] font-mono text-slate-400 space-y-1">
+                          <div className="text-emerald-400 flex items-center gap-1">
+                            <span>✓</span> <span>Continuous 45s Multi-Source RSS & Media Crawl</span>
+                          </div>
+                          <div className="text-emerald-400 flex items-center gap-1">
+                            <span>✓</span> <span>Full Coverage of TechCabal, Punch, Vanguard & Nairametrics</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenSubscriptionModal();
+                        }}
+                        className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30 active:scale-95 transition-all"
+                      >
+                        <Zap className="w-4 h-4" />
+                        <span>⚡ Unlock All Weekly Articles (₦50k/mo)</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="glass-panel p-8 text-center rounded-2xl text-slate-400 text-xs font-mono">
@@ -1069,11 +1273,19 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
 
                 <div className="flex items-center gap-2 self-start sm:self-auto">
                   <button
-                    onClick={() => handleQuickDispatchWhatsapp()}
-                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95"
+                    onClick={() => {
+                      if (!isProActive) {
+                        onOpenSubscriptionModal();
+                      } else {
+                        handleQuickDispatchWhatsapp();
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 ${
+                      isProActive ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                    }`}
                   >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    <span>Send to WhatsApp</span>
+                    {!isProActive ? <Lock className="w-3.5 h-3.5 text-amber-400" /> : <MessageSquare className="w-3.5 h-3.5" />}
+                    <span>{isProActive ? 'Send to WhatsApp' : '⚡ Pro: Send to WhatsApp'}</span>
                   </button>
 
                   <button
@@ -1098,9 +1310,16 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
 
               {/* Social Media Channels Copy Bar */}
               <div className="space-y-3">
-                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
-                  Platform-Tailored Debunk Broadcasts:
-                </span>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                    Platform-Tailored Debunk Broadcasts:
+                  </span>
+                  {!isProActive && (
+                    <span className="text-[10px] font-mono text-blue-400 flex items-center gap-1">
+                      <Lock className="w-3 h-3" /> Pro unlocks full WhatsApp, LinkedIn & Instagram templates
+                    </span>
+                  )}
+                </div>
 
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
                   <button
@@ -1118,7 +1337,7 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                       activeSocialTab === 'whatsapp' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'
                     }`}
                   >
-                    <MessageSquare className="w-3.5 h-3.5" /> WhatsApp Broadcast
+                    <MessageSquare className="w-3.5 h-3.5" /> WhatsApp Broadcast {!isProActive && '🔒'}
                   </button>
 
                   <button
@@ -1127,7 +1346,7 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                       activeSocialTab === 'linkedin' ? 'bg-blue-700 text-white' : 'bg-slate-800 text-slate-400'
                     }`}
                   >
-                    <Briefcase className="w-3.5 h-3.5" /> LinkedIn Statement
+                    <Briefcase className="w-3.5 h-3.5" /> LinkedIn Statement {!isProActive && '🔒'}
                   </button>
 
                   <button
@@ -1136,7 +1355,7 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                       activeSocialTab === 'instagram' ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white' : 'bg-slate-800 text-slate-400'
                     }`}
                   >
-                    <Camera className="w-3.5 h-3.5" /> Instagram Caption
+                    <Camera className="w-3.5 h-3.5" /> Instagram Caption {!isProActive && '🔒'}
                   </button>
                 </div>
 
@@ -1155,6 +1374,25 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                     <span>{copiedKey === activeSocialTab ? 'Copied!' : 'Copy'}</span>
                   </button>
                 </div>
+
+                {/* Free Tier Callout in Debunk Kit */}
+                {!isProActive && (
+                  <div className="p-3.5 rounded-xl bg-blue-950/40 border border-blue-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="text-xs text-slate-300 space-y-0.5">
+                      <div className="font-bold text-white flex items-center gap-1.5">
+                        <Lock className="w-3.5 h-3.5 text-blue-400" />
+                        <span>Unlock Instant WhatsApp Auto-Dispatch & Executive Spokesperson Modes</span>
+                      </div>
+                      <p className="text-slate-400">BMoni Pro tier enables 1-click broadcasts directly to your brand's WhatsApp channels & PR distribution lists.</p>
+                    </div>
+                    <button
+                      onClick={onOpenSubscriptionModal}
+                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shrink-0 active:scale-95 transition-all shadow-md"
+                    >
+                      <span>⚡ Unlock BMoni Pro</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
