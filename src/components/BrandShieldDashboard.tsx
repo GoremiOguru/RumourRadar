@@ -46,14 +46,18 @@ interface BrandShieldDashboardProps {
 }
 
 const ENTITY_PRESETS = {
-  corporation: ['GTBank', 'Kuda Bank', 'Opay', 'Access Bank', 'Dangote Group', 'Air Peace', 'Flutterwave'],
-  creator: ['Davido', 'Hilda Baci', 'Tony Elumelu', 'Chef Dammy', 'Don Jazzy', 'Innoson Motors'],
-  agency: ['CBN', 'INEC', 'NCDC', 'NNPC Limited', 'EFCC', 'NCAA']
+  corporation: ['GTBank', 'Access Bank', 'Opay', 'Dangote Group', 'MTN Nigeria', 'Air Peace', 'Flutterwave', 'Kuda Bank', 'Zenith Bank'],
+  creator: ['Davido', 'Burna Boy', 'Wizkid', 'Hilda Baci', 'Tiwa Savage', 'Don Jazzy', 'Asake', 'Tony Elumelu', 'Tunde Ednut'],
+  agency: ['CBN', 'INEC', 'EFCC', 'NCDC', 'NNPC Limited', 'NCAA', 'JAMB', 'WAEC']
 };
+
+const DEFAULT_WATCHLIST = ['GTBank', 'Davido', 'Dangote Group', 'CBN', 'Burna Boy', 'Opay', 'Hilda Baci'];
 
 export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'en', initialBrand }: BrandShieldDashboardProps) {
   const isPidgin = appLanguage === 'pcm';
   const [brandInput, setBrandInput] = useState(initialBrand || 'GTBank');
+  const [watchlist, setWatchlist] = useState<string[]>(DEFAULT_WATCHLIST);
+  const [newWatchlistInput, setNewWatchlistInput] = useState('');
   const [entityCategory, setEntityCategory] = useState<'corporation' | 'creator' | 'agency'>('corporation');
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<(BrandShieldScanResult & { recentWeeklyNews?: (VerifiedBrandNewsItem & { isNewlyIngested?: boolean })[] }) | null>(null);
@@ -92,12 +96,23 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
         const tier = (localStorage.getItem('rumourradar_tier') as any) || 'enterprise_shield';
         const savedPhone = localStorage.getItem('rumourradar_alert_phone') || '';
         const savedEmail = localStorage.getItem('rumourradar_alert_email') || '';
+        const savedWatchlist = localStorage.getItem('rumourradar_brand_watchlist');
 
         setIsProActive(active);
         setProOrgName(org);
         setProTier(tier);
         if (savedPhone) setAlertWhatsappNumber(savedPhone);
         if (savedEmail) setAlertEmail(savedEmail);
+        if (savedWatchlist) {
+          try {
+            const parsed = JSON.parse(savedWatchlist);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setWatchlist(parsed);
+            }
+          } catch (e) {
+            // ignore JSON parse error
+          }
+        }
       }
     };
 
@@ -110,6 +125,32 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
       window.removeEventListener('storage', checkProStatus);
     };
   }, []);
+
+  const handleAddToWatchlist = (nameToAdd?: string) => {
+    const target = (nameToAdd || newWatchlistInput || brandInput).trim();
+    if (!target) return;
+    if (!watchlist.includes(target)) {
+      const updated = [target, ...watchlist];
+      setWatchlist(updated);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('rumourradar_brand_watchlist', JSON.stringify(updated));
+      }
+      addSentinelLog(`Added "${target}" to Multi-Entity Sentinel Watchlist`, 'success');
+    }
+    setNewWatchlistInput('');
+    setBrandInput(target);
+    executeScan(target);
+  };
+
+  const handleRemoveFromWatchlist = (target: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = watchlist.filter(w => w !== target);
+    setWatchlist(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('rumourradar_brand_watchlist', JSON.stringify(updated));
+    }
+    addSentinelLog(`Removed "${target}" from Watchlist`, 'info');
+  };
 
   const addSentinelLog = (message: string, type: 'info' | 'alert' | 'success' = 'info') => {
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -439,6 +480,83 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
               {b}
             </button>
           ))}
+        </div>
+
+        {/* Multi-Entity Sentinel Watchlist Manager */}
+        <div className="pt-3 border-t border-slate-800/80 space-y-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5">
+              <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+              <span className="text-xs font-bold text-slate-200">
+                {isPidgin ? 'Your Sentinel Watchlist (Track Multi-Entities & Celebrities):' : 'Multi-Entity Sentinel Watchlist (Celebrities, Brands & Agencies):'}
+              </span>
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                {watchlist.length} Active
+              </span>
+            </div>
+
+            {/* Quick Add Custom Entity */}
+            <div className="flex items-center gap-1.5">
+              <input 
+                type="text"
+                value={newWatchlistInput}
+                onChange={(e) => setNewWatchlistInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddToWatchlist()}
+                placeholder="Add celebrity or brand (e.g. Davido, Opay)..."
+                className="px-2.5 py-1 text-xs rounded-lg bg-slate-900 border border-slate-700 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-400 w-48 sm:w-56"
+              />
+              <button
+                onClick={() => handleAddToWatchlist()}
+                className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all active:scale-95 shrink-0"
+              >
+                + Track
+              </button>
+            </div>
+          </div>
+
+          {/* Watchlist Chips */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {watchlist.map((entity) => {
+              const isSelected = brandInput.toLowerCase() === entity.toLowerCase();
+              return (
+                <div
+                  key={entity}
+                  onClick={() => {
+                    setBrandInput(entity);
+                    executeScan(entity);
+                  }}
+                  className={`group flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all border ${
+                    isSelected
+                      ? 'bg-blue-600 text-white border-blue-400 shadow-md ring-1 ring-blue-400'
+                      : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:border-blue-500 hover:text-white'
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white animate-ping' : 'bg-emerald-400'}`} />
+                  <span>{entity}</span>
+                  <button
+                    onClick={(e) => handleRemoveFromWatchlist(entity, e)}
+                    className="opacity-40 group-hover:opacity-100 hover:text-rose-400 p-0.5 rounded transition-opacity"
+                    title={`Stop tracking ${entity}`}
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              );
+            })}
+            {!watchlist.includes(brandInput.trim()) && brandInput.trim().length > 0 && (
+              <button
+                onClick={() => handleAddToWatchlist(brandInput)}
+                className="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/40 text-xs font-medium hover:bg-blue-500/30 transition-all flex items-center gap-1"
+              >
+                <span>+ Add "{brandInput}" to Watchlist</span>
+              </button>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2 pt-1 text-[11px] text-slate-400 font-mono">
+            <span className="text-emerald-400">● 24/7 Multi-Platform Coverage:</span>
+            <span>WhatsApp forward chains, X (Twitter) viral quotes, TikTok skits, Telegram channels & Nigerian newsrooms.</span>
+          </div>
         </div>
       </div>
 

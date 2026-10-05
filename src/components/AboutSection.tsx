@@ -28,7 +28,9 @@ import {
   TrendingUp,
   Zap,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Globe,
+  MessageSquare
 } from 'lucide-react';
 import { BmoniAppDownloadButton } from '@/components/BmoniAppDownloadButton';
 
@@ -323,6 +325,40 @@ export function AboutSection({ onOpenTipModal, onSelectTab, onOpenBmoniModal, ap
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Omni-Platform Social Media Defense Banner */}
+          <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-emerald-950/30 to-slate-900 border border-emerald-500/40 shadow-xl space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div className="space-y-1">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5" />
+                  {isPidgin ? 'BUILT FOR ALL SOCIAL MEDIA PLATFORMS' : 'UNIVERSAL SOCIAL MEDIA DEFENSE ENGINE'}
+                </span>
+                <h4 className="text-base sm:text-lg font-bold text-white">
+                  {isPidgin
+                    ? 'Engineered Specifically for Places Wey Rumours Dey Spread Fastest'
+                    : 'Custom-Engineered for Platforms Where Disinformation Spreads Fastest'}
+                </h4>
+                <p className="text-xs text-slate-300 max-w-3xl leading-relaxed">
+                  {isPidgin
+                    ? 'RumourRadar was built to catch fake news across WhatsApp forward chains, audio voice notes, viral X (Twitter) screenshots, TikTok skits, Telegram channels, and Facebook groups before they cause panics or riots in Nigeria.'
+                    : 'RumourRadar is engineered to neutralize viral disinformation across WhatsApp family & community groups, viral X threads, TikTok deepfakes, Telegram unmoderated channels, and Facebook newsfeeds with instant grounded debunks.'}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap shrink-0">
+                <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold font-mono flex items-center gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5" /> WhatsApp #1
+                </span>
+                <span className="px-3 py-1.5 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-500/40 text-xs font-bold font-mono flex items-center gap-1.5">
+                  <Share2 className="w-3.5 h-3.5" /> X (Twitter)
+                </span>
+                <span className="px-3 py-1.5 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/40 text-xs font-bold font-mono">
+                  TikTok & Telegram
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       )}
