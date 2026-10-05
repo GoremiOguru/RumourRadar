@@ -134,6 +134,9 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
   const seenArticleLinksRef = useRef<Set<string>>(new Set());
   const initialScanDoneRef = useRef(false);
 
+  const [selectedStoryForDebunk, setSelectedStoryForDebunk] = useState<{ title: string; snippet?: string; source?: string } | null>(null);
+  const [isGeneratingDebunk, setIsGeneratingDebunk] = useState(false);
+
   // Load Pro status from localStorage
   useEffect(() => {
     const checkProStatus = () => {
@@ -215,7 +218,10 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
       const res = await fetch('/api/brand-shield/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brandName: brand })
+        body: JSON.stringify({ 
+          brandName: brand,
+          entityCategory
+        })
       });
 
       if (res.ok) {
@@ -252,6 +258,20 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
           recentWeeklyNews: enrichedWeeklyNews
         });
 
+        if (result.alerts.length > 0) {
+          setSelectedStoryForDebunk({
+            title: result.alerts[0].title,
+            snippet: result.alerts[0].summary,
+            source: result.alerts[0].sourceName
+          });
+        } else if (enrichedWeeklyNews.length > 0) {
+          setSelectedStoryForDebunk({
+            title: enrichedWeeklyNews[0].title,
+            snippet: enrichedWeeklyNews[0].snippet,
+            source: enrichedWeeklyNews[0].source
+          });
+        }
+
         addSentinelLog(`Surveillance synchronized. ${enrichedWeeklyNews.length} articles indexed. Threat Level: ${result.threatLevel}`, 'success');
       }
     } catch (err) {
@@ -260,6 +280,38 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
     } finally {
       setIsScanning(false);
       setLastScannedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    }
+  };
+
+  const handleGenerateDebunkForStory = async (title: string, snippet?: string, source?: string) => {
+    const brand = scanResult?.brandName || brandInput;
+    setSelectedStoryForDebunk({ title, snippet, source });
+    setActiveTab('debunk_kit');
+    setIsGeneratingDebunk(true);
+
+    try {
+      const res = await fetch('/api/brand-shield/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brandName: brand,
+          entityCategory,
+          targetStoryTitle: title,
+          targetStorySnippet: snippet
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.result?.debunkKit) {
+          setScanResult(prev => prev ? { ...prev, debunkKit: data.result.debunkKit } : null);
+          addSentinelLog(`Generated tailored PR Debunk Kit for "${title.slice(0, 40)}..."`, 'success');
+        }
+      }
+    } catch (err) {
+      console.error('Failed to generate tailored debunk kit:', err);
+    } finally {
+      setIsGeneratingDebunk(false);
     }
   };
 
@@ -289,6 +341,10 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
   }, [isAutoUpdating, scanResult?.brandName]);
 
   const handleCopy = (text: string, key: string) => {
+    if (!isProActive) {
+      onOpenSubscriptionModal();
+      return;
+    }
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 2500);
@@ -313,6 +369,10 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
   };
 
   const handleQuickDispatchWhatsapp = (customText?: string) => {
+    if (!isProActive) {
+      onOpenSubscriptionModal();
+      return;
+    }
     const brand = scanResult?.brandName || brandInput;
     const cleanBrief = cleanHtmlEntities(scanResult?.alerts?.[0]?.summary) || 'Continuous live surveillance active. No critical rumors detected.';
     const text = customText || (scanResult?.debunkKit?.whatsappBroadcastTemplate || `🚨 *RUMOUR RADAR SENTINEL ALERT*\n\nBrand Monitored: *${brand}*\nThreat Level: *${scanResult?.threatLevel || 'MODERATE'}*\n\nLatest Briefing: ${cleanBrief}\n\nVerified by Rumour Radar Nigeria: https://rumourradar.vercel.app`);
@@ -323,6 +383,10 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
   };
 
   const handleQuickDispatchTelegram = () => {
+    if (!isProActive) {
+      onOpenSubscriptionModal();
+      return;
+    }
     const brand = scanResult?.brandName || brandInput;
     const text = `🚨 *RUMOUR RADAR SENTINEL ALERT*\n\nBrand: *${brand}*\nThreat: *${scanResult?.threatLevel}*\n\n${scanResult?.alerts?.[0]?.summary || 'Live surveillance active.'}\n\nhttps://rumourradar.vercel.app`;
     window.open(`https://t.me/share/url?url=https://rumourradar.vercel.app&text=${encodeURIComponent(text)}`, '_blank');
@@ -936,8 +1000,9 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                             )}
 
                             <button
-                              onClick={() => setActiveTab('debunk_kit')}
+                              onClick={() => handleGenerateDebunkForStory(cleanTitle, cleanSummary, alert.sourceName)}
                               className={`w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 ${!onVerifyClaim ? 'sm:col-span-2' : ''}`}
+                              title="Generate tailored PR Debunk Kit for this specific rumor"
                             >
                               <FileText className="w-3.5 h-3.5" />
                               <span>{isPidgin ? 'PR Debunk Kit →' : 'PR Debunk Kit →'}</span>
@@ -1123,15 +1188,26 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                             </a>
                           </div>
 
-                          {onVerifyClaim && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                            {onVerifyClaim && (
+                              <button
+                                onClick={() => onVerifyClaim(`${cleanNewsTitle} — ${cleanNewsSnippet}`)}
+                                className="w-full py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                              >
+                                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>{isPidgin ? 'Check Tori' : 'Verify Story'}</span>
+                              </button>
+                            )}
+
                             <button
-                              onClick={() => onVerifyClaim(`${cleanNewsTitle} — ${cleanNewsSnippet}`)}
-                              className="w-full py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                              onClick={() => handleGenerateDebunkForStory(cleanNewsTitle, cleanNewsSnippet, news.source)}
+                              className={`w-full py-1.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 ${!onVerifyClaim ? 'sm:col-span-2' : ''}`}
+                              title="Generate tailored PR Debunk Kit for this article"
                             >
-                              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                              <span>{isPidgin ? 'Check Dis News for Claim Engine' : 'Check Story in Claim Verify'}</span>
+                              <FileText className="w-3.5 h-3.5" />
+                              <span>Debunk Kit →</span>
                             </button>
-                          )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -1195,8 +1271,106 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
 
           {/* Tab 3: 1-Click Multi-Platform PR Debunk Kit */}
           {activeTab === 'debunk_kit' && scanResult.debunkKit && (
-            <div className="glass-panel p-5 sm:p-6 rounded-2xl border-blue-500/30 space-y-5 shadow-2xl">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
+            <div className="glass-panel p-5 sm:p-6 rounded-2xl border-blue-500/30 space-y-5 shadow-2xl relative overflow-hidden">
+              {/* Story Context & Debunk Switcher Banner */}
+              <div className="p-4 rounded-xl bg-slate-900/90 border border-blue-500/30 space-y-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 uppercase flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-blue-400" />
+                      <span>{entityCategory === 'creator' ? '👤 Authentic Creator Tone' : entityCategory === 'agency' ? '🏛️ Official Regulatory Gazette' : '🏢 Corporate Communications Tone'}</span>
+                    </span>
+                    {isGeneratingDebunk && (
+                      <span className="text-[11px] font-mono text-emerald-400 animate-pulse flex items-center gap-1">
+                        <RefreshCw className="w-3 h-3 animate-spin" /> Customizing kit for story...
+                      </span>
+                    )}
+                  </div>
+
+                  <span className="text-[11px] font-mono text-slate-400">
+                    Entity: <strong className="text-white">{scanResult.brandName}</strong>
+                  </span>
+                </div>
+
+                <div className="text-xs text-slate-300">
+                  <span className="font-semibold text-slate-400 uppercase text-[10px] tracking-wider block font-mono">Addressing Specific Story / Rumor:</span>
+                  <div className="font-bold text-white text-sm mt-0.5 line-clamp-2">
+                    "{cleanHtmlEntities(selectedStoryForDebunk?.title || scanResult.debunkKit.targetRumour || scanResult.alerts[0]?.title || scanResult.recentWeeklyNews?.[0]?.title || `Viral claims regarding ${scanResult.brandName}`)}"
+                  </div>
+                </div>
+
+                {/* Quick Switch Story Chips */}
+                {(scanResult.alerts.length > 1 || (scanResult.recentWeeklyNews && scanResult.recentWeeklyNews.length > 0)) && (
+                  <div className="pt-2 border-t border-slate-800/80 space-y-1">
+                    <span className="text-[10px] font-mono text-slate-400 uppercase">Change Story to Debunk:</span>
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5">
+                      {scanResult.alerts.map((a, i) => (
+                        <button
+                          key={a.id}
+                          onClick={() => handleGenerateDebunkForStory(cleanHtmlEntities(a.title), cleanHtmlEntities(a.summary), a.sourceName)}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-semibold truncate max-w-[200px] shrink-0 border transition-all active:scale-95 ${
+                            selectedStoryForDebunk?.title === cleanHtmlEntities(a.title)
+                              ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                              : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200'
+                          }`}
+                          title={a.title}
+                        >
+                          ⚠️ Rumor #{i + 1}: {cleanHtmlEntities(a.title)}
+                        </button>
+                      ))}
+                      {(scanResult.recentWeeklyNews || []).slice(0, 4).map((n, i) => (
+                        <button
+                          key={n.id}
+                          onClick={() => handleGenerateDebunkForStory(cleanHtmlEntities(n.title), cleanHtmlEntities(n.snippet), n.source)}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-semibold truncate max-w-[200px] shrink-0 border transition-all active:scale-95 ${
+                            selectedStoryForDebunk?.title === cleanHtmlEntities(n.title)
+                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                              : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200'
+                          }`}
+                          title={n.title}
+                        >
+                          📰 News #{i + 1}: {cleanHtmlEntities(n.title)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* STRICT BMoni Pro Lock Banner if not Pro */}
+              {!isProActive && (
+                <div 
+                  onClick={onOpenSubscriptionModal}
+                  className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-950/90 via-slate-900 to-indigo-950/90 border-2 border-blue-500/60 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4 cursor-pointer group hover:border-blue-400 transition-all"
+                >
+                  <div className="space-y-1 text-left flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase flex items-center gap-1">
+                        <Lock className="w-3 h-3 text-amber-400" /> Locked Feature
+                      </span>
+                      <span className="text-xs font-bold text-white">Full PR Debunk Kit & Auto-Dispatches</span>
+                    </div>
+                    <h4 className="text-sm sm:text-base font-extrabold text-white">
+                      Unlock Persona-Tailored Debunk Copy with BMoni Pro Tier (₦50k/mo)
+                    </h4>
+                    <p className="text-xs text-slate-300 max-w-xl">
+                      Debunk kits are locked for Free Tier users to prevent unauthorized reproduction. Create your BMoni Pro account to unlock copyable, authentic drafts tailored to WhatsApp, Twitter/X, Instagram, and LinkedIn.
+                    </p>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenSubscriptionModal();
+                    }}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 shrink-0 active:scale-95 transition-all"
+                  >
+                    <Zap className="w-4 h-4" />
+                    <span>⚡ Create BMoni Pro Tier Account</span>
+                  </button>
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-t border-slate-800 pt-3">
                 <div>
                   <h3 className="text-base font-bold text-white flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-blue-400" />
@@ -1225,21 +1399,46 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                   </button>
 
                   <button
-                    onClick={() => scanResult.debunkKit && handleCopy(scanResult.debunkKit.officialStatementDraft, 'official_stmt')}
-                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all"
+                    onClick={() => {
+                      if (!isProActive) {
+                        onOpenSubscriptionModal();
+                      } else if (scanResult.debunkKit) {
+                        handleCopy(scanResult.debunkKit.officialStatementDraft, 'official_stmt');
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-white font-bold text-xs flex items-center gap-1.5 transition-all ${
+                      isProActive ? 'bg-blue-600 hover:bg-blue-500' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                    }`}
                   >
-                    {copiedKey === 'official_stmt' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedKey === 'official_stmt' ? 'Copied Statement!' : 'Copy Official Statement'}</span>
+                    {!isProActive ? <Lock className="w-3.5 h-3.5 text-amber-400" /> : copiedKey === 'official_stmt' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{!isProActive ? 'Unlock Copy (Pro)' : copiedKey === 'official_stmt' ? 'Copied Statement!' : 'Copy Official Statement'}</span>
                   </button>
                 </div>
               </div>
 
               {/* Official Statement Draft */}
-              <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
-                <span className="text-xs font-mono font-bold text-blue-400 uppercase">
-                  Official Press Clarification Draft
-                </span>
-                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-sans">
+              <div 
+                onClick={() => {
+                  if (!isProActive) onOpenSubscriptionModal();
+                }}
+                className={`p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2 relative transition-all ${
+                  !isProActive ? 'cursor-pointer hover:border-blue-500/50' : ''
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-bold text-blue-400 uppercase">
+                    Official Press Clarification Draft
+                  </span>
+                  {!isProActive && (
+                    <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 flex items-center gap-1">
+                      <Lock className="w-2.5 h-2.5" /> Pro Tier Protected
+                    </span>
+                  )}
+                </div>
+
+                <p className={`text-xs sm:text-sm text-slate-200 leading-relaxed font-sans transition-all ${
+                  !isProActive ? 'blur-[3px] select-none opacity-60' : ''
+                }`}>
                   {scanResult.debunkKit.officialStatementDraft}
                 </p>
               </div>
@@ -1251,8 +1450,8 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                     Platform-Tailored Debunk Broadcasts:
                   </span>
                   {!isProActive && (
-                    <span className="text-[10px] font-mono text-blue-400 flex items-center gap-1">
-                      <Lock className="w-3 h-3" /> Pro unlocks full WhatsApp, LinkedIn & Instagram templates
+                    <span className="text-[10px] font-mono text-amber-400 flex items-center gap-1">
+                      <Lock className="w-3 h-3" /> Pro unlocks unblurred copy for WhatsApp, X, LinkedIn & Instagram
                     </span>
                   )}
                 </div>
@@ -1296,39 +1495,36 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                 </div>
 
                 {/* Social Copy Box */}
-                <div className="relative p-4 rounded-xl bg-slate-950 border border-slate-800 font-mono text-xs text-slate-200 whitespace-pre-wrap leading-relaxed">
-                  {getSocialPostText(scanResult.debunkKit)}
+                <div 
+                  onClick={() => {
+                    if (!isProActive) onOpenSubscriptionModal();
+                  }}
+                  className={`relative p-4 rounded-xl bg-slate-950 border border-slate-800 font-mono text-xs text-slate-200 whitespace-pre-wrap leading-relaxed transition-all ${
+                    !isProActive ? 'cursor-pointer hover:border-blue-500/50' : ''
+                  }`}
+                >
+                  <div className={!isProActive ? 'blur-[3px] select-none opacity-60' : ''}>
+                    {getSocialPostText(scanResult.debunkKit)}
+                  </div>
 
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isProActive) {
+                        onOpenSubscriptionModal();
+                        return;
+                      }
                       const text = getSocialPostText(scanResult.debunkKit);
                       handleCopy(text, activeSocialTab);
                     }}
-                    className="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 flex items-center gap-1"
+                    className={`absolute top-3 right-3 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+                      isProActive ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
+                    }`}
                   >
-                    {copiedKey === activeSocialTab ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedKey === activeSocialTab ? 'Copied!' : 'Copy'}</span>
+                    {!isProActive ? <Lock className="w-3 h-3 text-amber-400" /> : copiedKey === activeSocialTab ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{!isProActive ? 'Unlock Copy' : copiedKey === activeSocialTab ? 'Copied!' : 'Copy'}</span>
                   </button>
                 </div>
-
-                {/* Free Tier Callout in Debunk Kit */}
-                {!isProActive && (
-                  <div className="p-3.5 rounded-xl bg-blue-950/40 border border-blue-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div className="text-xs text-slate-300 space-y-0.5">
-                      <div className="font-bold text-white flex items-center gap-1.5">
-                        <Lock className="w-3.5 h-3.5 text-blue-400" />
-                        <span>Unlock Instant WhatsApp Auto-Dispatch & Executive Spokesperson Modes</span>
-                      </div>
-                      <p className="text-slate-400">BMoni Pro tier enables 1-click broadcasts directly to your brand's WhatsApp channels & PR distribution lists.</p>
-                    </div>
-                    <button
-                      onClick={onOpenSubscriptionModal}
-                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shrink-0 active:scale-95 transition-all shadow-md"
-                    >
-                      <span>⚡ Unlock BMoni Pro</span>
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           )}
