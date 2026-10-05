@@ -94,6 +94,7 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
   const [isAutoUpdating, setIsAutoUpdating] = useState(true);
   const [lastScannedTime, setLastScannedTime] = useState<string>('');
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isWhyModalOpen, setIsWhyModalOpen] = useState(false);
   const signalsScrollRef = useRef<HTMLDivElement>(null);
   const newsScrollRef = useRef<HTMLDivElement>(null);
 
@@ -364,12 +365,21 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
         {/* Action Controls */}
         <div className="flex flex-wrap items-center gap-2 self-start md:self-auto shrink-0">
           <button
+            onClick={() => setIsWhyModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300 text-xs font-bold transition-all shadow-sm active:scale-95"
+            title={isPidgin ? 'Why Brand Shield & BMoni Pro Tier is Critical' : 'Why Brand Shield & BMoni Pro Tier is Critical'}
+          >
+            <Sparkles className="w-4 h-4 text-blue-400" />
+            <span>{isPidgin ? 'Why Brand Shield & Pro?' : 'Why Brand Shield & Pro Tier?'}</span>
+          </button>
+
+          <button
             onClick={() => setIsHelpOpen(true)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500/15 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300 text-xs font-bold transition-all shadow-sm active:scale-95"
             title={isPidgin ? 'How to use Brand Shield' : 'How to use Brand Shield'}
           >
             <HelpCircle className="w-4 h-4 text-blue-400" />
-            <span>{isPidgin ? 'How to Use & How it Works' : 'How to Use & How it Works'}</span>
+            <span>{isPidgin ? 'How to Use?' : 'How to Use?'}</span>
           </button>
 
           <button
@@ -395,97 +405,6 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
             <span>{isProActive ? (proOrgName ? `Pro Active (${proOrgName})` : 'BMoni Pro Active') : '⚡ Create BMoni Pro Tier Account (₦50k/mo)'}</span>
           </button>
         </div>
-      </div>
-
-      {/* VALUE PROPOSITION & TARGET AUDIENCES OVERVIEW */}
-      <div className="glass-panel p-4 sm:p-5 rounded-2xl border-blue-500/30 bg-gradient-to-br from-slate-900/90 via-blue-950/30 to-slate-950 shadow-xl space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800/80">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 font-black text-xs">
-              ⚡
-            </div>
-            <div>
-              <h3 className="text-xs sm:text-sm font-extrabold text-white">
-                {isPidgin ? 'Why Brand Shield & BMoni Pro Tier Dey Important?' : 'Why Brand Shield & BMoni Pro Tier is Critical'}
-              </h3>
-              <p className="text-[11px] text-slate-400 font-mono">
-                Built specifically for 2 core audiences in Nigeria & Africa
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsHelpOpen(true)}
-              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold flex items-center gap-1 border border-slate-700 transition-colors"
-            >
-              <HelpCircle className="w-3.5 h-3.5 text-blue-400" />
-              <span>How it Works</span>
-            </button>
-            {!isProActive && (
-              <button
-                onClick={onOpenSubscriptionModal}
-                className="px-3 py-1 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-[11px] shadow-sm flex items-center gap-1 active:scale-95 transition-all"
-              >
-                <Zap className="w-3 h-3" />
-                <span>Unlock Full Pro Access</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Dual Audience Breakdown Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-          {/* Audience 1: Companies, Brands, Executives & Creators */}
-          <div className="p-3.5 rounded-xl bg-slate-950/80 border border-blue-500/20 space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-base">🏢</span>
-              <span className="text-xs font-bold text-blue-300 uppercase tracking-wide">
-                Target 1: Companies, Brands & Creators (People)
-              </span>
-            </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Stay ahead of viral defamatory rumors, fabricated memos, fake circulars, and damaging trends across WhatsApp forwards and X quotes before panic hits customers or investors.
-            </p>
-            <div className="text-[11px] text-emerald-400 font-mono flex items-center gap-1.5 pt-1">
-              <span>✓ Auto-generate 1-click PR Debunk Kits for WhatsApp, X, & Press releases in 60s</span>
-            </div>
-          </div>
-
-          {/* Audience 2: Trackers, Fans & Super-Followers */}
-          <div className="p-3.5 rounded-xl bg-slate-950/80 border border-purple-500/20 space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-base">⭐</span>
-              <span className="text-xs font-bold text-purple-300 uppercase tracking-wide">
-                Target 2: Brand Trackers, Fans & Followers
-              </span>
-            </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Keep complete real-time tabs on all verified updates, breaking press articles, and viral stories about your favorite celebrities (Davido, Burna Boy), banks (GTBank, Opay), or agencies (CBN, EFCC).
-            </p>
-            <div className="text-[11px] text-purple-300 font-mono flex items-center gap-1.5 pt-1">
-              <span>✓ 24/7 continuous 7-day live news ingestion & instant alert rails</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Free Preview Notice for Non-Pro Users */}
-        {!isProActive && (
-          <div className="p-3 rounded-xl bg-blue-950/40 border border-blue-500/30 flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-2 text-xs text-slate-300">
-              <Lock className="w-4 h-4 text-blue-400 shrink-0" />
-              <span>
-                <strong>Free Tier Preview:</strong> Showing 1 sample signal/article. <strong>BMoni Pro Tier</strong> unlocks the entire stream, all detected rumors, full 7-day weekly news ingestion, and 1-click PR kits.
-              </span>
-            </div>
-            <button
-              onClick={onOpenSubscriptionModal}
-              className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shrink-0 flex items-center gap-1 shadow-md transition-all active:scale-95"
-            >
-              <span>Create Pro Account &rarr;</span>
-            </button>
-          </div>
-        )}
       </div>
 
       {/* REAL-TIME ALERT BANNER WHEN NEW ARTICLE OR CRISIS IS DETECTED */}
@@ -1476,6 +1395,105 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* WHY BRAND SHIELD & BMONI PRO POPUP MODAL */}
+      {isWhyModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
+          <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 rounded-2xl bg-slate-900 border border-blue-500/40 shadow-2xl text-slate-100 space-y-5">
+            <button
+              onClick={() => setIsWhyModalOpen(false)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Modal Header */}
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-black text-white">
+                  {isPidgin ? 'Why Brand Shield & BMoni Pro Tier Dey Critical?' : 'Why Brand Shield & BMoni Pro Tier is Critical'}
+                </h3>
+                <p className="text-xs text-slate-400 font-mono">
+                  Built specifically for 2 core audiences in Nigeria & Africa
+                </p>
+              </div>
+            </div>
+
+            {/* Dual Audience Cards */}
+            <div className="space-y-3">
+              {/* Audience 1: Companies, Brands, Executives & Creators */}
+              <div className="p-4 rounded-xl bg-slate-950 border border-blue-500/30 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🏢</span>
+                  <h4 className="text-xs sm:text-sm font-bold text-blue-300 uppercase tracking-wide">
+                    Target 1: Companies, Brands & Creators (People)
+                  </h4>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Stay ahead of viral defamatory rumors, fabricated memos, fake regulatory circulars, and damaging trends across WhatsApp forwards and X quotes before panic hits customers, investors, or fans.
+                </p>
+                <div className="text-[11px] text-emerald-400 font-mono flex items-center gap-1.5 pt-1">
+                  <span>✓ Auto-generate 1-click PR Debunk Kits for WhatsApp, X, LinkedIn & Press in 60s</span>
+                </div>
+              </div>
+
+              {/* Audience 2: Trackers, Fans & Super-Followers */}
+              <div className="p-4 rounded-xl bg-slate-950 border border-purple-500/30 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">⭐</span>
+                  <h4 className="text-xs sm:text-sm font-bold text-purple-300 uppercase tracking-wide">
+                    Target 2: Brand Trackers, Fans & Followers
+                  </h4>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Keep complete real-time tabs on all verified updates, breaking press articles, and circulating claims about your favorite celebrities (Davido, Burna Boy, Wizkid), banks (GTBank, Opay), or agencies (CBN, EFCC).
+                </p>
+                <div className="text-[11px] text-purple-300 font-mono flex items-center gap-1.5 pt-1">
+                  <span>✓ 24/7 continuous 7-day live news ingestion & instant alert rails</span>
+                </div>
+              </div>
+            </div>
+
+            {/* How it Works / Pro Tier Capabilities */}
+            <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300 space-y-2">
+              <div className="font-bold text-white flex items-center gap-1.5">
+                <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                <span>Continuous 45s Multi-Source Sentinel Node</span>
+              </div>
+              <p className="text-[11px] text-slate-400 font-mono">
+                Surveillance grid crawls national newsrooms (TechCabal, Punch, Vanguard, Nairametrics), WhatsApp forward trends, and social quotes in real-time.
+              </p>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="pt-2 flex flex-col sm:flex-row items-center gap-2.5">
+              <button
+                onClick={() => {
+                  setIsWhyModalOpen(false);
+                  onOpenSubscriptionModal();
+                }}
+                className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-blue-500/30 active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <Zap className="w-4 h-4" />
+                <span>{isProActive ? 'Manage BMoni Pro Subscription' : '⚡ Create BMoni Pro Tier Account (₦50k/mo)'}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsWhyModalOpen(false);
+                  setIsHelpOpen(true);
+                }}
+                className="w-full sm:w-auto px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors"
+              >
+                Open Walkthrough Guide
+              </button>
+            </div>
           </div>
         </div>
       )}
