@@ -220,7 +220,7 @@ export function AboutSection({ onOpenTipModal, onSelectTab, onOpenBmoniModal, ap
               }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
-            {isPidgin ? '✨ New Features We Build' : '✨ New Features Showcase'}
+            {isPidgin ? '✨ Feature Showcase' : '✨ Feature Showcase'}
           </button>
 
           <button
@@ -265,21 +265,21 @@ export function AboutSection({ onOpenTipModal, onSelectTab, onOpenBmoniModal, ap
         </div>
       </div>
 
-      {/* TAB 0: NEW FEATURES SHOWCASE */}
+      {/* TAB 0: FEATURE SHOWCASE */}
       {activeTab === 'features' && (
         <div className="space-y-6">
           <div className="text-center space-y-2 max-w-2xl mx-auto">
             <span className="text-xs font-mono text-emerald-400 font-bold uppercase tracking-wider flex items-center justify-center gap-1.5">
               <Zap className="w-3.5 h-3.5 text-emerald-400" />
-              {isPidgin ? 'New Power for Rumour Radar' : 'Platform Expansion & New Capabilities'}
+              {isPidgin ? 'Core Powers of Rumour Radar' : 'Core Platform Capabilities'}
             </span>
             <h3 className="text-xl sm:text-3xl font-display font-bold text-white">
-              {isPidgin ? 'Everything Wey We Don Add Give Naija People' : 'Advanced Tools Built for Citizens & Organizations'}
+              {isPidgin ? 'Verification Tools Built for Every Naija Citizen & Brand' : 'Verification Tools Built for Citizens, Creators & Organizations'}
             </h3>
             <p className="text-xs sm:text-sm text-slate-400">
               {isPidgin
-                ? 'From deepfake video scanner to brand protection guard and 36-state heatmap alert, see all our new features below.'
-                : 'Explore our newly launched capabilities spanning deepfake media inspection, enterprise & creator brand protection, geopolitical risk heatmapping, and 5-language vernacular TTS speech.'}
+                ? 'Explore our core capabilities built for accessibility — from 5-language voice audio in Pidgin, Yoruba, Hausa & Igbo to deepfake video detection, brand guard and 36-state heatmap alerts.'
+                : 'Explore our core capabilities built for universal accessibility — from 5-language vernacular TTS voice summaries (Pidgin, Yorùbá, Hausa, Igbo) to forensic deepfake detection, 36-state rumor heatmaps, and enterprise brand surveillance.'}
             </p>
           </div>
 
@@ -393,11 +393,11 @@ export function AboutSection({ onOpenTipModal, onSelectTab, onOpenBmoniModal, ap
             {/* Mobile App Download Promotion Banner */}
             <BmoniAppDownloadButton appLanguage={appLanguage} />
 
-            {/* 3 Pillar Cards Header & Control Bar */}
-            <div className="flex items-center justify-between pt-2 pb-1">
+            {/* 3 Pillar Cards Header & Control Bar — Only on Mobile/Tablet */}
+            <div className="flex md:hidden items-center justify-between pt-2 pb-1">
               <span className="text-xs font-mono font-bold text-blue-400 flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-blue-400" />
-                {isPidgin ? 'Swipe or tap arrows to view our 3 BMoni rails:' : 'Swipe or tap arrows to view our 3 BMoni rails:'}
+                {isPidgin ? 'Swipe or tap arrows to view 3 BMoni rails:' : 'Swipe or tap arrows to view 3 BMoni rails:'}
               </span>
               <div className="flex items-center gap-1.5">
                 <button
