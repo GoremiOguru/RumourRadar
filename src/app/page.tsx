@@ -406,22 +406,6 @@ export default function Home() {
             </button>
 
             <button
-              ref={(element) => { tabButtonRefs.current.heatmap = element; }}
-              onClick={() => handleTabChange('heatmap')}
-              aria-pressed={activeTab === 'heatmap'}
-              className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 sm:py-2.5 rounded-xl text-center text-[10px] sm:text-xs font-bold transition-all ${
-                activeTab === 'heatmap'
-                  ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-black shadow-lg shadow-amber-500/20 font-black'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-              }`}
-            >
-              <MapPin className="w-3.5 h-3.5 shrink-0" />
-              <span className="leading-tight font-display">
-                <span>{t.tabHeatmap}</span>
-              </span>
-            </button>
-
-            <button
               ref={(element) => { tabButtonRefs.current.deepfake = element; }}
               onClick={() => handleTabChange('deepfake')}
               aria-pressed={activeTab === 'deepfake'}
@@ -457,13 +441,36 @@ export default function Home() {
 
         <div key={activeTab} className={`tab-section-enter tab-section-enter-${tabDirection} section-stagger space-y-8`}>
         {activeTab === 'brand_shield' ? (
-          <BrandShieldDashboard appLanguage={appLanguage} initialBrand={brandShieldTarget} onOpenSubscriptionModal={() => setIsBmoniModalOpen(true)} />
+          <BrandShieldDashboard 
+            appLanguage={appLanguage} 
+            initialBrand={brandShieldTarget} 
+            onOpenSubscriptionModal={() => setIsBmoniModalOpen(true)}
+            onVerifyClaim={(claim) => {
+              handleTabChange('verify');
+              setQuery(claim);
+              handleVerify(claim);
+            }}
+          />
         ) : activeTab === 'heatmap' ? (
-          <NigeriaHeatmap appLanguage={appLanguage} onSelectClaim={(claim) => {
-            handleTabChange('verify');
-            setQuery(claim);
-            handleVerify(claim);
-          }} />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-900/90 border border-slate-800">
+              <button
+                onClick={() => handleTabChange('verify')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-bold transition-all active:scale-95"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>← {appLanguage === 'pcm' ? 'Go Back to Check Claim' : 'Back to Claim Verification'}</span>
+              </button>
+              <span className="text-[11px] text-amber-400 font-mono font-semibold">
+                ● 36 States & FCT Regional Misinformation Surveillance
+              </span>
+            </div>
+            <NigeriaHeatmap appLanguage={appLanguage} onSelectClaim={(claim) => {
+              handleTabChange('verify');
+              setQuery(claim);
+              handleVerify(claim);
+            }} />
+          </div>
         ) : activeTab === 'deepfake' ? (
           <DeepfakeVideoScanner appLanguage={appLanguage} />
         ) : activeTab === 'about' ? (
@@ -689,6 +696,44 @@ export default function Home() {
                         </button>
                       );
                     })}
+                  </div>
+
+                  {/* Regional Heatmap Exploration Banner - Get Current Live Rumors */}
+                  <div 
+                    onClick={() => handleTabChange('heatmap')}
+                    className="mt-3 p-3.5 sm:p-4 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-950/30 via-slate-900 to-rose-950/25 hover:border-amber-400 transition-all cursor-pointer shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 group"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 group-hover:scale-105 transition-transform">
+                        <MapPin className="w-5 h-5 text-amber-400 animate-pulse" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-amber-300 transition-colors">
+                            {appLanguage === 'pcm' ? 'Browse Live 36-State Tori & Regional Heatmap' : 'Browse Live 36-State Regional Rumour Radar'}
+                          </h4>
+                          <span className="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/30">
+                            {appLanguage === 'pcm' ? 'Live Current Tori' : 'Live State Feeds'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
+                          {appLanguage === 'pcm'
+                            ? 'No want presets? Tap here to browse hot breaking rumours across all 36 states and Abuja to check in 1-click!'
+                            : 'Want something more current than presets? Explore live rumors circulating across all 36 Nigerian states & FCT to test in 1-click.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleTabChange('heatmap');
+                      }}
+                      className="px-3.5 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-black font-extrabold text-xs shrink-0 transition-all active:scale-95 shadow-md flex items-center gap-1.5 self-end sm:self-auto"
+                    >
+                      <span>{appLanguage === 'pcm' ? 'Open State Map →' : 'Explore State Rumors →'}</span>
+                    </button>
                   </div>
                 </div>
               )}

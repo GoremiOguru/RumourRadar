@@ -43,6 +43,33 @@ interface BrandShieldDashboardProps {
   onOpenSubscriptionModal: () => void;
   appLanguage?: 'en' | 'pcm';
   initialBrand?: string;
+  onVerifyClaim?: (claimText: string) => void;
+}
+
+export function formatNigerianWhatsappNumber(rawPhone: string): string {
+  const digits = rawPhone.replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.startsWith('234')) return digits;
+  if (digits.startsWith('0') && digits.length === 11) {
+    return '234' + digits.slice(1);
+  }
+  if (digits.length === 10) {
+    return '234' + digits;
+  }
+  return digits;
+}
+
+export function cleanHtmlEntities(text?: string): string {
+  if (!text) return '';
+  return text
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/<[^>]*>/g, '')
+    .trim();
 }
 
 const ENTITY_PRESETS = {
@@ -53,7 +80,7 @@ const ENTITY_PRESETS = {
 
 const DEFAULT_WATCHLIST = ['GTBank', 'Davido', 'Dangote Group', 'CBN', 'Burna Boy', 'Opay', 'Hilda Baci'];
 
-export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'en', initialBrand }: BrandShieldDashboardProps) {
+export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'en', initialBrand, onVerifyClaim }: BrandShieldDashboardProps) {
   const isPidgin = appLanguage === 'pcm';
   const [brandInput, setBrandInput] = useState(initialBrand || 'GTBank');
   const [watchlist, setWatchlist] = useState<string[]>(DEFAULT_WATCHLIST);
@@ -249,12 +276,16 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
 
   const handleSaveAlertConfig = (e: React.FormEvent) => {
     e.preventDefault();
+    const formatted = formatNigerianWhatsappNumber(alertWhatsappNumber.trim());
     if (typeof window !== 'undefined') {
-      localStorage.setItem('rumourradar_alert_phone', alertWhatsappNumber.trim());
+      localStorage.setItem('rumourradar_alert_phone', formatted || alertWhatsappNumber.trim());
       localStorage.setItem('rumourradar_alert_email', alertEmail.trim());
     }
+    if (formatted && formatted !== alertWhatsappNumber) {
+      setAlertWhatsappNumber(formatted);
+    }
     setIsAlertConfigSaved(true);
-    addSentinelLog(`WhatsApp notification webhook armed for: ${alertWhatsappNumber || 'PR Desk'}`, 'success');
+    addSentinelLog(`WhatsApp notification armed for +${formatted || 'PR Desk'}`, 'success');
     setTimeout(() => {
       setIsAlertConfigSaved(false);
       setIsAlertConfigOpen(false);
@@ -263,9 +294,11 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
 
   const handleQuickDispatchWhatsapp = (customText?: string) => {
     const brand = scanResult?.brandName || brandInput;
-    const text = customText || (scanResult?.debunkKit?.whatsappBroadcastTemplate || `🚨 *RUMOUR RADAR SENTINEL ALERT*\n\nBrand Monitored: *${brand}*\nThreat Level: *${scanResult?.threatLevel || 'MODERATE'}*\n\nLatest Briefing: ${scanResult?.alerts?.[0]?.summary || 'Continuous live surveillance active. No critical rumors detected.'}\n\nVerified by Rumour Radar Nigeria: https://rumourradar.vercel.app`);
+    const cleanBrief = cleanHtmlEntities(scanResult?.alerts?.[0]?.summary) || 'Continuous live surveillance active. No critical rumors detected.';
+    const text = customText || (scanResult?.debunkKit?.whatsappBroadcastTemplate || `🚨 *RUMOUR RADAR SENTINEL ALERT*\n\nBrand Monitored: *${brand}*\nThreat Level: *${scanResult?.threatLevel || 'MODERATE'}*\n\nLatest Briefing: ${cleanBrief}\n\nVerified by Rumour Radar Nigeria: https://rumourradar.vercel.app`);
     const encoded = encodeURIComponent(text);
-    const phoneParam = alertWhatsappNumber ? `&phone=${alertWhatsappNumber.replace(/\D/g, '')}` : '';
+    const formattedPhone = formatNigerianWhatsappNumber(alertWhatsappNumber);
+    const phoneParam = formattedPhone ? `&phone=${formattedPhone}` : '';
     window.open(`https://api.whatsapp.com/send?text=${encoded}${phoneParam}`, '_blank');
   };
 
@@ -410,26 +443,33 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
 
       {/* Brand Search Bar & Presets */}
       <div className="glass-panel p-4 sm:p-5 rounded-2xl border-blue-500/30 space-y-4 shadow-lg">
-        {/* Entity Type Filter Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          <span className="text-[11px] font-mono text-slate-400 font-bold shrink-0 mr-1">Target Entity Type:</span>
-          {[
-            { id: 'corporation', label: '🏢 Corporations & SMEs' },
-            { id: 'creator', label: '👤 Personal Brands & Creators' },
-            { id: 'agency', label: '🏛️ Government Agencies & Regulators' }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setEntityCategory(tab.id as any)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
-                entityCategory === tab.id
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-slate-800/60 text-slate-400 hover:text-white'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        {/* Entity Type Filter Tabs - Fully Visible on Mobile & Desktop */}
+        <div className="space-y-1.5">
+          <span className="text-[11px] font-mono text-slate-400 font-bold block">
+            {isPidgin ? 'Target Entity Type (Choose one to scan):' : 'Target Entity Category (Select to scan):'}
+          </span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {[
+              { id: 'corporation', label: '🏢 Corporations & SMEs', desc: 'Banks, Fintechs, Telecoms' },
+              { id: 'creator', label: '👤 Personal Brands & Creators', desc: 'Celebrities, Influencers & Leaders' },
+              { id: 'agency', label: '🏛️ Government & Regulators', desc: 'CBN, INEC, EFCC, NCDC' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setEntityCategory(tab.id as any)}
+                className={`p-2.5 rounded-xl text-xs font-bold transition-all text-left flex flex-col justify-between border ${
+                  entityCategory === tab.id
+                    ? 'bg-blue-600 text-white border-blue-400 shadow-md ring-1 ring-blue-400'
+                    : 'bg-slate-900/80 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span className={`text-[10px] font-normal mt-0.5 ${entityCategory === tab.id ? 'text-blue-100' : 'text-slate-500'}`}>
+                  {tab.desc}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Search Input Bar */}
@@ -753,37 +793,22 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
 
           {/* Tab 1: Unverified Rumours & Threats */}
           {activeTab === 'rumours' && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between px-1">
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
                 <div>
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-300 font-display flex items-center gap-2">
                     <span>{isPidgin ? `Detected Rumor Signals (${scanResult.alerts.length})` : `Detected Misinformation Signals (${scanResult.alerts.length})`}</span>
                     <span className="text-[10px] font-mono text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
-                      Horizontal Stream
+                      Live Ingestion Feed
                     </span>
                   </span>
-                  <p className="text-[11px] font-mono text-slate-500">{isPidgin ? 'Auto-ranked by risk level' : 'Auto-prioritized by enterprise risk level'}</p>
+                  <p className="text-[11px] font-mono text-slate-500">
+                    {isPidgin ? 'Click "Check in Claim Engine" to verify why any tori be rumour' : 'Click "Check in Claim Engine" to inspect grounded evidence for any rumor'}
+                  </p>
                 </div>
-
-                {/* Arrow navigation buttons */}
-                {scanResult.alerts.length > 0 && (
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => signalsScrollRef.current?.scrollBy({ left: -360, behavior: 'smooth' })}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700 active:scale-95"
-                      title="Scroll left"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => signalsScrollRef.current?.scrollBy({ left: 360, behavior: 'smooth' })}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700 active:scale-95"
-                      title="Scroll right"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
+                <span className="text-[11px] font-mono text-slate-400">
+                  Showing all {scanResult.alerts.length} detected signals
+                </span>
               </div>
 
               {scanResult.alerts.length === 0 ? (
@@ -803,18 +828,15 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                   </p>
                 </div>
               ) : (
-                <ScrollReveal className="min-w-0">
-                  <div
-                    ref={signalsScrollRef}
-                    className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-slate-700"
-                  >
-                    {scanResult.alerts.map((alert) => (
-                      <ScrollReveal
-                        key={alert.id} 
-                        className="min-w-[300px] sm:min-w-[360px] max-w-[420px] shrink-0 snap-start"
-                        delay={Math.min(scanResult.alerts.indexOf(alert) * 65, 260)}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {scanResult.alerts.map((alert) => {
+                    const cleanSummary = cleanHtmlEntities(alert.summary);
+                    const cleanTitle = cleanHtmlEntities(alert.title);
+                    return (
+                      <div 
+                        key={alert.id}
+                        className="glass-panel p-4 sm:p-5 rounded-2xl border-rose-500/30 flex flex-col justify-between shadow-xl space-y-3 hover:border-rose-500/60 transition-all bg-slate-950/70"
                       >
-                      <div className="glass-panel p-4 sm:p-5 rounded-xl border-rose-500/30 flex flex-col justify-between shadow-xl space-y-3 hover:border-rose-500/50 transition-colors">
                         <div className="space-y-2.5">
                           <div className="flex items-center justify-between gap-2">
                             <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0">
@@ -823,53 +845,64 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                             <span className="text-[11px] font-mono text-slate-400 font-semibold">{alert.publishedDate}</span>
                           </div>
 
-                          <h4 className="font-bold text-sm text-white line-clamp-2 leading-snug">{alert.title}</h4>
+                          <h4 className="font-bold text-sm text-white leading-snug">{cleanTitle}</h4>
 
-                          <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/60 p-3 rounded-lg border border-slate-800">
-                            {alert.summary}
+                          <p className="text-xs text-slate-300 leading-relaxed bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                            {cleanSummary}
                           </p>
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800 text-xs">
-                          <span className="text-slate-400 font-mono">
-                            Source: <strong className="text-slate-200">{alert.sourceName}</strong>
-                          </span>
-
-                          <div className="flex items-center gap-2">
+                        <div className="space-y-2.5 pt-3 border-t border-slate-800 text-xs">
+                          <div className="flex items-center justify-between text-slate-400 font-mono text-[11px]">
+                            <span>Source: <strong className="text-slate-200">{alert.sourceName}</strong></span>
                             {alert.sourceUrl && (
                               <a
                                 href={alert.sourceUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 text-xs font-semibold border border-slate-700 transition-colors"
+                                className="inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300 transition-colors font-semibold"
                               >
                                 <ExternalLink className="w-3 h-3" />
-                                <span>{isPidgin ? 'View News' : 'View Source Article'}</span>
+                                <span>{isPidgin ? 'Source Link' : 'Source Article'}</span>
                               </a>
+                            )}
+                          </div>
+
+                          {/* Action Buttons: 1-Click Verify Claim & PR Debunk */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                            {onVerifyClaim && (
+                              <button
+                                onClick={() => onVerifyClaim(`${cleanTitle} — ${cleanSummary}`)}
+                                className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95"
+                                title="Load into Claim Verification Engine"
+                              >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span>{isPidgin ? '🔍 Check Tori for Engine' : '🔍 Verify Claim in Engine'}</span>
+                              </button>
                             )}
 
                             <button
                               onClick={() => setActiveTab('debunk_kit')}
-                              className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-colors"
+                              className={`w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 ${!onVerifyClaim ? 'sm:col-span-2' : ''}`}
                             >
-                              {isPidgin ? 'PR Debunk Kit &rarr;' : 'Generate PR Debunk Kit &rarr;'}
+                              <FileText className="w-3.5 h-3.5" />
+                              <span>{isPidgin ? 'PR Debunk Kit →' : 'PR Debunk Kit →'}</span>
                             </button>
                           </div>
                         </div>
                       </div>
-                      </ScrollReveal>
-                    ))}
-                  </div>
-                </ScrollReveal>
+                    );
+                  })}
+                </div>
               )}
             </div>
           )}
 
           {/* Tab 2: All Recent News This Week (Live Weekly Ingestion) */}
           {activeTab === 'weekly_news' && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between px-1">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 font-display">
                   Verified News Published This Week ({scanResult.recentWeeklyNews?.length || 0})
                 </span>
                 <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
@@ -878,74 +911,90 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
               </div>
 
               {scanResult.recentWeeklyNews && scanResult.recentWeeklyNews.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {scanResult.recentWeeklyNews.map((news) => (
-                    <div
-                      key={news.id}
-                      className={`p-4 rounded-xl bg-slate-900/60 border transition-all flex flex-col justify-between space-y-3 ${
-                        news.isNewlyIngested 
-                          ? 'border-emerald-500/80 bg-emerald-950/20 ring-1 ring-emerald-500/40 shadow-lg' 
-                          : 'border-slate-800 hover:border-slate-700'
-                      }`}
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 truncate">
-                            <span className="text-[11px] font-bold text-emerald-400 truncate max-w-[180px]">
-                              {news.source}
-                            </span>
-                            {news.isNewlyIngested && (
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500 text-black uppercase animate-pulse">
-                                ✨ NEW LIVE STORY
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {scanResult.recentWeeklyNews.map((news) => {
+                    const cleanNewsTitle = cleanHtmlEntities(news.title);
+                    const cleanNewsSnippet = cleanHtmlEntities(news.snippet);
+                    return (
+                      <div
+                        key={news.id}
+                        className={`p-4 sm:p-5 rounded-2xl bg-slate-900/80 border transition-all flex flex-col justify-between space-y-3 ${
+                          news.isNewlyIngested 
+                            ? 'border-emerald-500/80 bg-emerald-950/20 ring-1 ring-emerald-500/40 shadow-lg' 
+                            : 'border-slate-800 hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 truncate">
+                              <span className="text-[11px] font-bold text-emerald-400 truncate max-w-[180px]">
+                                {news.source}
                               </span>
-                            )}
+                              {news.isNewlyIngested && (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500 text-black uppercase animate-pulse">
+                                  ✨ NEW LIVE STORY
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] font-mono text-slate-400 shrink-0">
+                              {news.publishedDate}
+                            </span>
                           </div>
-                          <span className="text-[10px] font-mono text-slate-400 shrink-0">
-                            {news.publishedDate}
-                          </span>
+
+                          <h4 className="text-sm font-semibold text-slate-100 leading-snug">
+                            {cleanNewsTitle}
+                          </h4>
+
+                          <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/80">
+                            {cleanNewsSnippet}
+                          </p>
                         </div>
 
-                        <h4 className="text-xs sm:text-sm font-semibold text-slate-100 line-clamp-2 leading-relaxed">
-                          {news.title}
-                        </h4>
+                        <div className="pt-3 border-t border-slate-800/80 space-y-2.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                                news.sentiment === 'POSITIVE' ? 'bg-emerald-500/20 text-emerald-300' :
+                                news.sentiment === 'NEGATIVE' ? 'bg-rose-500/20 text-rose-300' :
+                                'bg-slate-800 text-slate-300'
+                              }`}>
+                                {news.sentiment}
+                              </span>
 
-                        <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
-                          {news.snippet}
-                        </p>
-                      </div>
+                              <button
+                                onClick={() => handleQuickDispatchWhatsapp(`📰 *RUMOUR RADAR NEWS RADAR*\n\nBrand: *${brandInput}*\nHeadline: *${cleanNewsTitle}*\nPublisher: ${news.source}\nLink: ${news.link}`)}
+                                className="px-2 py-1 rounded-md bg-slate-800 hover:bg-emerald-600/30 text-slate-300 hover:text-emerald-300 text-[10px] font-bold flex items-center gap-1 transition-colors"
+                                title="Forward article to WhatsApp"
+                              >
+                                <MessageSquare className="w-3 h-3 text-emerald-400" />
+                                <span>Share</span>
+                              </button>
+                            </div>
 
-                      <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
-                            news.sentiment === 'POSITIVE' ? 'bg-emerald-500/20 text-emerald-300' :
-                            news.sentiment === 'NEGATIVE' ? 'bg-rose-500/20 text-rose-300' :
-                            'bg-slate-800 text-slate-300'
-                          }`}>
-                            {news.sentiment}
-                          </span>
+                            <a
+                              href={news.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors"
+                            >
+                              <span>Read Full Story</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
 
-                          <button
-                            onClick={() => handleQuickDispatchWhatsapp(`📰 *RUMOUR RADAR NEWS RADAR*\n\nBrand: *${brandInput}*\nHeadline: *${news.title}*\nPublisher: ${news.source}\nLink: ${news.link}`)}
-                            className="p-1 rounded-md bg-slate-800 hover:bg-emerald-600/30 text-slate-400 hover:text-emerald-300 text-[10px] flex items-center gap-1 transition-colors"
-                            title="Forward article to WhatsApp"
-                          >
-                            <MessageSquare className="w-3 h-3 text-emerald-400" />
-                            <span>Share</span>
-                          </button>
+                          {onVerifyClaim && (
+                            <button
+                              onClick={() => onVerifyClaim(`${cleanNewsTitle} — ${cleanNewsSnippet}`)}
+                              className="w-full py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                            >
+                              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>{isPidgin ? 'Check Dis News for Claim Engine' : 'Check Story in Claim Verify'}</span>
+                            </button>
+                          )}
                         </div>
-
-                        <a
-                          href={news.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors"
-                        >
-                          <span>Read Full Story</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="glass-panel p-8 text-center rounded-2xl text-slate-400 text-xs font-mono">
@@ -1095,12 +1144,12 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                     type="tel"
                     value={alertWhatsappNumber}
                     onChange={(e) => setAlertWhatsappNumber(e.target.value)}
-                    placeholder="+234 801 234 5678"
+                    placeholder="e.g. 08012345678 or +234 801 234 5678"
                     className="w-full pl-9 pr-3.5 py-2.5 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
-                <span className="text-[10px] text-slate-500 mt-1 block">
-                  Dispatches direct WhatsApp crisis links when high-risk rumors or breaking news are indexed.
+                <span className="text-[10px] text-emerald-400 mt-1 block font-mono">
+                  ✓ Accepts all Nigerian formats (080..., 090..., 070... or +234...). Auto-formats to international country code.
                 </span>
               </div>
 
