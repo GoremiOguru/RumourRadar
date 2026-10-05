@@ -68,6 +68,7 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
   const [videoUrl, setVideoUrl] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [rawImageBase64, setRawImageBase64] = useState<string | null>(null);
+  const [rawCleanFrames, setRawCleanFrames] = useState<string[]>([]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [extractedFrames, setExtractedFrames] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -87,9 +88,9 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
 
   /**
    * Real Client-Side HTML5 Video Keyframe Extractor
-   * Extracts clean and annotated frames from user-uploaded MP4/WebM/MOV video
+   * Extracts clean sequence of frames across the timeline for multi-frame deepfake analysis
    */
-  const extractRealVideoFrames = async (file: File): Promise<{ uiFrames: string[]; cleanFrame: string | null }> => {
+  const extractRealVideoFrames = async (file: File): Promise<{ uiFrames: string[]; cleanFrames: string[] }> => {
     return new Promise((resolve) => {
       const video = document.createElement('video');
       video.preload = 'metadata';
@@ -98,7 +99,7 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
       video.src = URL.createObjectURL(file);
 
       const uiFrames: string[] = [];
-      let cleanFrame: string | null = null;
+      const cleanFrames: string[] = [];
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
@@ -122,13 +123,11 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
             video.currentTime = t;
             video.onseeked = () => {
               if (ctx) {
-                // Draw raw clean frame first
+                // 1. Draw raw clean frame first without annotations
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                if (i === 0) {
-                  cleanFrame = canvas.toDataURL('image/jpeg', 0.88);
-                }
+                cleanFrames.push(canvas.toDataURL('image/jpeg', 0.85));
                 
-                // Add biometric landmark overlay for UI preview
+                // 2. Add biometric landmark overlay for UI gallery rail
                 ctx.strokeStyle = 'rgba(168, 85, 247, 0.6)';
                 ctx.lineWidth = 1.5;
                 ctx.strokeRect(canvas.width * 0.28, canvas.height * 0.2, canvas.width * 0.44, canvas.height * 0.55);
@@ -141,11 +140,11 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
         }
 
         URL.revokeObjectURL(video.src);
-        resolve({ uiFrames, cleanFrame });
+        resolve({ uiFrames, cleanFrames });
       };
 
       video.onerror = () => {
-        resolve({ uiFrames: [], cleanFrame: null });
+        resolve({ uiFrames: [], cleanFrames: [] });
       };
     });
   };
@@ -229,10 +228,12 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
         const { uiFrames, cleanFrame } = await extractImageForensicFrames(file);
         setExtractedFrames(uiFrames);
         setRawImageBase64(cleanFrame);
+        setRawCleanFrames(cleanFrame ? [cleanFrame] : []);
       } else {
-        const { uiFrames, cleanFrame } = await extractRealVideoFrames(file);
+        const { uiFrames, cleanFrames } = await extractRealVideoFrames(file);
         setExtractedFrames(uiFrames);
-        setRawImageBase64(cleanFrame);
+        setRawImageBase64(cleanFrames[0] || null);
+        setRawCleanFrames(cleanFrames);
       }
     } catch (err) {
       console.warn('Frame extraction notice:', err);
@@ -253,7 +254,7 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
         ? (isPidgin ? 'We dey scan photo pixels, GAN noise & facial alignment...' : 'Analyzing spatial pixel noise, GAN artifacts & facial mesh alignment...')
         : isDoc
         ? (isPidgin ? 'We dey inspect document stamp, text resolution & header...' : 'Examining document letterhead typography, digital noise & stamp forgery...')
-        : (isPidgin ? 'We dey extract video picture frame & sound wave...' : 'Extracting video keyframes and optical flow...')
+        : (isPidgin ? 'We dey inspect multi-frame video timestamps & neural voice...' : 'Extracting temporal video keyframes & analyzing lip-sync optical flow...')
     );
 
     try {
@@ -262,7 +263,7 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
           ? (isPidgin ? 'We dey check synthetic pixel distortion & lighting...' : 'Evaluating GAN frequency spectrum & illumination inconsistencies...') 
           : isDoc
           ? (isPidgin ? 'We dey verify official circular format & signature...' : 'Verifying typographic alignment, stamp authenticity & digital compression...')
-          : (isPidgin ? 'We dey check voice sound spectrum & clone jitter...' : 'Analyzing neural voice acoustic spectrum & formant jitter...')
+          : (isPidgin ? 'We dey check puppet face movement & voice cadence...' : 'Analyzing facial puppetry jitter, temporal boundary seams & voice cadence...')
       ), 600);
       
       setTimeout(() => setScanningStage(
@@ -270,7 +271,7 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
           ? (isPidgin ? 'We dey calculate AI deepfake photo confidence score...' : 'Synthesizing image forensic risk score...') 
           : isDoc
           ? (isPidgin ? 'We dey calculate document authenticity score...' : 'Synthesizing document integrity score...')
-          : (isPidgin ? 'We dey check face boundary & lip sync...' : 'Evaluating facial boundary mesh & lip-sync coherence...')
+          : (isPidgin ? 'We dey evaluate deepfake probability & lip-sync...' : 'Evaluating temporal mesh coherence & deepfake probability...')
       ), 1200);
 
       const targetMediaType = overrideMediaType || (isDoc ? 'document' : isImage ? 'image' : isVideo ? 'video' : 'image');
@@ -284,7 +285,8 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
           mediaType: targetMediaType,
           framesCount: extractedFrames.length || 4,
           firstFrameBase64: extractedFrames[0] || undefined,
-          rawImageBase64: rawImageBase64 || undefined
+          rawImageBase64: rawImageBase64 || undefined,
+          cleanFrames: rawCleanFrames.length > 0 ? rawCleanFrames : undefined
         })
       });
 
@@ -312,6 +314,7 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
     setSelectedFile(null);
     setPreviewUrl(null);
     setRawImageBase64(null);
+    setRawCleanFrames([]);
     setExtractedFrames([]);
     setVideoUrl(sample.url);
     handleScan(sample.title, sample.url, sample.type);
@@ -397,6 +400,7 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
                 setSelectedFile(null);
                 setPreviewUrl(null);
                 setRawImageBase64(null);
+                setRawCleanFrames([]);
                 setExtractedFrames([]);
                 setResult(null);
               }}

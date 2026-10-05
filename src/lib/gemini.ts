@@ -25,6 +25,7 @@ export async function executeLlmWithFailover(
   prompt: string,
   options?: {
     imageBase64?: string;
+    imagesBase64?: Array<{ base64: string; mimeType?: string }>;
     mimeType?: string;
     temperature?: number;
     openRouterModel?: string;
@@ -34,6 +35,24 @@ export async function executeLlmWithFailover(
   const temp = options?.temperature ?? 0.1;
   const maxTokens = options?.maxTokens || 1000;
 
+  // Prepare normalized image list
+  const imageList: Array<{ dataUrl: string; cleanBase64: string; mimeType: string }> = [];
+  if (options?.imagesBase64 && options.imagesBase64.length > 0) {
+    for (const img of options.imagesBase64) {
+      if (img.base64) {
+        const mime = img.mimeType || 'image/jpeg';
+        const clean = img.base64.replace(/^data:image\/\w+;base64,/, '');
+        const url = img.base64.startsWith('data:') ? img.base64 : `data:${mime};base64,${clean}`;
+        imageList.push({ dataUrl: url, cleanBase64: clean, mimeType: mime });
+      }
+    }
+  } else if (options?.imageBase64) {
+    const mime = options.mimeType || 'image/jpeg';
+    const clean = options.imageBase64.replace(/^data:image\/\w+;base64,/, '');
+    const url = options.imageBase64.startsWith('data:') ? options.imageBase64 : `data:${mime};base64,${clean}`;
+    imageList.push({ dataUrl: url, cleanBase64: clean, mimeType: mime });
+  }
+
   // 1. PRIMARY RAIL: Google Gemini (Only attempted if key format is valid)
   if (genAI && !isGeminiDisabled) {
     try {
@@ -42,14 +61,17 @@ export async function executeLlmWithFailover(
         generationConfig: { temperature: temp, maxOutputTokens: maxTokens }
       });
 
-      if (options?.imageBase64) {
-        const imagePart = {
-          inlineData: {
-            data: options.imageBase64.replace(/^data:image\/\w+;base64,/, ''),
-            mimeType: options.mimeType || 'image/jpeg'
-          }
-        };
-        const result = await model.generateContent([prompt, imagePart]);
+      if (imageList.length > 0) {
+        const parts: any[] = [prompt];
+        for (const img of imageList) {
+          parts.push({
+            inlineData: {
+              data: img.cleanBase64,
+              mimeType: img.mimeType
+            }
+          });
+        }
+        const result = await model.generateContent(parts);
         const text = result.response.text();
         if (text && text.trim().length > 0) return text.trim();
       } else {
@@ -65,32 +87,20 @@ export async function executeLlmWithFailover(
 
   // 2. SECONDARY RAIL: High-Speed OpenRouter (Google Gemini 2.5 Flash for vision / gpt-4o-mini for text)
   if (openRouterApiKey) {
-    // For vision tasks, use google/gemini-2.5-flash as default, then fallback to gpt-4o-mini
     const candidateModels = options?.openRouterModel 
       ? [options.openRouterModel]
-      : options?.imageBase64
+      : imageList.length > 0
       ? ['google/gemini-2.5-flash', 'qwen/qwen-2.5-vl-72b-instruct', 'openai/gpt-4o-mini']
       : ['openai/gpt-4o-mini', 'google/gemini-2.5-flash'];
 
     for (const selectedModel of candidateModels) {
       try {
-        const messages: any[] = [];
-
-        if (options?.imageBase64) {
-          const dataUrl = options.imageBase64.startsWith('data:') 
-            ? options.imageBase64 
-            : `data:${options.mimeType || 'image/jpeg'};base64,${options.imageBase64}`;
-            
-          messages.push({
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
-              { type: 'image_url', image_url: { url: dataUrl } }
-            ]
-          });
-        } else {
-          messages.push({ role: 'user', content: prompt });
+        const contentParts: any[] = [{ type: 'text', text: prompt }];
+        for (const img of imageList) {
+          contentParts.push({ type: 'image_url', image_url: { url: img.dataUrl } });
         }
+
+        const messages = [{ role: 'user', content: imageList.length > 0 ? contentParts : prompt }];
 
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
