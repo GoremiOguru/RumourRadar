@@ -215,8 +215,8 @@ export function AboutSection({ onOpenTipModal, onSelectTab, onOpenBmoniModal, ap
           <button
             onClick={() => setActiveTab('features')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 font-display flex items-center gap-1.5 ${activeTab === 'features'
-                ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20'
-                : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
+              ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20'
+              : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
               }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
@@ -226,8 +226,8 @@ export function AboutSection({ onOpenTipModal, onSelectTab, onOpenBmoniModal, ap
           <button
             onClick={() => setActiveTab('bmoni')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 font-display flex items-center gap-1.5 ${activeTab === 'bmoni'
-                ? 'bg-blue-500 text-slate-950 shadow-lg shadow-blue-500/20'
-                : 'bg-slate-900/80 text-blue-400 hover:text-white border border-blue-500/30'
+              ? 'bg-blue-500 text-slate-950 shadow-lg shadow-blue-500/20'
+              : 'bg-slate-900/80 text-blue-400 hover:text-white border border-blue-500/30'
               }`}
           >
             💳 {isPidgin ? 'BMoni Bank Rail & Hackathon API' : 'BMoni API & Hackathon Role'}
@@ -236,8 +236,8 @@ export function AboutSection({ onOpenTipModal, onSelectTab, onOpenBmoniModal, ap
           <button
             onClick={() => setActiveTab('market')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 font-display ${activeTab === 'market'
-                ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20'
-                : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
+              ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20'
+              : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
               }`}
           >
             🎯 {isPidgin ? 'Why We Pass Other AI' : 'Our Place in the Market'}
@@ -246,8 +246,8 @@ export function AboutSection({ onOpenTipModal, onSelectTab, onOpenBmoniModal, ap
           <button
             onClick={() => setActiveTab('pipeline')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 font-display ${activeTab === 'pipeline'
-                ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20'
-                : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
+              ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20'
+              : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
               }`}
           >
             ⚙️ {isPidgin ? 'How We Dey Work (AI Engine)' : 'How We Work (Dual-Rail AI)'}
@@ -256,8 +256,8 @@ export function AboutSection({ onOpenTipModal, onSelectTab, onOpenBmoniModal, ap
           <button
             onClick={() => setActiveTab('civic')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 font-display ${activeTab === 'civic'
-                ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20'
-                : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
+              ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20'
+              : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
               }`}
           >
             🇳🇬 {isPidgin ? 'Naija People Duty & Promise' : 'Civic Mission & Citizen Appeal'}
@@ -342,8 +342,8 @@ export function AboutSection({ onOpenTipModal, onSelectTab, onOpenBmoniModal, ap
                 </h4>
                 <p className="text-xs text-slate-300 max-w-3xl leading-relaxed">
                   {isPidgin
-                    ? 'RumourRadar was built to catch fake news across WhatsApp forward chains, audio voice notes, viral X (Twitter) screenshots, TikTok skits, Telegram channels, and Facebook groups before they cause panics or riots in Nigeria.'
-                    : 'RumourRadar is engineered to neutralize viral disinformation across WhatsApp family & community groups, viral X threads, TikTok deepfakes, Telegram unmoderated channels, and Facebook newsfeeds with instant grounded debunks.'}
+                    ? 'RumourRadar was built to catch fake news, WhatsApp forwards and audios, viral X (Twitter) screenshots, TikTok skits, Telegram channels, and Facebook groups before dem go cause panics or riots for Naija.'
+                    : 'RumourRadar is engineered to neutralize viral disinformation across social media platforms like WhatsApp family & community groups, viral X threads, TikTok deepfakes, Telegram unmoderated channels, and Facebook newsfeeds with instant grounded debunks.'}
                 </p>
               </div>
 
@@ -702,8 +702,8 @@ export function AboutSection({ onOpenTipModal, onSelectTab, onOpenBmoniModal, ap
                 key={s.stage}
                 onClick={() => setActiveStage(s.stage)}
                 className={`p-4 rounded-2xl border text-left transition-all ${activeStage === s.stage
-                    ? 'bg-slate-900 border-emerald-500 shadow-xl shadow-emerald-500/10 ring-1 ring-emerald-500/50 scale-[1.02]'
-                    : 'bg-slate-900/50 border-slate-800 hover:border-slate-700 hover:bg-slate-900/80'
+                  ? 'bg-slate-900 border-emerald-500 shadow-xl shadow-emerald-500/10 ring-1 ring-emerald-500/50 scale-[1.02]'
+                  : 'bg-slate-900/50 border-slate-800 hover:border-slate-700 hover:bg-slate-900/80'
                   }`}
               >
                 <div className="flex items-center justify-between mb-2">
