@@ -56,9 +56,9 @@ import {
 } from 'lucide-react';
 import { SectionHelpModal } from '@/components/SectionHelpModal';
 
-type MainTab = 'verify' | 'brand_shield' | 'heatmap' | 'deepfake' | 'about';
+type MainTab = 'verify' | 'deepfake' | 'brand_shield' | 'about' | 'heatmap';
 
-const MAIN_TAB_ORDER: MainTab[] = ['verify', 'brand_shield', 'heatmap', 'deepfake', 'about'];
+const MAIN_TAB_ORDER: MainTab[] = ['verify', 'deepfake', 'brand_shield', 'about', 'heatmap'];
 const VERIFICATION_STAGES = [
   'Extracting claim',
   'Checking fact-checks',
@@ -392,6 +392,7 @@ export default function Home() {
                 onAnimationEnd={() => setTabTravel(null)}
               />
             )}
+            {/* 1. Claim Verification (Home Page) - Free */}
             <button
               ref={(element) => { tabButtonRefs.current.verify = element; }}
               onClick={() => handleTabChange('verify')}
@@ -408,6 +409,24 @@ export default function Home() {
               </span>
             </button>
 
+            {/* 2. Deepfake Scanner - Free */}
+            <button
+              ref={(element) => { tabButtonRefs.current.deepfake = element; }}
+              onClick={() => handleTabChange('deepfake')}
+              aria-pressed={activeTab === 'deepfake'}
+              className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 sm:py-2.5 rounded-xl text-center text-[10px] sm:text-xs font-bold transition-all ${
+                activeTab === 'deepfake'
+                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20 font-black'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+              }`}
+            >
+              <Video className="w-3.5 h-3.5 shrink-0" />
+              <span className="leading-tight font-display">
+                <span>{t.tabDeepfake}</span>
+              </span>
+            </button>
+
+            {/* 3. Brand Shield - Pro Feature */}
             <button
               ref={(element) => { tabButtonRefs.current.brand_shield = element; }}
               onClick={() => handleTabChange('brand_shield')}
@@ -425,22 +444,7 @@ export default function Home() {
               </span>
             </button>
 
-            <button
-              ref={(element) => { tabButtonRefs.current.deepfake = element; }}
-              onClick={() => handleTabChange('deepfake')}
-              aria-pressed={activeTab === 'deepfake'}
-              className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 sm:py-2.5 rounded-xl text-center text-[10px] sm:text-xs font-bold transition-all ${
-                activeTab === 'deepfake'
-                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20 font-black'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-              }`}
-            >
-              <Video className="w-3.5 h-3.5 shrink-0" />
-              <span className="leading-tight font-display">
-                <span>{t.tabDeepfake}</span>
-              </span>
-            </button>
-
+            {/* 4. About RumourRadar */}
             <button
               ref={(element) => { tabButtonRefs.current.about = element; }}
               onClick={() => handleTabChange('about')}
