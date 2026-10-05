@@ -57,6 +57,12 @@ export function BmoniSubscriptionModal({ isOpen, onClose, initialTier = 'newsroo
       const data = await res.json();
       if (data.virtualAccount) {
         setVirtualAccount(data.virtualAccount);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('rumourradar_pro_active', 'true');
+          localStorage.setItem('rumourradar_org_name', orgName.trim());
+          localStorage.setItem('rumourradar_tier', selectedTier);
+          window.dispatchEvent(new Event('rumourradar_pro_updated'));
+        }
       }
     } catch (err) {
       console.error('Failed to provision virtual account:', err);
@@ -74,6 +80,12 @@ export function BmoniSubscriptionModal({ isOpen, onClose, initialTier = 'newsroo
 
   const handleLaunchBrandShield = () => {
     const targetOrg = orgName.trim() || (virtualAccount ? virtualAccount.accountHolderName.replace('RumourRadar / ', '').trim() : '');
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('rumourradar_pro_active', 'true');
+      localStorage.setItem('rumourradar_org_name', targetOrg);
+      localStorage.setItem('rumourradar_tier', selectedTier);
+      window.dispatchEvent(new Event('rumourradar_pro_updated'));
+    }
     if (onLaunchBrandShield && targetOrg) {
       onLaunchBrandShield(targetOrg);
     }

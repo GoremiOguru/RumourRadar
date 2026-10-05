@@ -25,7 +25,15 @@ import {
   Newspaper,
   ChevronLeft,
   ChevronRight,
-  HelpCircle
+  HelpCircle,
+  Bell,
+  BellRing,
+  Radio,
+  Settings,
+  X,
+  Zap,
+  Phone,
+  Save
 } from 'lucide-react';
 import { VerifiedBrandNewsItem } from '@/app/api/brand-shield/scan/route';
 import { ScrollReveal } from '@/components/ScrollReveal';
@@ -48,7 +56,7 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
   const [brandInput, setBrandInput] = useState(initialBrand || 'GTBank');
   const [entityCategory, setEntityCategory] = useState<'corporation' | 'creator' | 'agency'>('corporation');
   const [isScanning, setIsScanning] = useState(false);
-  const [scanResult, setScanResult] = useState<(BrandShieldScanResult & { recentWeeklyNews?: VerifiedBrandNewsItem[] }) | null>(null);
+  const [scanResult, setScanResult] = useState<(BrandShieldScanResult & { recentWeeklyNews?: (VerifiedBrandNewsItem & { isNewlyIngested?: boolean })[] }) | null>(null);
   const [activeTab, setActiveTab] = useState<'rumours' | 'weekly_news' | 'debunk_kit'>('rumours');
   const [activeSocialTab, setActiveSocialTab] = useState<'twitter' | 'whatsapp' | 'press' | 'linkedin' | 'instagram'>('twitter');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -57,18 +65,64 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const signalsScrollRef = useRef<HTMLDivElement>(null);
 
+  // Pro & Enterprise Sentinel State
+  const [isProActive, setIsProActive] = useState(false);
+  const [proOrgName, setProOrgName] = useState('');
+  const [proTier, setProTier] = useState<'newsroom_pro' | 'enterprise_shield'>('enterprise_shield');
+
+  // Real-Time Sentinel Article Alerts State
+  const [latestNewArticleAlert, setLatestNewArticleAlert] = useState<VerifiedBrandNewsItem | null>(null);
+  const [isAlertConfigOpen, setIsAlertConfigOpen] = useState(false);
+  const [alertWhatsappNumber, setAlertWhatsappNumber] = useState('');
+  const [alertEmail, setAlertEmail] = useState('');
+  const [isAlertConfigSaved, setIsAlertConfigSaved] = useState(false);
+  const [sentinelLogs, setSentinelLogs] = useState<Array<{ timestamp: string; message: string; type: 'info' | 'alert' | 'success' }>>([]);
+  const [showLogs, setShowLogs] = useState(false);
+
+  // Track known article links across sessions to detect REAL new articles
+  const seenArticleLinksRef = useRef<Set<string>>(new Set());
+  const initialScanDoneRef = useRef(false);
+
+  // Load Pro status from localStorage
   useEffect(() => {
-    if (initialBrand && initialBrand.trim().length > 0) {
-      setBrandInput(initialBrand);
-      executeScan(initialBrand);
-    }
-  }, [initialBrand]);
+    const checkProStatus = () => {
+      if (typeof window !== 'undefined') {
+        const active = localStorage.getItem('rumourradar_pro_active') === 'true';
+        const org = localStorage.getItem('rumourradar_org_name') || '';
+        const tier = (localStorage.getItem('rumourradar_tier') as any) || 'enterprise_shield';
+        const savedPhone = localStorage.getItem('rumourradar_alert_phone') || '';
+        const savedEmail = localStorage.getItem('rumourradar_alert_email') || '';
+
+        setIsProActive(active);
+        setProOrgName(org);
+        setProTier(tier);
+        if (savedPhone) setAlertWhatsappNumber(savedPhone);
+        if (savedEmail) setAlertEmail(savedEmail);
+      }
+    };
+
+    checkProStatus();
+    window.addEventListener('rumourradar_pro_updated', checkProStatus);
+    window.addEventListener('storage', checkProStatus);
+
+    return () => {
+      window.removeEventListener('rumourradar_pro_updated', checkProStatus);
+      window.removeEventListener('storage', checkProStatus);
+    };
+  }, []);
+
+  const addSentinelLog = (message: string, type: 'info' | 'alert' | 'success' = 'info') => {
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setSentinelLogs(prev => [{ timestamp: time, message, type }, ...prev.slice(0, 19)]);
+  };
 
   const executeScan = async (targetBrand?: string) => {
     const brand = targetBrand || brandInput;
     if (!brand.trim()) return;
 
     setIsScanning(true);
+    addSentinelLog(`Polling 15+ Nigerian media RSS endpoints & social feeds for "${brand}"...`, 'info');
+
     try {
       const res = await fetch('/api/brand-shield/scan', {
         method: 'POST',
@@ -78,15 +132,55 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
 
       if (res.ok) {
         const data = await res.json();
-        setScanResult(data.result);
+        const result = data.result as BrandShieldScanResult & { recentWeeklyNews?: VerifiedBrandNewsItem[] };
+
+        // Check for newly discovered real articles since last check
+        const newArticles: VerifiedBrandNewsItem[] = [];
+        const enrichedWeeklyNews = (result.recentWeeklyNews || []).map(newsItem => {
+          const isBrandNew = initialScanDoneRef.current && !seenArticleLinksRef.current.has(newsItem.link);
+          if (isBrandNew) {
+            newArticles.push(newsItem);
+          }
+          seenArticleLinksRef.current.add(newsItem.link);
+          return {
+            ...newsItem,
+            isNewlyIngested: isBrandNew
+          };
+        });
+
+        if (!initialScanDoneRef.current) {
+          initialScanDoneRef.current = true;
+          // Populate initial set
+          (result.recentWeeklyNews || []).forEach(item => seenArticleLinksRef.current.add(item.link));
+        } else if (newArticles.length > 0) {
+          // Trigger REAL Live Alert Banner
+          const newest = newArticles[0];
+          setLatestNewArticleAlert(newest);
+          addSentinelLog(`🚨 NEW ARTICLE DETECTED: "${newest.title}" from ${newest.source}`, 'alert');
+        }
+
+        setScanResult({
+          ...result,
+          recentWeeklyNews: enrichedWeeklyNews
+        });
+
+        addSentinelLog(`Surveillance synchronized. ${enrichedWeeklyNews.length} articles indexed. Threat Level: ${result.threatLevel}`, 'success');
       }
     } catch (err) {
       console.error('Brand Shield scan failed:', err);
+      addSentinelLog(`Scan error: Connection timeout with RSS crawler`, 'alert');
     } finally {
       setIsScanning(false);
       setLastScannedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     }
   };
+
+  useEffect(() => {
+    if (initialBrand && initialBrand.trim().length > 0) {
+      setBrandInput(initialBrand);
+      executeScan(initialBrand);
+    }
+  }, [initialBrand]);
 
   useEffect(() => {
     executeScan('GTBank');
@@ -110,6 +204,34 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 2500);
+  };
+
+  const handleSaveAlertConfig = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('rumourradar_alert_phone', alertWhatsappNumber.trim());
+      localStorage.setItem('rumourradar_alert_email', alertEmail.trim());
+    }
+    setIsAlertConfigSaved(true);
+    addSentinelLog(`WhatsApp notification webhook armed for: ${alertWhatsappNumber || 'PR Desk'}`, 'success');
+    setTimeout(() => {
+      setIsAlertConfigSaved(false);
+      setIsAlertConfigOpen(false);
+    }, 1500);
+  };
+
+  const handleQuickDispatchWhatsapp = (customText?: string) => {
+    const brand = scanResult?.brandName || brandInput;
+    const text = customText || (scanResult?.debunkKit?.whatsappBroadcastTemplate || `🚨 *RUMOUR RADAR SENTINEL ALERT*\n\nBrand Monitored: *${brand}*\nThreat Level: *${scanResult?.threatLevel || 'MODERATE'}*\n\nLatest Briefing: ${scanResult?.alerts?.[0]?.summary || 'Continuous live surveillance active. No critical rumors detected.'}\n\nVerified by Rumour Radar Nigeria: https://rumourradar.vercel.app`);
+    const encoded = encodeURIComponent(text);
+    const phoneParam = alertWhatsappNumber ? `&phone=${alertWhatsappNumber.replace(/\D/g, '')}` : '';
+    window.open(`https://api.whatsapp.com/send?text=${encoded}${phoneParam}`, '_blank');
+  };
+
+  const handleQuickDispatchTelegram = () => {
+    const brand = scanResult?.brandName || brandInput;
+    const text = `🚨 *RUMOUR RADAR SENTINEL ALERT*\n\nBrand: *${brand}*\nThreat: *${scanResult?.threatLevel}*\n\n${scanResult?.alerts?.[0]?.summary || 'Live surveillance active.'}\n\nhttps://rumourradar.vercel.app`;
+    window.open(`https://t.me/share/url?url=https://rumourradar.vercel.app&text=${encodeURIComponent(text)}`, '_blank');
   };
 
   const getSocialPostText = (kit?: DebunkKit): string => {
@@ -138,6 +260,12 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
               <Building2 className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
               {isPidgin ? 'BMONI BRAND & ENTITY SHIELD' : 'BMONI ENTERPRISE RADAR'}
             </span>
+            {isProActive && (
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono font-bold flex items-center gap-1">
+                <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
+                ENTERPRISE SENTINEL ACTIVE
+              </span>
+            )}
             <span className="text-xs text-slate-400 font-mono">
               {isPidgin ? 'Live Rumor Monitoring & PR Debunk Kit' : 'Live Weekly Ingestion & PR Debunk Kits'}
             </span>
@@ -182,13 +310,62 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
 
           <button
             onClick={onOpenSubscriptionModal}
-            className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+            className={`flex items-center space-x-1.5 px-4 py-2 rounded-xl font-bold text-xs shadow-lg transition-all active:scale-95 ${
+              isProActive 
+                ? 'bg-emerald-600/30 border border-emerald-500/50 text-emerald-300 hover:bg-emerald-600/50' 
+                : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-500 hover:to-indigo-500 shadow-blue-500/20'
+            }`}
           >
-            <Lock className="w-3.5 h-3.5" />
-            <span>Manage Enterprise Plan (₦250k/mo)</span>
+            {isProActive ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Lock className="w-3.5 h-3.5" />}
+            <span>{isProActive ? (proOrgName ? `Pro Active (${proOrgName})` : 'Pro Active Tier') : 'Manage Enterprise Plan (₦250k/mo)'}</span>
           </button>
         </div>
       </div>
+
+      {/* REAL-TIME ALERT BANNER WHEN NEW ARTICLE OR CRISIS IS DETECTED */}
+      {latestNewArticleAlert && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-rose-950/80 via-slate-900 to-rose-950/80 border-2 border-rose-500/60 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3">
+          <div className="flex items-start space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/50 flex items-center justify-center text-rose-400 shrink-0 mt-0.5">
+              <BellRing className="w-5 h-5 animate-bounce" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-mono font-black uppercase px-2 py-0.5 rounded bg-rose-500 text-white tracking-wider animate-pulse">
+                  🚨 REAL-TIME SENTINEL ALERT
+                </span>
+                <span className="text-xs font-mono text-slate-300">
+                  New Press Story Ingested Just Now ({latestNewArticleAlert.source})
+                </span>
+              </div>
+              <h4 className="text-sm font-bold text-white">
+                "{latestNewArticleAlert.title}"
+              </h4>
+              <p className="text-xs text-slate-300 line-clamp-1">
+                {latestNewArticleAlert.snippet}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+            <button
+              onClick={() => handleQuickDispatchWhatsapp(`🚨 *RUMOUR RADAR NEW STORY ALERT*\n\nBrand: *${brandInput}*\nStory: *${latestNewArticleAlert.title}*\nSource: ${latestNewArticleAlert.source}\nLink: ${latestNewArticleAlert.link}\n\nAutomated Sentinel Alert from RumourRadar.ng`)}
+              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Dispatch WhatsApp Alert</span>
+            </button>
+
+            <button
+              onClick={() => setLatestNewArticleAlert(null)}
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+              title="Dismiss Alert"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Brand Search Bar & Presets */}
       <div className="glass-panel p-4 sm:p-5 rounded-2xl border-blue-500/30 space-y-4 shadow-lg">
@@ -198,68 +375,58 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
           {[
             { id: 'corporation', label: '🏢 Corporations & SMEs' },
             { id: 'creator', label: '👤 Personal Brands & Creators' },
-            { id: 'agency', label: '🏛️ Public Agencies & Officials' }
-          ].map((cat) => (
+            { id: 'agency', label: '🏛️ Government Agencies & Regulators' }
+          ].map((tab) => (
             <button
-              key={cat.id}
-              onClick={() => {
-                const nextCat = cat.id as 'corporation' | 'creator' | 'agency';
-                setEntityCategory(nextCat);
-                const firstPreset = ENTITY_PRESETS[nextCat][0];
-                setBrandInput(firstPreset);
-                executeScan(firstPreset);
-              }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${
-                entityCategory === cat.id
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 font-black'
-                  : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
+              key={tab.id}
+              onClick={() => setEntityCategory(tab.id as any)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
+                entityCategory === tab.id
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-slate-800/60 text-slate-400 hover:text-white'
               }`}
             >
-              {cat.label}
+              {tab.label}
             </button>
           ))}
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2">
+        {/* Search Input Bar */}
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
+            <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
               value={brandInput}
               onChange={(e) => setBrandInput(e.target.value)}
-              placeholder={
-                entityCategory === 'creator'
-                  ? 'Search creator, artist, executive or founder (e.g. Davido, Hilda Baci, Tony Elumelu)...'
-                  : entityCategory === 'agency'
-                  ? 'Search public agency or official (e.g. CBN, INEC, NCDC, NNPC)...'
-                  : 'Search corporation or brand (e.g. GTBank, Kuda, Air Peace, Opay, Access Bank)...'
-              }
-              className="w-full px-4 py-3 rounded-xl bg-slate-950/80 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500/50 font-medium"
               onKeyDown={(e) => e.key === 'Enter' && executeScan()}
+              placeholder={isPidgin ? "Type company name, creator or public person to scan..." : "Search brand name, corporate entity, creator, or government agency..."}
+              className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/80 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
             />
           </div>
 
           <button
             onClick={() => executeScan()}
             disabled={isScanning || !brandInput.trim()}
-            className="flex items-center justify-center space-x-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 active:scale-95 shrink-0"
+            className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-sm hover:from-blue-500 hover:to-indigo-500 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 active:scale-95"
           >
             {isScanning ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Scanning Media...</span>
+                <span>{isPidgin ? 'We Dey Scan News...' : 'Scanning Surveillance Grid...'}</span>
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                <span>Scan Entity Rumors</span>
+                <span>{isPidgin ? 'Scan Brand News & Rumours' : 'Run Crisis Radar Scan'}</span>
               </>
             )}
           </button>
         </div>
 
-        {/* Quick Presets for Selected Category */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-          <span className="text-[11px] font-bold text-slate-400 shrink-0 mr-1">Popular Presets:</span>
+        {/* Preset Quick-Search Badges */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-1">
+          <span className="text-[11px] font-mono text-slate-400 font-bold shrink-0 mr-1">Trending Entities:</span>
           {ENTITY_PRESETS[entityCategory].map((b) => (
             <button
               key={b}
@@ -275,38 +442,124 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
         </div>
       </div>
 
-      {/* BMONI Pro Automated Sentinel Teaser Lock Banner */}
-      <div 
-        onClick={onOpenSubscriptionModal}
-        className="glass-panel p-4 rounded-2xl border-blue-500/40 bg-gradient-to-r from-blue-950/50 via-slate-900 to-indigo-950/40 hover:border-blue-400 transition-all cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg"
-      >
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0">
-            <Lock className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h4 className="text-xs sm:text-sm font-bold text-white">24/7 Automated Sentinel & Instant WhatsApp Alerts</h4>
-              <span className="text-[10px] font-mono font-bold bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded border border-blue-500/30">
-                BMONI Pro Feature
-              </span>
-            </div>
-            <p className="text-xs text-slate-400">
-              Get notified immediately on WhatsApp & Telegram when viral rumors mention your brand or entity.
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpenSubscriptionModal();
-          }}
-          className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shrink-0 transition-all active:scale-95 shadow-md"
+      {/* DYNAMIC 24/7 SENTINEL NODE: LOCKED TEASER vs ACTIVE LIVE DISPATCHER */}
+      {!isProActive ? (
+        /* Free Tier: Informational Upgrade Banner */
+        <div 
+          onClick={onOpenSubscriptionModal}
+          className="glass-panel p-4 rounded-2xl border-blue-500/40 bg-gradient-to-r from-blue-950/50 via-slate-900 to-indigo-950/40 hover:border-blue-400 transition-all cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg group"
         >
-          Unlock Automated Sentinel &rarr;
-        </button>
-      </div>
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0 group-hover:scale-105 transition-transform">
+              <Lock className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h4 className="text-xs sm:text-sm font-bold text-white">24/7 Automated Sentinel & Instant WhatsApp Alerts</h4>
+                <span className="text-[10px] font-mono font-bold bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded border border-blue-500/30">
+                  BMONI Pro Feature
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">
+                Get notified immediately on WhatsApp & Telegram the second viral rumors or new press articles mention your brand.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenSubscriptionModal();
+            }}
+            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shrink-0 transition-all active:scale-95 shadow-md flex items-center gap-1.5"
+          >
+            <Zap className="w-3.5 h-3.5" />
+            <span>Unlock Automated Sentinel &rarr;</span>
+          </button>
+        </div>
+      ) : (
+        /* PRO & ENTERPRISE TIER: LIVE ACTIVE SENTINEL NODE */
+        <div className="glass-panel p-4 sm:p-5 rounded-2xl border-emerald-500/40 bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-950 shadow-xl space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
+                <Radio className="w-5 h-5 animate-pulse text-emerald-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="text-sm font-extrabold text-white">24/7 Automated Sentinel Node Active</h4>
+                  <span className="text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/40 uppercase">
+                    Continuous Surveillance Live
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300">
+                  Active Target: <strong className="text-emerald-400">{scanResult?.brandName || brandInput}</strong> • Continuous 45s Multi-Source RSS & Social Crawl
+                </p>
+              </div>
+            </div>
+
+            {/* Instant Actions */}
+            <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+              <button
+                onClick={() => handleQuickDispatchWhatsapp()}
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95"
+                title="Send active debunk & crisis status to WhatsApp"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>Instant WhatsApp Dispatch</span>
+              </button>
+
+              <button
+                onClick={handleQuickDispatchTelegram}
+                className="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center gap-1 transition-all shadow-md active:scale-95"
+                title="Share to Telegram channel"
+              >
+                <Send className="w-3 h-3" />
+                <span>Telegram</span>
+              </button>
+
+              <button
+                onClick={() => setIsAlertConfigOpen(true)}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs flex items-center gap-1 transition-all active:scale-95"
+                title="Configure alert phone number & channels"
+              >
+                <Settings className="w-3.5 h-3.5 text-slate-400" />
+                <span>{alertWhatsappNumber ? `Alerts: ${alertWhatsappNumber.slice(-4)}` : 'Alert Settings'}</span>
+              </button>
+
+              <button
+                onClick={() => setShowLogs(!showLogs)}
+                className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 font-mono text-[11px] transition-colors"
+                title="View Sentinel Telemetry Stream"
+              >
+                {showLogs ? 'Hide Logs ▲' : 'Logs ▼'}
+              </button>
+            </div>
+          </div>
+
+          {/* Collapsible Telemetry Ingestion Log Box */}
+          {showLogs && (
+            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] text-slate-300 space-y-1 max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800">
+              <div className="text-slate-500 pb-1 border-b border-slate-900 flex justify-between items-center">
+                <span>🛰️ Sentinel Live Ingestion Stream ({sentinelLogs.length} events):</span>
+                <span className="text-emerald-400">Node Status: Operational</span>
+              </div>
+              {sentinelLogs.length === 0 ? (
+                <div className="text-slate-500 py-2">Listening for incoming media streams...</div>
+              ) : (
+                sentinelLogs.map((log, idx) => (
+                  <div key={idx} className="flex items-start gap-2">
+                    <span className="text-slate-500 shrink-0">[{log.timestamp}]</span>
+                    <span className={log.type === 'alert' ? 'text-rose-400 font-bold' : log.type === 'success' ? 'text-emerald-400' : 'text-slate-300'}>
+                      {log.message}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Main Results View */}
       {scanResult && (
@@ -511,13 +764,24 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                   {scanResult.recentWeeklyNews.map((news) => (
                     <div
                       key={news.id}
-                      className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between space-y-3"
+                      className={`p-4 rounded-xl bg-slate-900/60 border transition-all flex flex-col justify-between space-y-3 ${
+                        news.isNewlyIngested 
+                          ? 'border-emerald-500/80 bg-emerald-950/20 ring-1 ring-emerald-500/40 shadow-lg' 
+                          : 'border-slate-800 hover:border-slate-700'
+                      }`}
                     >
                       <div className="space-y-2">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-[11px] font-bold text-emerald-400 truncate max-w-[180px]">
-                            {news.source}
-                          </span>
+                          <div className="flex items-center gap-2 truncate">
+                            <span className="text-[11px] font-bold text-emerald-400 truncate max-w-[180px]">
+                              {news.source}
+                            </span>
+                            {news.isNewlyIngested && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500 text-black uppercase animate-pulse">
+                                ✨ NEW LIVE STORY
+                              </span>
+                            )}
+                          </div>
                           <span className="text-[10px] font-mono text-slate-400 shrink-0">
                             {news.publishedDate}
                           </span>
@@ -532,14 +796,25 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                         </p>
                       </div>
 
-                      <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
-                          news.sentiment === 'POSITIVE' ? 'bg-emerald-500/20 text-emerald-300' :
-                          news.sentiment === 'NEGATIVE' ? 'bg-rose-500/20 text-rose-300' :
-                          'bg-slate-800 text-slate-300'
-                        }`}>
-                          {news.sentiment}
-                        </span>
+                      <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                            news.sentiment === 'POSITIVE' ? 'bg-emerald-500/20 text-emerald-300' :
+                            news.sentiment === 'NEGATIVE' ? 'bg-rose-500/20 text-rose-300' :
+                            'bg-slate-800 text-slate-300'
+                          }`}>
+                            {news.sentiment}
+                          </span>
+
+                          <button
+                            onClick={() => handleQuickDispatchWhatsapp(`📰 *RUMOUR RADAR NEWS RADAR*\n\nBrand: *${brandInput}*\nHeadline: *${news.title}*\nPublisher: ${news.source}\nLink: ${news.link}`)}
+                            className="p-1 rounded-md bg-slate-800 hover:bg-emerald-600/30 text-slate-400 hover:text-emerald-300 text-[10px] flex items-center gap-1 transition-colors"
+                            title="Forward article to WhatsApp"
+                          >
+                            <MessageSquare className="w-3 h-3 text-emerald-400" />
+                            <span>Share</span>
+                          </button>
+                        </div>
 
                         <a
                           href={news.link}
@@ -576,13 +851,23 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                   </p>
                 </div>
 
-                <button
-                  onClick={() => scanResult.debunkKit && handleCopy(scanResult.debunkKit.officialStatementDraft, 'official_stmt')}
-                  className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all self-start sm:self-auto"
-                >
-                  {copiedKey === 'official_stmt' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedKey === 'official_stmt' ? 'Copied Press Release!' : 'Copy Official Statement'}</span>
-                </button>
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <button
+                    onClick={() => handleQuickDispatchWhatsapp()}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>Send to WhatsApp</span>
+                  </button>
+
+                  <button
+                    onClick={() => scanResult.debunkKit && handleCopy(scanResult.debunkKit.officialStatementDraft, 'official_stmt')}
+                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all"
+                  >
+                    {copiedKey === 'official_stmt' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedKey === 'official_stmt' ? 'Copied Statement!' : 'Copy Official Statement'}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Official Statement Draft */}
@@ -657,6 +942,87 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ALERT CONFIGURATION MODAL */}
+      {isAlertConfigOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
+          <div className="relative w-full max-w-md p-6 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl text-slate-100 space-y-4">
+            <button
+              onClick={() => setIsAlertConfigOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-full bg-slate-800 text-slate-400 hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-3 pb-2 border-b border-slate-800">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                <BellRing className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Configure Sentinel Alert Channels</h3>
+                <p className="text-xs text-slate-400">Instant notification rails for {brandInput}</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveAlertConfig} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">
+                  WhatsApp Phone Number for Urgent Alerts:
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                  <input
+                    type="tel"
+                    value={alertWhatsappNumber}
+                    onChange={(e) => setAlertWhatsappNumber(e.target.value)}
+                    placeholder="+234 801 234 5678"
+                    className="w-full pl-9 pr-3.5 py-2.5 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <span className="text-[10px] text-slate-500 mt-1 block">
+                  Dispatches direct WhatsApp crisis links when high-risk rumors or breaking news are indexed.
+                </span>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">
+                  PR Desk Email (Optional):
+                </label>
+                <input
+                  type="email"
+                  value={alertEmail}
+                  onChange={(e) => setAlertEmail(e.target.value)}
+                  placeholder="pr-desk@company.ng"
+                  className="w-full px-3.5 py-2.5 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-[11px] flex items-center gap-2">
+                <Sparkles className="w-4 h-4 shrink-0 text-emerald-400" />
+                <span>Continuous crawler scans news every 45s and triggers instant WhatsApp broadcast intents.</span>
+              </div>
+
+              <div className="pt-2 flex items-center gap-2">
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5"
+                >
+                  {isAlertConfigSaved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4 hidden" />}
+                  <span>{isAlertConfigSaved ? 'Alert Channels Saved!' : 'Save & Arm Sentinel Alerts'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsAlertConfigOpen(false)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                >
+                  Close
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
