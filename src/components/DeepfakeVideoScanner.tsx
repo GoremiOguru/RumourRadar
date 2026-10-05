@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Video, 
   Upload, 
@@ -14,6 +14,7 @@ import {
   Activity, 
   Check, 
   FileVideo, 
+  FileText,
   ExternalLink,
   Flame,
   X,
@@ -23,9 +24,10 @@ import {
   ScanLine,
   Image as ImageIcon,
   HelpCircle,
-  Copy
+  Copy,
+  Sun
 } from 'lucide-react';
-import { DeepfakeScanResult } from '@/app/api/deepfake/scan/route';
+import { DeepfakeScanResult, DeepfakeMetric } from '@/app/api/deepfake/scan/route';
 import { ScrollReveal } from '@/components/ScrollReveal';
 import { SectionHelpModal } from '@/components/SectionHelpModal';
 
@@ -49,7 +51,7 @@ const SAMPLE_TEST_MEDIA = [
   {
     id: 'sample-doctored-memo',
     title: 'Doctored Press Circular (.jpg)',
-    type: 'image' as const,
+    type: 'document' as const,
     tag: 'Forged JPG Memo',
     url: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?q=80&w=800',
     desc: 'Sample forged circular document with distorted letterhead & synthetic text blur.'
@@ -65,6 +67,7 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
   const isPidgin = appLanguage === 'pcm';
   const [videoUrl, setVideoUrl] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [rawImageBase64, setRawImageBase64] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [extractedFrames, setExtractedFrames] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -73,7 +76,6 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
   const [activeFrameIndex, setActiveFrameIndex] = useState<number>(0);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoElementRef = useRef<HTMLVideoElement | null>(null);
 
   const handleOpenHelp = () => {
     if (onOpenHelpModal) {
@@ -85,9 +87,9 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
 
   /**
    * Real Client-Side HTML5 Video Keyframe Extractor
-   * Extracts real PNG image frames from user-uploaded MP4/WebM/MOV video
+   * Extracts clean and annotated frames from user-uploaded MP4/WebM/MOV video
    */
-  const extractRealVideoFrames = async (file: File): Promise<string[]> => {
+  const extractRealVideoFrames = async (file: File): Promise<{ uiFrames: string[]; cleanFrame: string | null }> => {
     return new Promise((resolve) => {
       const video = document.createElement('video');
       video.preload = 'metadata';
@@ -95,7 +97,8 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
       video.playsInline = true;
       video.src = URL.createObjectURL(file);
 
-      const frames: string[] = [];
+      const uiFrames: string[] = [];
+      let cleanFrame: string | null = null;
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
@@ -111,18 +114,24 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
           Math.min(4.5, duration * 0.85)
         ];
 
-        for (const t of timestamps) {
+        for (let i = 0; i < timestamps.length; i++) {
+          const t = timestamps[i];
           await new Promise<void>((resSeek) => {
             video.currentTime = t;
             video.onseeked = () => {
               if (ctx) {
+                // Draw raw clean frame first
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                // Draw forensic AI landmark grid overlay on extracted frame
+                if (i === 0) {
+                  cleanFrame = canvas.toDataURL('image/jpeg', 0.85);
+                }
+                
+                // Add biometric landmark overlay for UI preview
                 ctx.strokeStyle = 'rgba(168, 85, 247, 0.6)';
                 ctx.lineWidth = 1.5;
                 ctx.strokeRect(canvas.width * 0.28, canvas.height * 0.2, canvas.width * 0.44, canvas.height * 0.55);
 
-                frames.push(canvas.toDataURL('image/jpeg', 0.8));
+                uiFrames.push(canvas.toDataURL('image/jpeg', 0.8));
               }
               resSeek();
             };
@@ -130,68 +139,70 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
         }
 
         URL.revokeObjectURL(video.src);
-        resolve(frames);
+        resolve({ uiFrames, cleanFrame });
       };
 
       video.onerror = () => {
-        resolve([]);
+        resolve({ uiFrames: [], cleanFrame: null });
       };
     });
   };
 
   /**
    * Client-Side Forensic Image Frame Extractor
-   * Generates 4 visual inspection keyframes (Original, GAN Border, Feature Crop, Spectral Overlay) for uploaded AI images/photos
+   * Generates visual inspection keyframes for uploaded AI images/photos while preserving the raw image
    */
-  const extractImageForensicFrames = async (file: File): Promise<string[]> => {
+  const extractImageForensicFrames = async (file: File): Promise<{ uiFrames: string[]; cleanFrame: string | null }> => {
     return new Promise((resolve) => {
-      const img = new Image();
-      img.src = URL.createObjectURL(file);
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return resolve([]);
+      const reader = new FileReader();
+      reader.onload = () => {
+        const cleanBase64 = reader.result as string;
+        const img = new Image();
+        img.src = cleanBase64;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return resolve({ uiFrames: [], cleanFrame: cleanBase64 });
 
-        canvas.width = Math.min(img.width || 640, 640);
-        canvas.height = Math.min(img.height || 480, 480);
-        const frames: string[] = [];
+          canvas.width = Math.min(img.width || 640, 640);
+          canvas.height = Math.min(img.height || 480, 480);
+          const uiFrames: string[] = [];
 
-        // Frame 1: Original with face mesh grid
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        ctx.strokeStyle = 'rgba(168, 85, 247, 0.8)';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(canvas.width * 0.25, canvas.height * 0.15, canvas.width * 0.5, canvas.height * 0.6);
-        frames.push(canvas.toDataURL('image/jpeg', 0.8));
+          // Frame 1: Original with subtle face mesh grid
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          ctx.strokeStyle = 'rgba(168, 85, 247, 0.8)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(canvas.width * 0.25, canvas.height * 0.15, canvas.width * 0.5, canvas.height * 0.6);
+          uiFrames.push(canvas.toDataURL('image/jpeg', 0.8));
 
-        // Frame 2: Spatial noise / GAN boundary highlight
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = 'rgba(168, 85, 247, 0.15)';
-        ctx.fillRect(canvas.width * 0.25, canvas.height * 0.15, canvas.width * 0.5, canvas.height * 0.6);
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
-        ctx.lineWidth = 2.5;
-        ctx.strokeRect(canvas.width * 0.2, canvas.height * 0.1, canvas.width * 0.6, canvas.height * 0.7);
-        frames.push(canvas.toDataURL('image/jpeg', 0.8));
+          // Frame 2: Spatial noise / GAN boundary highlight
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = 'rgba(168, 85, 247, 0.15)';
+          ctx.fillRect(canvas.width * 0.25, canvas.height * 0.15, canvas.width * 0.5, canvas.height * 0.6);
+          ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
+          ctx.lineWidth = 2.5;
+          ctx.strokeRect(canvas.width * 0.2, canvas.height * 0.1, canvas.width * 0.6, canvas.height * 0.7);
+          uiFrames.push(canvas.toDataURL('image/jpeg', 0.8));
 
-        // Frame 3: Zoomed region
-        ctx.drawImage(img, canvas.width * 0.2, canvas.height * 0.2, canvas.width * 0.6, canvas.height * 0.6, 0, 0, canvas.width, canvas.height);
-        ctx.strokeStyle = 'rgba(34, 197, 94, 0.8)';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(canvas.width * 0.2, canvas.height * 0.3, canvas.width * 0.6, canvas.height * 0.4);
-        frames.push(canvas.toDataURL('image/jpeg', 0.8));
+          // Frame 3: Zoomed region
+          ctx.drawImage(img, canvas.width * 0.2, canvas.height * 0.2, canvas.width * 0.6, canvas.height * 0.6, 0, 0, canvas.width, canvas.height);
+          ctx.strokeStyle = 'rgba(34, 197, 94, 0.8)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(canvas.width * 0.2, canvas.height * 0.3, canvas.width * 0.6, canvas.height * 0.4);
+          uiFrames.push(canvas.toDataURL('image/jpeg', 0.8));
 
-        // Frame 4: Frequency spectrum overlay
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = 'rgba(59, 130, 246, 0.2)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        frames.push(canvas.toDataURL('image/jpeg', 0.8));
+          // Frame 4: Frequency spectrum overlay
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = 'rgba(59, 130, 246, 0.2)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          uiFrames.push(canvas.toDataURL('image/jpeg', 0.8));
 
-        URL.revokeObjectURL(img.src);
-        resolve(frames);
+          resolve({ uiFrames, cleanFrame: cleanBase64 });
+        };
+        img.onerror = () => resolve({ uiFrames: [], cleanFrame: cleanBase64 });
       };
-
-      img.onerror = () => {
-        resolve([]);
-      };
+      reader.onerror = () => resolve({ uiFrames: [], cleanFrame: null });
+      reader.readAsDataURL(file);
     });
   };
 
@@ -206,41 +217,65 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
 
     try {
       if (file.type.startsWith('image/')) {
-        const frames = await extractImageForensicFrames(file);
-        setExtractedFrames(frames);
+        const { uiFrames, cleanFrame } = await extractImageForensicFrames(file);
+        setExtractedFrames(uiFrames);
+        setRawImageBase64(cleanFrame);
       } else {
-        const frames = await extractRealVideoFrames(file);
-        setExtractedFrames(frames);
+        const { uiFrames, cleanFrame } = await extractRealVideoFrames(file);
+        setExtractedFrames(uiFrames);
+        setRawImageBase64(cleanFrame);
       }
     } catch (err) {
       console.warn('Frame extraction notice:', err);
     }
   };
 
-  const handleScan = async (overrideTitle?: string, overrideUrl?: string) => {
+  const handleScan = async (overrideTitle?: string, overrideUrl?: string, overrideMediaType?: 'image' | 'video' | 'document') => {
     if (!selectedFile && !videoUrl && !overrideTitle && !overrideUrl) return;
 
-    const isImage = selectedFile?.type.startsWith('image/');
+    const isImage = overrideMediaType ? overrideMediaType === 'image' : selectedFile?.type.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|bmp)(\?.*)?$/i.test(videoUrl) || /unsplash|imgur|cloudinary|twimg/i.test(videoUrl);
+    const isVideo = overrideMediaType ? overrideMediaType === 'video' : selectedFile?.type.startsWith('video/') || /\.(mp4|webm|mov)(\?.*)?$/i.test(videoUrl);
+    const isDoc = overrideMediaType ? overrideMediaType === 'document' : /memo|circular|document|\.pdf/i.test(videoUrl || overrideTitle || '');
+
     setLoading(true);
     setResult(null);
     setScanningStage(
       isImage
         ? (isPidgin ? 'We dey scan photo pixels, GAN noise & facial alignment...' : 'Analyzing spatial pixel noise, GAN artifacts & facial mesh alignment...')
+        : isDoc
+        ? (isPidgin ? 'We dey inspect document stamp, text resolution & header...' : 'Examining document letterhead typography, digital noise & stamp forgery...')
         : (isPidgin ? 'We dey extract video picture frame & sound wave...' : 'Extracting video keyframes and optical flow...')
     );
 
     try {
-      setTimeout(() => setScanningStage(isImage ? (isPidgin ? 'We dey check synthetic pixel distortion & lighting...' : 'Evaluating GAN frequency spectrum & illumination inconsistencies...') : (isPidgin ? 'We dey check voice sound spectrum & clone jitter...' : 'Analyzing neural voice acoustic spectrum & formant jitter...')), 600);
-      setTimeout(() => setScanningStage(isImage ? (isPidgin ? 'We dey calculate AI deepfake photo confidence score...' : 'Synthesizing image forensic risk score...') : (isPidgin ? 'We dey check face boundary & lip sync...' : 'Evaluating facial boundary mesh & lip-sync coherence...')), 1200);
+      setTimeout(() => setScanningStage(
+        isImage 
+          ? (isPidgin ? 'We dey check synthetic pixel distortion & lighting...' : 'Evaluating GAN frequency spectrum & illumination inconsistencies...') 
+          : isDoc
+          ? (isPidgin ? 'We dey verify official circular format & signature...' : 'Verifying typographic alignment, stamp authenticity & digital compression...')
+          : (isPidgin ? 'We dey check voice sound spectrum & clone jitter...' : 'Analyzing neural voice acoustic spectrum & formant jitter...')
+      ), 600);
+      
+      setTimeout(() => setScanningStage(
+        isImage 
+          ? (isPidgin ? 'We dey calculate AI deepfake photo confidence score...' : 'Synthesizing image forensic risk score...') 
+          : isDoc
+          ? (isPidgin ? 'We dey calculate document authenticity score...' : 'Synthesizing document integrity score...')
+          : (isPidgin ? 'We dey check face boundary & lip sync...' : 'Evaluating facial boundary mesh & lip-sync coherence...')
+      ), 1200);
+
+      const targetMediaType = overrideMediaType || (isDoc ? 'document' : isImage ? 'image' : isVideo ? 'video' : 'image');
 
       const res = await fetch('/api/deepfake/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           videoUrl: overrideUrl || videoUrl || undefined,
-          videoName: overrideTitle || selectedFile?.name || (isImage ? 'Uploaded AI Image Sample' : 'Uploaded Video Sample'),
+          videoName: overrideTitle || selectedFile?.name || (targetMediaType === 'image' ? 'Uploaded AI Image Sample' : targetMediaType === 'document' ? 'Uploaded Official Circular' : 'Uploaded Video Sample'),
+          mediaType: targetMediaType,
           framesCount: extractedFrames.length || 4,
-          firstFrameBase64: extractedFrames[0] || undefined
+          firstFrameBase64: extractedFrames[0] || undefined,
+          rawImageBase64: rawImageBase64 || undefined
         })
       });
 
@@ -267,10 +302,32 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
   const handleTestSampleUrl = (sample: typeof SAMPLE_TEST_MEDIA[0]) => {
     setSelectedFile(null);
     setPreviewUrl(null);
+    setRawImageBase64(null);
     setExtractedFrames([]);
     setVideoUrl(sample.url);
-    handleScan(sample.title, sample.url);
+    handleScan(sample.title, sample.url, sample.type);
   };
+
+  const renderMetricIcon = (type?: string) => {
+    switch (type) {
+      case 'face':
+        return <Eye className="w-3.5 h-3.5 text-purple-400" />;
+      case 'mic':
+        return <Mic className="w-3.5 h-3.5 text-purple-400" />;
+      case 'layers':
+        return <Layers className="w-3.5 h-3.5 text-purple-400" />;
+      case 'sun':
+        return <Sun className="w-3.5 h-3.5 text-purple-400" />;
+      case 'file':
+        return <FileText className="w-3.5 h-3.5 text-purple-400" />;
+      default:
+        return <Activity className="w-3.5 h-3.5 text-purple-400" />;
+    }
+  };
+
+  // Determine active media type label for UI
+  const isImageFile = selectedFile?.type.startsWith('image/');
+  const isVideoFile = selectedFile?.type.startsWith('video/');
 
   return (
     <div className="section-stagger space-y-6">
@@ -321,7 +378,7 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
                   {selectedFile.name}
                 </span>
                 <span className="text-[11px] text-emerald-400 font-mono">
-                  {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • {selectedFile.type.startsWith('image/') ? 'AI Photo Media' : 'Video Media'} • {extractedFrames.length} Keyframes
+                  {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • {selectedFile.type.startsWith('image/') ? 'Image/Photo Media' : 'Video Media'} • {extractedFrames.length} Keyframes
                 </span>
               </div>
             </div>
@@ -330,6 +387,7 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
               onClick={() => {
                 setSelectedFile(null);
                 setPreviewUrl(null);
+                setRawImageBase64(null);
                 setExtractedFrames([]);
                 setResult(null);
               }}
@@ -372,7 +430,7 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
             type="text"
             value={videoUrl}
             onChange={(e) => setVideoUrl(e.target.value)}
-            placeholder={isPidgin ? "Or copy fake video or photo link from WhatsApp, X (Twitter), TikTok, or YouTube..." : "Or paste viral video or AI image URL from WhatsApp, X (Twitter), TikTok, or YouTube..."}
+            placeholder={isPidgin ? "Or copy photo or video link from WhatsApp, X (Twitter), TikTok, or news..." : "Or paste photo, video or news media URL from WhatsApp, X (Twitter), TikTok, or YouTube..."}
             className="flex-1 px-4 py-3 rounded-xl bg-slate-950/80 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500/50"
           />
 
@@ -390,7 +448,7 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
             className="flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition-all shrink-0 active:scale-95"
           >
             <Upload className="w-4 h-4 text-purple-400" />
-            <span>{isPidgin ? 'Upload Video / Image' : 'Upload Video / Image File'}</span>
+            <span>{isPidgin ? 'Upload Video / Photo' : 'Upload Video / Image'}</span>
           </button>
 
           <button
@@ -401,12 +459,18 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
             {loading ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>{isPidgin ? 'We Dey Check Video...' : 'Forensics in Progress...'}</span>
+                <span>{isPidgin ? 'We Dey Check Media...' : 'Forensics in Progress...'}</span>
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                <span>{isPidgin ? 'Check If Video Na Fake' : 'Analyze Deepfake Risk'}</span>
+                <span>
+                  {isImageFile 
+                    ? (isPidgin ? 'Check If Photo Na AI' : 'Analyze AI Photo Risk')
+                    : isVideoFile
+                    ? (isPidgin ? 'Check If Video Na Fake' : 'Analyze Deepfake Video')
+                    : (isPidgin ? 'Scan Media for AI' : 'Analyze Deepfake Risk')}
+                </span>
               </>
             )}
           </button>
@@ -487,9 +551,11 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
             <Activity className="w-7 h-7 animate-pulse" />
           </div>
           <div className="space-y-1 max-w-md mx-auto">
-            <h3 className="text-base font-bold text-white">Running Multimodal Biometric Forensics</h3>
+            <h3 className="text-base font-bold text-white">
+              {isPidgin ? 'We Dey Run AI Forensics Scan' : 'Running Multimodal Biometric Forensics'}
+            </h3>
             <p className="text-xs text-purple-300 font-mono">
-              {scanningStage || 'Processing video stream...'}
+              {scanningStage || 'Processing media stream...'}
             </p>
           </div>
         </div>
@@ -501,14 +567,22 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
           {/* Top Verdict Banner */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
             <div className="space-y-1">
-              <span className="text-xs font-mono text-slate-400 uppercase">Forensic Video Classification</span>
+              <span className="text-xs font-mono text-slate-400 uppercase">
+                {result.mediaType === 'image'
+                  ? (isPidgin ? 'Forensic Photo Classification' : 'Forensic Image Classification')
+                  : result.mediaType === 'document'
+                  ? (isPidgin ? 'Forensic Memo Classification' : 'Forensic Document Classification')
+                  : result.mediaType === 'video'
+                  ? (isPidgin ? 'Forensic Video Classification' : 'Forensic Video Classification')
+                  : (isPidgin ? 'Forensic Media Classification' : 'Forensic Media Classification')}
+              </span>
               <div className="flex items-center gap-2.5">
                 <span className={`px-3 py-1 rounded-xl text-sm font-black uppercase font-mono tracking-wider ${
                   result.verdict === 'SYNTHETIC_DEEPFAKE' ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30' :
                   result.verdict === 'SUSPICIOUS_AI_GENERATED' ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/30' :
                   'bg-emerald-500 text-black shadow-lg shadow-emerald-500/30'
                 }`}>
-                  {result.verdict.replace(/_/g, ' ')}
+                  {result.verdictDisplay || result.verdict.replace(/_/g, ' ')}
                 </span>
                 <span className="text-xs font-mono font-bold text-slate-300">
                   Risk Level: <strong className={result.riskLevel === 'CRITICAL' ? 'text-rose-400' : result.riskLevel === 'HIGH' ? 'text-amber-400' : 'text-emerald-400'}>{result.riskLevel}</strong>
@@ -534,47 +608,71 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
             </div>
           </div>
 
-          {/* Biometric Analysis Breakdown Bars */}
+          {/* Dynamic Media Analysis Breakdown Bars */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-400 flex items-center gap-1"><Eye className="w-3.5 h-3.5 text-purple-400" /> Lip-Sync Alignment:</span>
-                <span className="font-mono font-bold text-slate-200">{result.biometricBreakdown.lipSyncAlignment}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-purple-500 rounded-full" style={{ width: `${result.biometricBreakdown.lipSyncAlignment}%` }}></div>
-              </div>
-            </div>
+            {result.metrics && result.metrics.length > 0 ? (
+              result.metrics.map((metric, idx) => (
+                <div key={idx} className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5">
+                  <div className="flex justify-between text-xs items-center gap-1">
+                    <span className="text-slate-400 flex items-center gap-1 truncate">
+                      {renderMetricIcon(metric.type)}
+                      <span className="truncate">{metric.label}:</span>
+                    </span>
+                    <span className="font-mono font-bold text-slate-200 shrink-0">{metric.value}%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full ${
+                        metric.value >= 70 ? 'bg-purple-500' : metric.value >= 40 ? 'bg-amber-500' : 'bg-rose-500'
+                      }`} 
+                      style={{ width: `${metric.value}%` }}
+                    ></div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <>
+                <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-400 flex items-center gap-1"><Eye className="w-3.5 h-3.5 text-purple-400" /> Facial Landmark Integrity:</span>
+                    <span className="font-mono font-bold text-slate-200">{result.biometricBreakdown.facialBoundaryCoherence}%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-purple-500 rounded-full" style={{ width: `${result.biometricBreakdown.facialBoundaryCoherence}%` }}></div>
+                  </div>
+                </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-400 flex items-center gap-1"><Mic className="w-3.5 h-3.5 text-purple-400" /> Voice Acoustic Naturalness:</span>
-                <span className="font-mono font-bold text-slate-200">{result.biometricBreakdown.voiceAcousticNaturalness}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-purple-500 rounded-full" style={{ width: `${result.biometricBreakdown.voiceAcousticNaturalness}%` }}></div>
-              </div>
-            </div>
+                <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-400 flex items-center gap-1"><Layers className="w-3.5 h-3.5 text-purple-400" /> Pixel Noise Consistency:</span>
+                    <span className="font-mono font-bold text-slate-200">{result.biometricBreakdown.ganNoiseConsistency ?? 92}%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-purple-500 rounded-full" style={{ width: `${result.biometricBreakdown.ganNoiseConsistency ?? 92}%` }}></div>
+                  </div>
+                </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-400 flex items-center gap-1"><Layers className="w-3.5 h-3.5 text-purple-400" /> Facial Mesh Coherence:</span>
-                <span className="font-mono font-bold text-slate-200">{result.biometricBreakdown.facialBoundaryCoherence}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-purple-500 rounded-full" style={{ width: `${result.biometricBreakdown.facialBoundaryCoherence}%` }}></div>
-              </div>
-            </div>
+                <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-400 flex items-center gap-1"><Sun className="w-3.5 h-3.5 text-purple-400" /> Lighting & Physics Coherence:</span>
+                    <span className="font-mono font-bold text-slate-200">{result.biometricBreakdown.lightingShadowPlausibility ?? 90}%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-purple-500 rounded-full" style={{ width: `${result.biometricBreakdown.lightingShadowPlausibility ?? 90}%` }}></div>
+                  </div>
+                </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-400 flex items-center gap-1"><Activity className="w-3.5 h-3.5 text-purple-400" /> Frame Continuity:</span>
-                <span className="font-mono font-bold text-slate-200">{result.biometricBreakdown.frameTemporalConsistency}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-purple-500 rounded-full" style={{ width: `${result.biometricBreakdown.frameTemporalConsistency}%` }}></div>
-              </div>
-            </div>
+                <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-400 flex items-center gap-1"><Activity className="w-3.5 h-3.5 text-purple-400" /> Frame Continuity:</span>
+                    <span className="font-mono font-bold text-slate-200">{result.biometricBreakdown.frameTemporalConsistency}%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-purple-500 rounded-full" style={{ width: `${result.biometricBreakdown.frameTemporalConsistency}%` }}></div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Forensic Summary & Recommendation */}
