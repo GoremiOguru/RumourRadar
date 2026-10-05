@@ -95,6 +95,7 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
   const [lastScannedTime, setLastScannedTime] = useState<string>('');
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const signalsScrollRef = useRef<HTMLDivElement>(null);
+  const newsScrollRef = useRef<HTMLDivElement>(null);
 
   // Pro & Enterprise Sentinel State
   const [isProActive, setIsProActive] = useState(false);
@@ -794,21 +795,38 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
           {/* Tab 1: Unverified Rumours & Threats */}
           {activeTab === 'rumours' && (
             <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
+              <div className="flex items-center justify-between gap-2 px-1">
                 <div>
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-300 font-display flex items-center gap-2">
                     <span>{isPidgin ? `Detected Rumor Signals (${scanResult.alerts.length})` : `Detected Misinformation Signals (${scanResult.alerts.length})`}</span>
                     <span className="text-[10px] font-mono text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
-                      Live Ingestion Feed
+                      ← Swipe Horizontal Stream →
                     </span>
                   </span>
                   <p className="text-[11px] font-mono text-slate-500">
                     {isPidgin ? 'Click "Check in Claim Engine" to verify why any tori be rumour' : 'Click "Check in Claim Engine" to inspect grounded evidence for any rumor'}
                   </p>
                 </div>
-                <span className="text-[11px] font-mono text-slate-400">
-                  Showing all {scanResult.alerts.length} detected signals
-                </span>
+
+                {/* Horizontal Navigation Arrow Buttons */}
+                {scanResult.alerts.length > 0 && (
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={() => signalsScrollRef.current?.scrollBy({ left: -340, behavior: 'smooth' })}
+                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 active:scale-95 transition-all shadow-sm"
+                      title="Scroll left"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => signalsScrollRef.current?.scrollBy({ left: 340, behavior: 'smooth' })}
+                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 active:scale-95 transition-all shadow-sm"
+                      title="Scroll right"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {scanResult.alerts.length === 0 ? (
@@ -828,14 +846,17 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div 
+                  ref={signalsScrollRef}
+                  className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-slate-700"
+                >
                   {scanResult.alerts.map((alert) => {
                     const cleanSummary = cleanHtmlEntities(alert.summary);
                     const cleanTitle = cleanHtmlEntities(alert.title);
                     return (
                       <div 
                         key={alert.id}
-                        className="glass-panel p-4 sm:p-5 rounded-2xl border-rose-500/30 flex flex-col justify-between shadow-xl space-y-3 hover:border-rose-500/60 transition-all bg-slate-950/70"
+                        className="w-[85vw] sm:w-[380px] min-w-[300px] max-w-[420px] shrink-0 snap-start glass-panel p-4 sm:p-5 rounded-2xl border-rose-500/30 flex flex-col justify-between shadow-xl space-y-3 hover:border-rose-500/60 transition-all bg-slate-950/80"
                       >
                         <div className="space-y-2.5">
                           <div className="flex items-center justify-between gap-2">
@@ -845,16 +866,16 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                             <span className="text-[11px] font-mono text-slate-400 font-semibold">{alert.publishedDate}</span>
                           </div>
 
-                          <h4 className="font-bold text-sm text-white leading-snug">{cleanTitle}</h4>
+                          <h4 className="font-bold text-sm text-white leading-snug line-clamp-2">{cleanTitle}</h4>
 
-                          <p className="text-xs text-slate-300 leading-relaxed bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                          <p className="text-xs text-slate-300 leading-relaxed bg-slate-900/80 p-3 rounded-xl border border-slate-800 line-clamp-3">
                             {cleanSummary}
                           </p>
                         </div>
 
                         <div className="space-y-2.5 pt-3 border-t border-slate-800 text-xs">
                           <div className="flex items-center justify-between text-slate-400 font-mono text-[11px]">
-                            <span>Source: <strong className="text-slate-200">{alert.sourceName}</strong></span>
+                            <span>Source: <strong className="text-slate-200 truncate max-w-[150px] inline-block align-bottom">{alert.sourceName}</strong></span>
                             {alert.sourceUrl && (
                               <a
                                 href={alert.sourceUrl}
@@ -863,7 +884,7 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                                 className="inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300 transition-colors font-semibold"
                               >
                                 <ExternalLink className="w-3 h-3" />
-                                <span>{isPidgin ? 'Source Link' : 'Source Article'}</span>
+                                <span>{isPidgin ? 'Source' : 'Source Article'}</span>
                               </a>
                             )}
                           </div>
@@ -877,7 +898,7 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                                 title="Load into Claim Verification Engine"
                               >
                                 <Sparkles className="w-3.5 h-3.5" />
-                                <span>{isPidgin ? '🔍 Check Tori for Engine' : '🔍 Verify Claim in Engine'}</span>
+                                <span>{isPidgin ? '🔍 Check Tori' : '🔍 Verify Claim'}</span>
                               </button>
                             )}
 
@@ -901,24 +922,52 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
           {/* Tab 2: All Recent News This Week (Live Weekly Ingestion) */}
           {activeTab === 'weekly_news' && (
             <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 font-display">
-                  Verified News Published This Week ({scanResult.recentWeeklyNews?.length || 0})
-                </span>
-                <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
-                  <Globe className="w-3 h-3" /> Real-time Press Ingestion
-                </span>
+              <div className="flex items-center justify-between gap-2 px-1">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400 font-display flex items-center gap-2">
+                    <span>Verified News This Week ({scanResult.recentWeeklyNews?.length || 0})</span>
+                    <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      ← Swipe Horizontal Stream →
+                    </span>
+                  </span>
+                  <p className="text-[11px] font-mono text-slate-500">
+                    Continuous 7-Day Live Ingestion
+                  </p>
+                </div>
+
+                {/* Horizontal Navigation Arrow Buttons */}
+                {scanResult.recentWeeklyNews && scanResult.recentWeeklyNews.length > 0 && (
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={() => newsScrollRef.current?.scrollBy({ left: -340, behavior: 'smooth' })}
+                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 active:scale-95 transition-all shadow-sm"
+                      title="Scroll left"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => newsScrollRef.current?.scrollBy({ left: 340, behavior: 'smooth' })}
+                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 active:scale-95 transition-all shadow-sm"
+                      title="Scroll right"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {scanResult.recentWeeklyNews && scanResult.recentWeeklyNews.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div 
+                  ref={newsScrollRef}
+                  className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-slate-700"
+                >
                   {scanResult.recentWeeklyNews.map((news) => {
                     const cleanNewsTitle = cleanHtmlEntities(news.title);
                     const cleanNewsSnippet = cleanHtmlEntities(news.snippet);
                     return (
                       <div
                         key={news.id}
-                        className={`p-4 sm:p-5 rounded-2xl bg-slate-900/80 border transition-all flex flex-col justify-between space-y-3 ${
+                        className={`w-[85vw] sm:w-[380px] min-w-[300px] max-w-[420px] shrink-0 snap-start p-4 sm:p-5 rounded-2xl bg-slate-900/80 border transition-all flex flex-col justify-between space-y-3 ${
                           news.isNewlyIngested 
                             ? 'border-emerald-500/80 bg-emerald-950/20 ring-1 ring-emerald-500/40 shadow-lg' 
                             : 'border-slate-800 hover:border-slate-700'
@@ -932,7 +981,7 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                               </span>
                               {news.isNewlyIngested && (
                                 <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500 text-black uppercase animate-pulse">
-                                  ✨ NEW LIVE STORY
+                                  ✨ NEW STORY
                                 </span>
                               )}
                             </div>
@@ -941,11 +990,11 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                             </span>
                           </div>
 
-                          <h4 className="text-sm font-semibold text-slate-100 leading-snug">
+                          <h4 className="text-sm font-semibold text-slate-100 leading-snug line-clamp-2">
                             {cleanNewsTitle}
                           </h4>
 
-                          <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/80">
+                          <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/80 line-clamp-3">
                             {cleanNewsSnippet}
                           </p>
                         </div>

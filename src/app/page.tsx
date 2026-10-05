@@ -51,7 +51,8 @@ import {
   MapPin,
   Video,
   Info,
-  HelpCircle
+  HelpCircle,
+  Lock
 } from 'lucide-react';
 import { SectionHelpModal } from '@/components/SectionHelpModal';
 
@@ -85,7 +86,25 @@ export default function Home() {
   const [isListening, setIsListening] = useState(false);
   const [isWhyModalOpen, setIsWhyModalOpen] = useState(false);
   const [isVerifyHelpOpen, setIsVerifyHelpOpen] = useState(false);
+  const [isBmoniModalOpen, setIsBmoniModalOpen] = useState(false);
+  const [isProActive, setIsProActive] = useState(false);
   const [brandShieldTarget, setBrandShieldTarget] = useState<string | undefined>(undefined);
+
+  // Sync BMoni Pro state from localStorage
+  React.useEffect(() => {
+    const checkPro = () => {
+      if (typeof window !== 'undefined') {
+        setIsProActive(localStorage.getItem('rumourradar_pro_active') === 'true');
+      }
+    };
+    checkPro();
+    window.addEventListener('rumourradar_pro_updated', checkPro);
+    window.addEventListener('storage', checkPro);
+    return () => {
+      window.removeEventListener('rumourradar_pro_updated', checkPro);
+      window.removeEventListener('storage', checkPro);
+    };
+  }, []);
 
   const handleLaunchBrandShieldFromBmoni = (orgName: string) => {
     setIsBmoniModalOpen(false);
@@ -156,7 +175,7 @@ export default function Home() {
       setIsListening(false);
     }
   };
-  const [isBmoniModalOpen, setIsBmoniModalOpen] = useState(false);
+
   const [isResultDetailsOpen, setIsResultDetailsOpen] = useState(false);
   const [isSocialShareOpen, setIsSocialShareOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -358,11 +377,11 @@ export default function Home() {
       />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8">
-        {/* Navigation Tabs - Mobile Optimized 5-Tab Control */}
+        {/* Navigation Tabs - Evenly Spread 4-Tab Control */}
         <div className="w-full flex justify-center">
           <div
             ref={tabNavRef}
-            className="relative w-full sm:w-auto grid grid-cols-5 sm:flex items-center gap-1 sm:gap-1.5 p-1 sm:p-1.5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-2xl backdrop-blur-md"
+            className="relative w-full max-w-2xl grid grid-cols-4 items-center gap-1 sm:gap-2 p-1 sm:p-1.5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-2xl backdrop-blur-md"
           >
             {tabTravel && (
               <span
@@ -400,8 +419,9 @@ export default function Home() {
               }`}
             >
               <Building2 className="w-3.5 h-3.5 shrink-0" />
-              <span className="leading-tight font-display">
+              <span className="leading-tight font-display flex items-center justify-center gap-1">
                 <span>{t.tabShield}</span>
+                {!isProActive && <Lock className="w-2.5 h-2.5 text-amber-400 shrink-0" />}
               </span>
             </button>
 
