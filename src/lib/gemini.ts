@@ -28,16 +28,18 @@ export async function executeLlmWithFailover(
     mimeType?: string;
     temperature?: number;
     openRouterModel?: string;
+    maxTokens?: number;
   }
 ): Promise<string | null> {
   const temp = options?.temperature ?? 0.1;
+  const maxTokens = options?.maxTokens || 1000;
 
   // 1. PRIMARY RAIL: Google Gemini (Only attempted if key format is valid)
   if (genAI && !isGeminiDisabled) {
     try {
       const model = genAI.getGenerativeModel({
         model: 'gemini-1.5-flash',
-        generationConfig: { temperature: temp }
+        generationConfig: { temperature: temp, maxOutputTokens: maxTokens }
       });
 
       if (options?.imageBase64) {
@@ -61,57 +63,64 @@ export async function executeLlmWithFailover(
     }
   }
 
-  // 2. SECONDARY RAIL: High-Speed OpenRouter (gpt-4o-mini <600ms latency)
+  // 2. SECONDARY RAIL: High-Speed OpenRouter (Google Gemini 2.5 Flash for vision / gpt-4o-mini for text)
   if (openRouterApiKey) {
-    try {
-      const selectedModel = options?.openRouterModel || 'openai/gpt-4o-mini';
-      const messages: any[] = [];
+    // For vision tasks, use google/gemini-2.5-flash as default, then fallback to gpt-4o-mini
+    const candidateModels = options?.openRouterModel 
+      ? [options.openRouterModel]
+      : options?.imageBase64
+      ? ['google/gemini-2.5-flash', 'qwen/qwen-2.5-vl-72b-instruct', 'openai/gpt-4o-mini']
+      : ['openai/gpt-4o-mini', 'google/gemini-2.5-flash'];
 
+    for (const selectedModel of candidateModels) {
+      try {
+        const messages: any[] = [];
 
-
-      if (options?.imageBase64) {
-        const dataUrl = options.imageBase64.startsWith('data:') 
-          ? options.imageBase64 
-          : `data:${options.mimeType || 'image/jpeg'};base64,${options.imageBase64}`;
-          
-        messages.push({
-          role: 'user',
-          content: [
-            { type: 'text', text: prompt },
-            { type: 'image_url', image_url: { url: dataUrl } }
-          ]
-        });
-      } else {
-        messages.push({ role: 'user', content: prompt });
-      }
-
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openRouterApiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://rumourradar.vercel.app',
-          'X-Title': 'RumourRadar'
-        },
-        body: JSON.stringify({
-          model: selectedModel,
-          messages,
-          temperature: temp
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const content = data.choices?.[0]?.message?.content;
-        if (content && typeof content === 'string') {
-          return content.trim();
+        if (options?.imageBase64) {
+          const dataUrl = options.imageBase64.startsWith('data:') 
+            ? options.imageBase64 
+            : `data:${options.mimeType || 'image/jpeg'};base64,${options.imageBase64}`;
+            
+          messages.push({
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              { type: 'image_url', image_url: { url: dataUrl } }
+            ]
+          });
+        } else {
+          messages.push({ role: 'user', content: prompt });
         }
-      } else {
-        const errText = await response.text();
-        console.warn('[LLM] OpenRouter returned non-200:', response.status, errText);
+
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openRouterApiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://rumourradar.vercel.app',
+            'X-Title': 'RumourRadar'
+          },
+          body: JSON.stringify({
+            model: selectedModel,
+            messages,
+            temperature: temp,
+            max_tokens: maxTokens
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content && typeof content === 'string' && content.trim().length > 0) {
+            return content.trim();
+          }
+        } else {
+          const errText = await response.text();
+          console.warn(`[LLM] OpenRouter ${selectedModel} returned non-200:`, response.status, errText);
+        }
+      } catch (openRouterError: any) {
+        console.warn(`[LLM] OpenRouter ${selectedModel} failover error:`, openRouterError?.message || openRouterError);
       }
-    } catch (openRouterError: any) {
-      console.warn('[LLM] OpenRouter failover error:', openRouterError?.message || openRouterError);
     }
   }
 
@@ -298,7 +307,6 @@ Return ONLY a valid JSON object matching this schema:
     "facebookInstagramCaption": "Engaging, clear caption for Instagram and Facebook carousel debunks"
   }
 }`;
-
 
   const responseText = await executeLlmWithFailover(prompt);
   if (!responseText) return null;

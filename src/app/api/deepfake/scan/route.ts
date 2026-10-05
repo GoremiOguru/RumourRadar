@@ -21,7 +21,7 @@ export interface DeepfakeScanResult {
   faceSwapProbability: number;
   detectedAnomalies: Array<{
     timestamp: string;
-    anomalyType: 'LIP_SYNC_DESYNC' | 'VOICE_CLONE_ARTIFACT' | 'FACIAL_WARP' | 'FRAME_INCONSISTENCY' | 'SPECTRAL_PEAK' | 'GAN_ARTIFACT' | 'LIGHTING_ANOMALY' | 'DOCUMENT_FORGERY';
+    anomalyType: 'LIP_SYNC_DESYNC' | 'VOICE_CLONE_ARTIFACT' | 'FACIAL_WARP' | 'FRAME_INCONSISTENCY' | 'SPECTRAL_PEAK' | 'GAN_ARTIFACT' | 'LIGHTING_ANOMALY' | 'DOCUMENT_FORGERY' | 'SCENE_INCONSISTENCY';
     description: string;
     severity: 'HIGH' | 'MEDIUM' | 'LOW';
   }>;
@@ -165,39 +165,40 @@ export async function POST(req: NextRequest) {
     let recommendation = 'Safe to share and cite. Media shows no signs of AI synthesis or manipulation.';
     let anomalies: DeepfakeScanResult['detectedAnomalies'] = [];
     let customMetrics: DeepfakeMetric[] = [];
+    let visionAnalysisDone = false;
 
     // 3. Multimodal Vision Forensics with Gemini / OpenRouter Failover
     if (frameImage && typeof frameImage === 'string' && frameImage.startsWith('data:image')) {
       try {
-        const visionPrompt = `You are a world-class digital media forensics & deepfake detection expert for Rumour Radar Nigeria.
-Analyze this media image with extreme rigor to detect AI generation, deepfake manipulation, GAN artifacts, or document forgery.
+        const visionPrompt = `You are a forensic AI detection specialist for Rumour Radar Nigeria.
+Analyze this media image with high forensic scrutiny for generative AI hallmarks, deepfakes, synthetic faces, digital compositing, and visual fallacies.
 
-Media Title: "${title}"
-Detected Type: ${resolvedMediaType}
+Media Context: "${title}" (Type: ${resolvedMediaType})
 
-FORENSIC EVALUATION CRITERIA:
-1. AI Generation (Midjourney, Stable Diffusion, Flux, DALL-E, GANs):
-   - Overly smooth, plastic, waxy skin texture lacking natural micro-pores and realistic wrinkles.
-   - Irregular teeth alignment, distorted ears/jewelry, unnatural pupil shapes or light reflections.
-   - Physics-defying backgrounds, surreal depth-of-field artifacts, illogical floating textures.
-2. Face-Swapping & Deepfakes (FaceFusion, DeepFaceLab):
-   - Blurry boundary seam around jawline/hairline, mismatched skin tones between neck and face.
-3. Forged Documents & Circulars:
-   - Misaligned text, digital pasting artifacts around signatures/stamps, differing compression noise.
-4. Genuine Authentic Photos / Videos:
-   - Coherent natural sensor noise, authentic optical lens bokeh, consistent lighting, realistic facial imperfections.
+EVALUATION CHECKLIST:
+1. Synthetic Generation (Midjourney v5/v6, Stable Diffusion, Flux, DALL-E 3, Photorealistic GANs):
+   - Overly clean, airbrushed, or waxy/plastic skin lacking real pores, wrinkles, and micro-imperfections.
+   - Hair detail (hair merging unnaturally into headwraps/turbans/clothes, artificial hairline blending).
+   - Text rendering on logos, machines, cars, or signs (garbled/nonsensical letters, distorted car emblems).
+   - Anatomical anomalies: hands, fingers, teeth, ears, pupils, limb proportions, asymmetrical earrings/necklaces.
+   - Illogical scene physics: impossible reflections, warped background objects, floating hospital equipment, unnatural depth-of-field.
+2. Political / Celebrity Face-Swaps & Deepfakes:
+   - Pasted heads on bodies, mismatched lighting between head and room, blurry jawline borders.
+   - Unlikely political/celebrity scenarios generated to spread disinformation (e.g. President visiting a boxer in hospital, fake arrests).
+3. Real Authentic Photos / Videos:
+   - Natural camera sensor noise, authentic optical focus falloff, true human imperfections, coherent lighting geometry.
 
-Return ONLY a JSON object:
+Return ONLY a valid JSON object matching this schema:
 {
   "isAiGenerated": boolean,
-  "deepfakeProbability": number (0 to 100),
+  "deepfakeProbability": number (Scale 0 to 100, where 100 is definite AI/deepfake, e.g. 95, and 5 is authentic real photo),
   "verdict": "SYNTHETIC_DEEPFAKE" | "SUSPICIOUS_AI_GENERATED" | "AUTHENTIC_PHOTO" | "AUTHENTIC_RECORDING" | "AUTHENTIC_DOCUMENT" | "AUTHENTIC_MEDIA",
-  "summary": "1-2 sentence forensic finding explaining clearly why it is AI-generated, forged, or authentic",
-  "recommendation": "Simple actionable advice for the public",
+  "summary": "1-2 sentence concise forensic breakdown explaining clearly why it is synthetic or authentic",
+  "recommendation": "Clear public advisory",
   "anomalies": [
     {
-      "anomalyType": "FACIAL_WARP" | "GAN_ARTIFACT" | "LIGHTING_ANOMALY" | "DOCUMENT_FORGERY" | "FRAME_INCONSISTENCY" | "VOICE_CLONE_ARTIFACT" | "LIP_SYNC_DESYNC",
-      "description": "Specific visual observation",
+      "anomalyType": "FACIAL_WARP" | "GAN_ARTIFACT" | "LIGHTING_ANOMALY" | "DOCUMENT_FORGERY" | "FRAME_INCONSISTENCY" | "VOICE_CLONE_ARTIFACT" | "LIP_SYNC_DESYNC" | "SCENE_INCONSISTENCY",
+      "description": "Specific visual flaw or observation",
       "severity": "HIGH" | "MEDIUM" | "LOW"
     }
   ],
@@ -214,16 +215,47 @@ Return ONLY a JSON object:
         const llmResponse = await executeLlmWithFailover(visionPrompt, {
           imageBase64: cleanBase64,
           mimeType,
-          temperature: 0.1
+          temperature: 0.1,
+          maxTokens: 1000
         });
 
         if (llmResponse) {
           const cleanJson = llmResponse.replace(/^```json\s*/, '').replace(/^```\s*/, '').replace(/```$/, '').trim();
           const parsed = JSON.parse(cleanJson);
 
-          if (typeof parsed.deepfakeProbability === 'number') {
-            probability = Math.max(4, Math.min(99, parsed.deepfakeProbability));
-            if (parsed.verdict) verdict = parsed.verdict;
+          if (typeof parsed.deepfakeProbability === 'number' || typeof parsed.isAiGenerated === 'boolean') {
+            visionAnalysisDone = true;
+            let rawProb = parsed.deepfakeProbability;
+            if (typeof rawProb === 'number') {
+              // Normalize 0.0-1.0 floats to 0-100 scale
+              if (rawProb <= 1.0 && rawProb > 0) {
+                probability = Math.round(rawProb * 100);
+              } else {
+                probability = Math.round(rawProb);
+              }
+            } else {
+              probability = parsed.isAiGenerated ? 92 : 12;
+            }
+
+            // Sync boolean flag with probability & verdict
+            if (parsed.isAiGenerated === true) {
+              probability = Math.max(probability, 85);
+              verdict = 'SYNTHETIC_DEEPFAKE';
+            } else if (parsed.verdict === 'SYNTHETIC_DEEPFAKE') {
+              probability = Math.max(probability, 80);
+              verdict = 'SYNTHETIC_DEEPFAKE';
+            } else if (parsed.verdict === 'SUSPICIOUS_AI_GENERATED') {
+              probability = Math.max(45, Math.min(74, probability));
+              verdict = 'SUSPICIOUS_AI_GENERATED';
+            } else if (parsed.verdict === 'AUTHENTIC_PHOTO' || parsed.verdict === 'AUTHENTIC_RECORDING' || parsed.verdict === 'AUTHENTIC_DOCUMENT' || parsed.verdict === 'AUTHENTIC_MEDIA') {
+              probability = Math.min(probability, 25);
+              verdict = parsed.verdict;
+            } else {
+              if (probability >= 70) verdict = 'SYNTHETIC_DEEPFAKE';
+              else if (probability >= 40) verdict = 'SUSPICIOUS_AI_GENERATED';
+              else verdict = resolvedMediaType === 'video' ? 'AUTHENTIC_RECORDING' : resolvedMediaType === 'document' ? 'AUTHENTIC_DOCUMENT' : 'AUTHENTIC_PHOTO';
+            }
+
             if (parsed.summary) forensicSummary = parsed.summary;
             if (parsed.recommendation) recommendation = parsed.recommendation;
 
@@ -249,7 +281,9 @@ Return ONLY a JSON object:
       } catch (err) {
         console.warn('[Deepfake Scan] Vision LLM analysis error, falling back to heuristics:', err);
       }
-    } else {
+    }
+
+    if (!visionAnalysisDone) {
       // Heuristics for URL / non-image media
       if (isObviousDeepfakeKeyword) {
         probability = 88 + Math.floor(Math.random() * 8);
@@ -273,17 +307,7 @@ Return ONLY a JSON object:
       }
     }
 
-    // Determine final verdict string if not already set specifically
-    if (probability >= 75) {
-      verdict = 'SYNTHETIC_DEEPFAKE';
-    } else if (probability >= 45) {
-      verdict = 'SUSPICIOUS_AI_GENERATED';
-    } else {
-      if (resolvedMediaType === 'video') verdict = 'AUTHENTIC_RECORDING';
-      else if (resolvedMediaType === 'document') verdict = 'AUTHENTIC_DOCUMENT';
-      else verdict = 'AUTHENTIC_PHOTO';
-    }
-
+    // Final Risk Level
     const riskLevel: DeepfakeScanResult['riskLevel'] =
       probability >= 75 ? 'CRITICAL' :
       probability >= 45 ? 'HIGH' : 'LOW';
@@ -336,7 +360,7 @@ Return ONLY a JSON object:
       }
     }
 
-    // Build metrics based on media type
+    // Build metrics based on media type if not provided by vision
     if (customMetrics.length === 0) {
       if (resolvedMediaType === 'video') {
         customMetrics = [
@@ -355,10 +379,10 @@ Return ONLY a JSON object:
       } else {
         // Image / Photo
         customMetrics = [
-          { label: 'Facial Landmark & Mesh Integrity', value: Math.max(20, 100 - probability), type: 'face' },
-          { label: 'Pixel Noise & GAN Texture Consistency', value: Math.max(25, 100 - (probability >= 45 ? probability : 5)), type: 'layers' },
-          { label: 'Lighting & Physics Coherence', value: Math.max(22, 100 - probability), type: 'sun' },
-          { label: 'Edge Boundary & Optical Sharpness', value: Math.max(30, 100 - (probability >= 45 ? probability : 8)), type: 'activity' }
+          { label: 'Facial Landmark & Mesh Integrity', value: Math.max(10, 100 - probability), type: 'face' },
+          { label: 'Pixel Noise & GAN Texture Consistency', value: Math.max(15, 100 - probability), type: 'layers' },
+          { label: 'Lighting & Physics Coherence', value: Math.max(15, 100 - probability), type: 'sun' },
+          { label: 'Edge Boundary & Optical Sharpness', value: Math.max(20, 100 - (probability >= 45 ? probability : 8)), type: 'activity' }
         ];
       }
     }
@@ -386,12 +410,12 @@ Return ONLY a JSON object:
       faceSwapProbability: probability >= 60 ? probability + 2 : 6,
       detectedAnomalies: anomalies,
       biometricBreakdown: {
-        facialBoundaryCoherence: Math.max(20, 100 - (probability >= 45 ? probability : 5)),
+        facialBoundaryCoherence: Math.max(15, 100 - probability),
         lipSyncAlignment: resolvedMediaType === 'video' ? (probability >= 45 ? 32 : 95) : 100,
         voiceAcousticNaturalness: resolvedMediaType === 'video' ? (probability >= 45 ? 38 : 94) : 100,
         frameTemporalConsistency: probability >= 45 ? 40 : 97,
-        ganNoiseConsistency: Math.max(20, 100 - probability),
-        lightingShadowPlausibility: Math.max(22, 100 - probability)
+        ganNoiseConsistency: Math.max(15, 100 - probability),
+        lightingShadowPlausibility: Math.max(15, 100 - probability)
       },
       metrics: customMetrics,
       forensicSummary,

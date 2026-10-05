@@ -103,8 +103,10 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
       const ctx = canvas.getContext('2d');
 
       video.onloadedmetadata = async () => {
-        canvas.width = Math.min(video.videoWidth || 640, 640);
-        canvas.height = Math.min(video.videoHeight || 360, 360);
+        const maxDim = 800;
+        const scale = Math.min(1, maxDim / Math.max(video.videoWidth || 640, video.videoHeight || 360));
+        canvas.width = Math.round((video.videoWidth || 640) * scale);
+        canvas.height = Math.round((video.videoHeight || 360) * scale);
 
         const duration = video.duration || 5;
         const timestamps = [
@@ -123,7 +125,7 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
                 // Draw raw clean frame first
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 if (i === 0) {
-                  cleanFrame = canvas.toDataURL('image/jpeg', 0.85);
+                  cleanFrame = canvas.toDataURL('image/jpeg', 0.88);
                 }
                 
                 // Add biometric landmark overlay for UI preview
@@ -150,26 +152,33 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
 
   /**
    * Client-Side Forensic Image Frame Extractor
-   * Generates visual inspection keyframes for uploaded AI images/photos while preserving the raw image
+   * Generates visual inspection keyframes for uploaded AI images/photos while preserving clean compressed frame
    */
   const extractImageForensicFrames = async (file: File): Promise<{ uiFrames: string[]; cleanFrame: string | null }> => {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = () => {
-        const cleanBase64 = reader.result as string;
+        const rawDataUrl = reader.result as string;
         const img = new Image();
-        img.src = cleanBase64;
+        img.src = rawDataUrl;
         img.onload = () => {
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
-          if (!ctx) return resolve({ uiFrames: [], cleanFrame: cleanBase64 });
+          if (!ctx) return resolve({ uiFrames: [], cleanFrame: rawDataUrl });
 
-          canvas.width = Math.min(img.width || 640, 640);
-          canvas.height = Math.min(img.height || 480, 480);
+          // Scale down gracefully to max 1024px for fast API transfer and crisp AI analysis
+          const maxDim = 1024;
+          const scale = Math.min(1, maxDim / Math.max(img.width || 800, img.height || 600));
+          canvas.width = Math.round((img.width || 800) * scale);
+          canvas.height = Math.round((img.height || 600) * scale);
+
+          // 1. First draw clean, unadorned image to get the pure base64 for AI Vision
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const cleanFrame = canvas.toDataURL('image/jpeg', 0.88);
+
           const uiFrames: string[] = [];
 
-          // Frame 1: Original with subtle face mesh grid
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          // Frame 1: Original with subtle face mesh grid for UI
           ctx.strokeStyle = 'rgba(168, 85, 247, 0.8)';
           ctx.lineWidth = 2;
           ctx.strokeRect(canvas.width * 0.25, canvas.height * 0.15, canvas.width * 0.5, canvas.height * 0.6);
@@ -197,9 +206,9 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           uiFrames.push(canvas.toDataURL('image/jpeg', 0.8));
 
-          resolve({ uiFrames, cleanFrame: cleanBase64 });
+          resolve({ uiFrames, cleanFrame });
         };
-        img.onerror = () => resolve({ uiFrames: [], cleanFrame: cleanBase64 });
+        img.onerror = () => resolve({ uiFrames: [], cleanFrame: rawDataUrl });
       };
       reader.onerror = () => resolve({ uiFrames: [], cleanFrame: null });
       reader.readAsDataURL(file);
