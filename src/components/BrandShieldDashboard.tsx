@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { BrandShieldScanResult, BrandAlert, DebunkKit } from '@/types';
 import { 
   ShieldAlert, 
@@ -33,7 +34,8 @@ import {
   X,
   Zap,
   Phone,
-  Save
+  Save,
+  ArrowRight
 } from 'lucide-react';
 import { VerifiedBrandNewsItem } from '@/app/api/brand-shield/scan/route';
 import { ScrollReveal } from '@/components/ScrollReveal';
@@ -95,8 +97,24 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
   const [lastScannedTime, setLastScannedTime] = useState<string>('');
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isWhyModalOpen, setIsWhyModalOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const signalsScrollRef = useRef<HTMLDivElement>(null);
   const newsScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isWhyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isWhyModalOpen]);
 
   // Pro & Enterprise Sentinel State
   const [isProActive, setIsProActive] = useState(false);
@@ -329,58 +347,69 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
   return (
     <div className="section-stagger space-y-6">
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-blue-950/40 to-slate-900 border border-blue-500/30 shadow-2xl">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-mono font-bold flex items-center gap-1.5">
-              <Building2 className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
-              {isPidgin ? 'BMONI BRAND & ENTITY SHIELD' : 'BMONI ENTERPRISE RADAR'}
-            </span>
-            {isProActive && (
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono font-bold flex items-center gap-1">
-                <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
-                ENTERPRISE SENTINEL ACTIVE
+      <div className="p-4 sm:p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-blue-950/40 to-slate-900 border border-blue-500/30 shadow-2xl space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[11px] font-mono font-bold flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 text-blue-400" />
+                <span>{isPidgin ? 'BMONI BRAND & ENTITY SHIELD' : 'BMONI ENTERPRISE RADAR'}</span>
               </span>
-            )}
-            <span className="text-xs text-slate-400 font-mono">
-              {isPidgin ? 'Live Rumor Monitoring & PR Debunk Kit' : 'Live Weekly Ingestion & PR Debunk Kits'}
-            </span>
-            {lastScannedTime && (
-              <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
-                <Activity className="w-3 h-3 animate-pulse" /> Live Telemetry ({lastScannedTime})
-              </span>
-            )}
+              {isProActive && (
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono font-bold flex items-center gap-1">
+                  <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
+                  <span>ENTERPRISE SENTINEL ACTIVE</span>
+                </span>
+              )}
+              {lastScannedTime && (
+                <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
+                  <Activity className="w-3 h-3 animate-pulse" /> Live Telemetry ({lastScannedTime})
+                </span>
+              )}
+            </div>
+
+            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+              {isPidgin ? 'Brand Shield: Live Misinformation & Crisis Radar for Brands & People' : 'Brand Shield: Real-Time Crisis & Misinformation Radar'}
+            </h2>
+            <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
+              {isPidgin
+                ? 'Real-time surveillance for companies, creators, executives & public entities in Nigeria. Monitors viral WhatsApp forwards, fake news & generates 1-click PR Debunk Kits.'
+                : 'Surveillance for Nigerian institutions & entities. Monitors viral WhatsApp forwards, fake circulars, and all weekly brand news with auto-generated PR Debunk Kits.'}
+            </p>
           </div>
 
-          <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-            {isPidgin ? 'Brand Shield: Live Misinformation & Crisis Radar for Brands & People' : 'Brand Shield: Real-Time Crisis & Misinformation Radar'}
-          </h2>
-          <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
-            {isPidgin
-              ? 'Real-time surveillance for companies, creators, executives & public entities for Nigeria. Monitors viral WhatsApp forwards, fake news & generates 1-click PR Debunk Kits.'
-              : 'Surveillance for Nigerian institutions & entities. Monitors viral WhatsApp forwards, fake circulars, and all weekly brand news with auto-generated PR Debunk Kits.'}
-          </p>
+          <button
+            onClick={onOpenSubscriptionModal}
+            className={`flex items-center justify-center space-x-1.5 px-4 py-2.5 rounded-xl font-bold text-xs shadow-lg transition-all active:scale-95 shrink-0 self-start md:self-center ${
+              isProActive 
+                ? 'bg-emerald-600/30 border border-emerald-500/50 text-emerald-300 hover:bg-emerald-600/50' 
+                : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-500 hover:to-indigo-500 shadow-blue-500/20 ring-1 ring-blue-400/50'
+            }`}
+          >
+            {isProActive ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Lock className="w-4 h-4 text-amber-300" />}
+            <span>{isProActive ? (proOrgName ? `Pro Active (${proOrgName})` : 'BMoni Pro Active Tier') : '⚡ Create BMoni Pro Tier Account (₦50k/mo)'}</span>
+          </button>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex flex-wrap items-center gap-2 self-start md:self-auto shrink-0">
-          <button
-            onClick={() => setIsWhyModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300 text-xs font-bold transition-all shadow-sm active:scale-95"
-            title={isPidgin ? 'Why Brand Shield & BMoni Pro Tier is Critical' : 'Why Brand Shield & BMoni Pro Tier is Critical'}
-          >
-            <Sparkles className="w-4 h-4 text-blue-400" />
-            <span>{isPidgin ? 'Why Brand Shield & Pro?' : 'Why Brand Shield & Pro Tier?'}</span>
-          </button>
+        {/* Action Controls Toolbar */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-800/80">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setIsWhyModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 text-blue-300 text-xs font-bold transition-all shadow-sm active:scale-95"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+              <span>Why Brand Shield?</span>
+            </button>
 
-          <button
-            onClick={() => setIsHelpOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500/15 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300 text-xs font-bold transition-all shadow-sm active:scale-95"
-            title={isPidgin ? 'How to use Brand Shield' : 'How to use Brand Shield'}
-          >
-            <HelpCircle className="w-4 h-4 text-blue-400" />
-            <span>{isPidgin ? 'How to Use?' : 'How to Use?'}</span>
-          </button>
+            <button
+              onClick={() => setIsHelpOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all shadow-sm active:scale-95"
+            >
+              <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+              <span>How to Use?</span>
+            </button>
+          </div>
 
           <button
             onClick={() => setIsAutoUpdating(!isAutoUpdating)}
@@ -391,18 +420,6 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
             }`}
           >
             {isAutoUpdating ? '● Auto-Update ON (45s)' : '○ Auto-Update Paused'}
-          </button>
-
-          <button
-            onClick={onOpenSubscriptionModal}
-            className={`flex items-center space-x-1.5 px-4 py-2 rounded-xl font-bold text-xs shadow-lg transition-all active:scale-95 ${
-              isProActive 
-                ? 'bg-emerald-600/30 border border-emerald-500/50 text-emerald-300 hover:bg-emerald-600/50' 
-                : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-500 hover:to-indigo-500 shadow-blue-500/20'
-            }`}
-          >
-            {isProActive ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Lock className="w-3.5 h-3.5" />}
-            <span>{isProActive ? (proOrgName ? `Pro Active (${proOrgName})` : 'BMoni Pro Active') : '⚡ Create BMoni Pro Tier Account (₦50k/mo)'}</span>
           </button>
         </div>
       </div>
@@ -1400,78 +1417,78 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
       )}
 
       {/* WHY BRAND SHIELD & BMONI PRO POPUP MODAL */}
-      {isWhyModalOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
-          <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 rounded-2xl bg-slate-900 border border-blue-500/40 shadow-2xl text-slate-100 space-y-5">
+      {isWhyModalOpen && mounted && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in overflow-y-auto"
+          onClick={() => setIsWhyModalOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-xl p-6 sm:p-8 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl text-slate-100 max-h-[90vh] overflow-y-auto my-auto space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={() => setIsWhyModalOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+              className="absolute top-4 right-4 p-1.5 rounded-full bg-slate-800 text-slate-400 hover:text-white transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
 
-            {/* Modal Header */}
+            {/* Modal Header matching BmoniSubscriptionModal branding */}
             <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0">
-                <Sparkles className="w-5 h-5" />
-              </div>
+              <img
+                src="/images/logowhite.jpeg"
+                alt="RumourRadar Logo"
+                className="w-10 h-10 rounded-xl object-cover border border-blue-500/40 shadow-md shrink-0"
+              />
               <div>
+                <div className="flex items-center gap-2 text-blue-400">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider">
+                    ⚡ BMONI SURVEILLANCE INTELLIGENCE
+                  </span>
+                </div>
                 <h3 className="text-base sm:text-lg font-black text-white">
                   {isPidgin ? 'Why Brand Shield & BMoni Pro Tier Dey Critical?' : 'Why Brand Shield & BMoni Pro Tier is Critical'}
                 </h3>
-                <p className="text-xs text-slate-400 font-mono">
-                  Built specifically for 2 core audiences in Nigeria & Africa
-                </p>
               </div>
             </div>
 
-            {/* Dual Audience Cards */}
-            <div className="space-y-3">
-              {/* Audience 1: Companies, Brands, Executives & Creators */}
-              <div className="p-4 rounded-xl bg-slate-950 border border-blue-500/30 space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🏢</span>
-                  <h4 className="text-xs sm:text-sm font-bold text-blue-300 uppercase tracking-wide">
-                    Target 1: Companies, Brands & Creators (People)
-                  </h4>
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Stay ahead of viral defamatory rumors, fabricated memos, fake regulatory circulars, and damaging trends across WhatsApp forwards and X quotes before panic hits customers, investors, or fans.
-                </p>
-                <div className="text-[11px] text-emerald-400 font-mono flex items-center gap-1.5 pt-1">
-                  <span>✓ Auto-generate 1-click PR Debunk Kits for WhatsApp, X, LinkedIn & Press in 60s</span>
-                </div>
+            {/* Audience 1: Companies & Creators */}
+            <div className="p-4 rounded-xl bg-slate-950 border border-blue-500/30 space-y-2.5">
+              <div className="flex items-center gap-2 text-blue-400 font-bold text-xs sm:text-sm">
+                <span className="text-base">🏢</span>
+                <span>Target 1: Companies, Brands & Creators (People)</span>
               </div>
-
-              {/* Audience 2: Trackers, Fans & Super-Followers */}
-              <div className="p-4 rounded-xl bg-slate-950 border border-purple-500/30 space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">⭐</span>
-                  <h4 className="text-xs sm:text-sm font-bold text-purple-300 uppercase tracking-wide">
-                    Target 2: Brand Trackers, Fans & Followers
-                  </h4>
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Keep complete real-time tabs on all verified updates, breaking press articles, and circulating claims about your favorite celebrities (Davido, Burna Boy, Wizkid), banks (GTBank, Opay), or agencies (CBN, EFCC).
-                </p>
-                <div className="text-[11px] text-purple-300 font-mono flex items-center gap-1.5 pt-1">
-                  <span>✓ 24/7 continuous 7-day live news ingestion & instant alert rails</span>
-                </div>
-              </div>
-            </div>
-
-            {/* How it Works / Pro Tier Capabilities */}
-            <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300 space-y-2">
-              <div className="font-bold text-white flex items-center gap-1.5">
-                <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                <span>Continuous 45s Multi-Source Sentinel Node</span>
-              </div>
-              <p className="text-[11px] text-slate-400 font-mono">
-                Surveillance grid crawls national newsrooms (TechCabal, Punch, Vanguard, Nairametrics), WhatsApp forward trends, and social quotes in real-time.
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Stay ahead of viral defamatory rumors, fabricated bank circulars, and damaging trends across WhatsApp forwards and X quotes before panic hits customers or investors.
               </p>
+              <div className="text-[11px] text-emerald-400 font-mono flex items-center gap-1.5 pt-1 border-t border-slate-800/80">
+                <span>✓ Auto-generate 1-click PR Debunk Kits for WhatsApp, X, LinkedIn & Press in 60s</span>
+              </div>
             </div>
 
-            {/* Modal Actions */}
+            {/* Audience 2: Brand Trackers & Fans */}
+            <div className="p-4 rounded-xl bg-slate-950 border border-purple-500/30 space-y-2.5">
+              <div className="flex items-center gap-2 text-purple-400 font-bold text-xs sm:text-sm">
+                <span className="text-base">⭐</span>
+                <span>Target 2: Brand Trackers, Fans & Super-Followers</span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Keep complete real-time tabs on all verified updates, breaking press articles, and viral stories about your favorite celebrities (Davido, Burna Boy, Wizkid), banks (GTBank, Opay), or agencies (CBN, EFCC).
+              </p>
+              <div className="text-[11px] text-purple-300 font-mono flex items-center gap-1.5 pt-1 border-t border-slate-800/80">
+                <span>✓ 24/7 continuous 7-day live news ingestion & instant alert rails</span>
+              </div>
+            </div>
+
+            {/* Continuous Surveillance Tech Badge */}
+            <div className="p-3 rounded-xl bg-blue-950/30 border border-blue-500/30 text-xs text-slate-300 flex items-center gap-2.5">
+              <Radio className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
+              <span className="text-[11px] text-slate-300 font-mono">
+                Surveillance grid crawls national newsrooms (TechCabal, Punch, Vanguard, Nairametrics), WhatsApp forward trends & social quotes every 45 seconds.
+              </span>
+            </div>
+
+            {/* Action Buttons */}
             <div className="pt-2 flex flex-col sm:flex-row items-center gap-2.5">
               <button
                 onClick={() => {
@@ -1481,7 +1498,7 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                 className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-blue-500/30 active:scale-95 transition-all flex items-center justify-center gap-2"
               >
                 <Zap className="w-4 h-4" />
-                <span>{isProActive ? 'Manage BMoni Pro Subscription' : '⚡ Create BMoni Pro Tier Account (₦50k/mo)'}</span>
+                <span>{isProActive ? 'Manage BMoni Pro Tier' : '⚡ Create BMoni Pro Tier Account (₦50k/mo)'}</span>
               </button>
 
               <button
@@ -1489,13 +1506,15 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                   setIsWhyModalOpen(false);
                   setIsHelpOpen(true);
                 }}
-                className="w-full sm:w-auto px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors"
+                className="w-full sm:w-auto px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
               >
-                Open Walkthrough Guide
+                <HelpCircle className="w-4 h-4 text-slate-400" />
+                <span>How to Use Guide</span>
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Brand Shield Section Help Modal */}
