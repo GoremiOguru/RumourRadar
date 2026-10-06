@@ -17,7 +17,7 @@ export interface AlgorithmicForensicReport {
   recommendation: string;
   anomalies: Array<{
     timestamp: string;
-    anomalyType: 'FACIAL_WARP' | 'GAN_ARTIFACT' | 'LIGHTING_ANOMALY' | 'DOCUMENT_FORGERY' | 'FRAME_INCONSISTENCY' | 'SCENE_INCONSISTENCY';
+    anomalyType: 'FACIAL_WARP' | 'GAN_ARTIFACT' | 'LIGHTING_ANOMALY' | 'DOCUMENT_FORGERY' | 'FRAME_INCONSISTENCY' | 'SCENE_INCONSISTENCY' | 'VOICE_CLONE_ARTIFACT' | 'LIP_SYNC_DESYNC' | 'SPECTRAL_PEAK';
     description: string;
     severity: 'HIGH' | 'MEDIUM' | 'LOW';
   }>;
