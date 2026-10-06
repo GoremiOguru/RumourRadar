@@ -4,7 +4,9 @@ import { ExtractedClaim, EvidenceItem, FactCheckMatch, VerdictType, ConfidenceLe
 const rawGeminiKey = process.env.GEMINI_API_KEY || '';
 const openRouterApiKey = process.env.OPENROUTER_API_KEY || '';
 
-// Valid Google AI Studio keys typically start with 'AIzaSy' or non-empty string
+const GEMINI_MODELS = ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.8-flash', 'gemini-2.5-flash'];
+
+// Valid Google AI Studio keys start with 'AIzaSy' or 'AQ.' or are >10 chars
 const isGeminiKeyValid = Boolean(rawGeminiKey && rawGeminiKey.trim().length > 10);
 let isGeminiDisabled = !isGeminiKeyValid;
 
@@ -53,36 +55,39 @@ export async function executeLlmWithFailover(
     imageList.push({ dataUrl: url, cleanBase64: clean, mimeType: mime });
   }
 
-  // 1. PRIMARY RAIL: Google Gemini (Only attempted if key format is valid)
+  // 1. PRIMARY RAIL: Google Gemini (Cycles through available flash models)
   if (genAI && !isGeminiDisabled) {
-    try {
-      const model = genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash',
-        generationConfig: { temperature: temp, maxOutputTokens: maxTokens }
-      });
+    for (const modelName of GEMINI_MODELS) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: { temperature: temp, maxOutputTokens: maxTokens }
+        });
 
-      if (imageList.length > 0) {
-        const parts: any[] = [prompt];
-        for (const img of imageList) {
-          parts.push({
-            inlineData: {
-              data: img.cleanBase64,
-              mimeType: img.mimeType
-            }
-          });
+        if (imageList.length > 0) {
+          const parts: any[] = [prompt];
+          for (const img of imageList) {
+            parts.push({
+              inlineData: {
+                data: img.cleanBase64,
+                mimeType: img.mimeType
+              }
+            });
+          }
+          const result = await model.generateContent(parts);
+          const text = result.response.text();
+          if (text && text.trim().length > 0) return text.trim();
+        } else {
+          const result = await model.generateContent(prompt);
+          const text = result.response.text();
+          if (text && text.trim().length > 0) return text.trim();
         }
-        const result = await model.generateContent(parts);
-        const text = result.response.text();
-        if (text && text.trim().length > 0) return text.trim();
-      } else {
-        const result = await model.generateContent(prompt);
-        const text = result.response.text();
-        if (text && text.trim().length > 0) return text.trim();
+      } catch (geminiError: any) {
+        // Fallback to next Gemini candidate model
+        continue;
       }
-    } catch (geminiError: any) {
-      console.warn('[LLM Failover] Primary Gemini request failed, routing to OpenRouter in 0ms...', geminiError?.message || geminiError);
-      isGeminiDisabled = true; // Disable for current runtime to avoid repeated timeout delays
     }
+  }
   }
 
   // 2. SECONDARY RAIL: High-Speed OpenRouter (OpenAI GPT-4o-mini & GPT-4.1-mini for vision / text)
