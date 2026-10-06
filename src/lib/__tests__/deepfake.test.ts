@@ -68,4 +68,120 @@ describe('Deepfake Scanner Video & Image Tests', () => {
     expect(data.result.verdict).toBe('SYNTHETIC_DEEPFAKE');
     expect(data.result.deepfakeProbability).toBeGreaterThanOrEqual(85);
   });
+
+  describe('Cognitive First-Principles & Real-Time Truth Intelligence', () => {
+    it('should detect physical impossibility: Cat on the moon without spacesuit', async () => {
+      const sampleBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+      const req = new NextRequest('http://localhost:3000/api/deepfake/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoName: 'Cat walking on the moon without spacesuit',
+          mediaType: 'image',
+          rawImageBase64: sampleBase64
+        })
+      });
+
+      const res = await POST(req);
+      const data = await res.json();
+      console.log('Cat on moon verdict:', data.result.verdict, data.result.forensicSummary);
+      expect(data.result.verdict).toBe('SYNTHETIC_DEEPFAKE');
+      expect(data.result.deepfakeProbability).toBeGreaterThanOrEqual(90);
+    });
+
+    it('should detect anatomical defect: Waitress with human feet instead of hands', async () => {
+      const sampleBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+      const req = new NextRequest('http://localhost:3000/api/deepfake/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoName: 'Waitress with human feet instead of hands serving coffee on tray',
+          mediaType: 'image',
+          rawImageBase64: sampleBase64
+        })
+      });
+
+      const res = await POST(req);
+      const data = await res.json();
+      console.log('Feet for hands verdict:', data.result.verdict, data.result.forensicSummary);
+      expect(data.result.verdict).toBe('SYNTHETIC_DEEPFAKE');
+      expect(data.result.deepfakeProbability).toBeGreaterThanOrEqual(90);
+    });
+
+    it('should detect biological & aerodynamic impossibility: 2 year old flying on giant eagle', async () => {
+      const sampleBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+      const req = new NextRequest('http://localhost:3000/api/deepfake/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoName: '2 year old child riding a giant eagle in African village like a pet dragon',
+          mediaType: 'image',
+          rawImageBase64: sampleBase64
+        })
+      });
+
+      const res = await POST(req);
+      const data = await res.json();
+      console.log('Eagle toddler verdict:', data.result.verdict, data.result.forensicSummary);
+      expect(data.result.verdict).toBe('SYNTHETIC_DEEPFAKE');
+      expect(data.result.deepfakeProbability).toBeGreaterThanOrEqual(90);
+    });
+
+    it('should detect animal biomechanical impossibility: Dog dancing salsa on a skyscraper', async () => {
+      const sampleBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+      const req = new NextRequest('http://localhost:3000/api/deepfake/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoName: 'Golden retriever dog dancing salsa on a skyscraper rooftop',
+          mediaType: 'video',
+          cleanFrames: [sampleBase64, sampleBase64]
+        })
+      });
+
+      const res = await POST(req);
+      const data = await res.json();
+      console.log('Dog dancing skyscraper verdict:', data.result.verdict, data.result.forensicSummary);
+      expect(data.result.verdict).toBe('SYNTHETIC_DEEPFAKE');
+      expect(data.result.deepfakeProbability).toBeGreaterThanOrEqual(90);
+    });
+
+    it('should detect neonatal biological impossibility: Newborn baby standing up and running', async () => {
+      const sampleBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+      const req = new NextRequest('http://localhost:3000/api/deepfake/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoName: 'Newborn baby standing up and running',
+          mediaType: 'image',
+          rawImageBase64: sampleBase64
+        })
+      });
+
+      const res = await POST(req);
+      const data = await res.json();
+      console.log('Newborn running verdict:', data.result.verdict, data.result.forensicSummary);
+      expect(data.result.verdict).toBe('SYNTHETIC_DEEPFAKE');
+      expect(data.result.deepfakeProbability).toBeGreaterThanOrEqual(90);
+    });
+
+    it('should ground and debunk political / celebrity claim via live search: Tinubu visiting Anthony Joshua in hospital', async () => {
+      const sampleBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+      const req = new NextRequest('http://localhost:3000/api/deepfake/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoName: 'Tinubu visiting Anthony Joshua in hospital',
+          mediaType: 'image',
+          rawImageBase64: sampleBase64
+        })
+      });
+
+      const res = await POST(req);
+      const data = await res.json();
+      console.log('Tinubu Joshua hospital verdict:', data.result.verdict, data.result.forensicSummary);
+      expect(data.result.verdict).toBe('SYNTHETIC_DEEPFAKE');
+      expect(data.result.deepfakeProbability).toBeGreaterThanOrEqual(90);
+    });
+  });
 });
