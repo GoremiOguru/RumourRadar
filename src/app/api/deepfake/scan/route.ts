@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeLlmWithFailover } from '@/lib/gemini';
-import { analyzeImageBufferForensics } from '@/lib/image-forensics';
+import { analyzeImageBufferForensics, analyzeVideoMultiFrameForensics } from '@/lib/image-forensics';
 
 export interface DeepfakeMetric {
   label: string;
@@ -190,8 +190,11 @@ export async function POST(req: NextRequest) {
 
     // Run Algorithmic Signal & Computer Vision Forensics if visual data is provided
     if (frameImagesList.length > 0) {
-      const primaryBase64 = frameImagesList[0].base64;
-      const cvReport = analyzeImageBufferForensics(primaryBase64, title, resolvedMediaType === 'video' ? 'video' : resolvedMediaType === 'document' ? 'document' : 'image');
+      const isVideoMultiFrame = resolvedMediaType === 'video' && frameImagesList.length > 1;
+      const cvReport = isVideoMultiFrame
+        ? analyzeVideoMultiFrameForensics(frameImagesList.map(f => f.base64), title)
+        : analyzeImageBufferForensics(frameImagesList[0].base64, title, resolvedMediaType === 'video' ? 'video' : resolvedMediaType === 'document' ? 'document' : 'image');
+      
       probability = cvReport.deepfakeProbability;
       verdict = cvReport.verdict as any;
       forensicSummary = cvReport.summary;
