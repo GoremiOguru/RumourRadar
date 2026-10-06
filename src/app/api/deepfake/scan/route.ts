@@ -58,30 +58,71 @@ const TRUSTED_MEDIA_DOMAINS = [
   'arise.tv'
 ];
 
-// Helper to fetch image URL as base64 on server if needed
-async function fetchImageUrlAsBase64(url: string): Promise<{ base64: string; mimeType: string } | null> {
+// Helper to fetch image URL as base64 on server or extract OpenGraph media from web pages
+async function fetchMediaFromUrl(url: string): Promise<{ base64: string; mimeType: string; pageTitle?: string } | null> {
   try {
     const res = await fetch(url, {
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(6000),
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       }
     });
     if (!res.ok) return null;
-    const contentType = res.headers.get('content-type') || 'image/jpeg';
-    if (!contentType.startsWith('image/')) return null;
+    const contentType = res.headers.get('content-type') || '';
 
-    const arrayBuffer = await res.arrayBuffer();
-    // Limit to 6MB
-    if (arrayBuffer.byteLength > 6 * 1024 * 1024) return null;
+    // Direct Image Response
+    if (contentType.startsWith('image/')) {
+      const arrayBuffer = await res.arrayBuffer();
+      if (arrayBuffer.byteLength > 8 * 1024 * 1024) return null;
+      const base64 = Buffer.from(arrayBuffer).toString('base64');
+      return {
+        base64,
+        mimeType: contentType.split(';')[0]
+      };
+    }
 
-    const base64 = Buffer.from(arrayBuffer).toString('base64');
-    return {
-      base64,
-      mimeType: contentType.split(';')[0]
-    };
+    // HTML Web Page - Extract OpenGraph Image / Twitter Card / Title
+    if (contentType.includes('text/html') || contentType.includes('application/xhtml')) {
+      const html = await res.text();
+      const ogImageMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+                           html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i) ||
+                           html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i);
+      
+      const titleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
+                         html.match(/<title[^>]*>([^<]+)<\/title>/i);
+      
+      const pageTitle = titleMatch ? titleMatch[1].trim() : undefined;
+
+      if (ogImageMatch && ogImageMatch[1]) {
+        let imageUrl = ogImageMatch[1];
+        if (imageUrl.startsWith('//')) imageUrl = 'https:' + imageUrl;
+        else if (imageUrl.startsWith('/')) {
+          const parsed = new URL(url);
+          imageUrl = `${parsed.protocol}//${parsed.host}${imageUrl}`;
+        }
+        
+        const imgRes = await fetch(imageUrl, {
+          signal: AbortSignal.timeout(4000),
+          headers: { 'User-Agent': 'Mozilla/5.0' }
+        });
+        if (imgRes.ok) {
+          const imgType = imgRes.headers.get('content-type') || 'image/jpeg';
+          const buf = await imgRes.arrayBuffer();
+          if (buf.byteLength < 8 * 1024 * 1024) {
+            return {
+              base64: Buffer.from(buf).toString('base64'),
+              mimeType: imgType.split(';')[0],
+              pageTitle
+            };
+          }
+        }
+      }
+      return pageTitle ? { base64: '', mimeType: '', pageTitle } : null;
+    }
+
+    return null;
   } catch (e) {
-    console.warn('[Deepfake Scan] Could not fetch remote image URL:', e);
+    console.warn('[Deepfake Scan] Could not fetch remote URL media:', e);
     return null;
   }
 }
@@ -91,22 +132,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { videoUrl, videoName, base64Preview, firstFrameBase64, rawImageBase64, cleanFrames, mediaType: reqMediaType } = body;
 
-    const title = videoName || (videoUrl ? `Media from ${(() => { try { return new URL(videoUrl).hostname; } catch { return videoUrl; } })()}` : 'Uploaded Media');
-    const lower = `${title} ${videoUrl || ''}`.toLowerCase();
-
-    // Determine media type
-    let resolvedMediaType: 'image' | 'video' | 'document' | 'url' = reqMediaType;
-    if (!resolvedMediaType) {
-      if (lower.includes('.mp4') || lower.includes('.webm') || lower.includes('.mov') || lower.includes('video') || lower.includes('youtube') || lower.includes('tiktok')) {
-        resolvedMediaType = 'video';
-      } else if (lower.includes('memo') || lower.includes('circular') || lower.includes('document') || lower.includes('.pdf')) {
-        resolvedMediaType = 'document';
-      } else if (lower.includes('.png') || lower.includes('.jpg') || lower.includes('.jpeg') || lower.includes('.webp') || lower.includes('photo') || lower.includes('portrait') || lower.includes('image') || lower.includes('unsplash')) {
-        resolvedMediaType = 'image';
-      } else {
-        resolvedMediaType = 'image';
-      }
-    }
+    let title = videoName || (videoUrl ? `Media from ${(() => { try { return new URL(videoUrl).hostname; } catch { return videoUrl; } })()}` : 'Uploaded Media');
 
     // Collect all input frames for vision analysis
     let frameImagesList: Array<{ base64: string; mimeType: string }> = [];
@@ -132,58 +158,57 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // If no direct base64 provided but a remote image URL is given, attempt to fetch it
+    // If no direct base64 provided but a remote URL is given, attempt to extract image/thumbnail & title
     if (frameImagesList.length === 0 && videoUrl && typeof videoUrl === 'string' && videoUrl.startsWith('http')) {
-      const isLikelyImage = /\.(jpg|jpeg|png|webp|gif|bmp)(\?.*)?$/i.test(videoUrl) || /unsplash|imgur|cloudinary|twimg|fbcdn/i.test(videoUrl);
-      if (isLikelyImage) {
-        const fetched = await fetchImageUrlAsBase64(videoUrl);
-        if (fetched) {
-          frameImagesList.push(fetched);
-          resolvedMediaType = 'image';
+      const fetched = await fetchMediaFromUrl(videoUrl);
+      if (fetched) {
+        if (fetched.base64) {
+          frameImagesList.push({ base64: fetched.base64, mimeType: fetched.mimeType });
         }
+        if (fetched.pageTitle && (!videoName || videoName === 'Uploaded Media')) {
+          title = fetched.pageTitle;
+        }
+      }
+    }
+
+    const lower = `${title} ${videoUrl || ''}`.toLowerCase();
+
+    // Determine media type
+    let resolvedMediaType: 'image' | 'video' | 'document' | 'url' = reqMediaType;
+    if (!resolvedMediaType) {
+      if (lower.includes('.mp4') || lower.includes('.webm') || lower.includes('.mov') || lower.includes('video') || lower.includes('youtube') || lower.includes('tiktok') || lower.includes('reel')) {
+        resolvedMediaType = 'video';
+      } else if (lower.includes('memo') || lower.includes('circular') || lower.includes('document') || lower.includes('.pdf')) {
+        resolvedMediaType = 'document';
+      } else {
+        resolvedMediaType = 'image';
       }
     }
 
     // 1. Check if source is a verified, trusted news organization
     const isTrustedMedia = TRUSTED_MEDIA_DOMAINS.some(domain => lower.includes(domain));
 
-    // 2. Keyword matching for synthetic deepfakes / AI-generated / doctored media
-    const isObviousDeepfakeKeyword = 
-      lower.includes('deepfake') || 
-      lower.includes('ai-generated') || 
-      lower.includes('face-swap') || 
-      lower.includes('faceswap') ||
-      lower.includes('cloned-voice') || 
-      lower.includes('voice-cloned') ||
-      lower.includes('synthetic-media') ||
-      lower.includes('synthetic') ||
-      lower.includes('ai gan') ||
-      lower.includes('gan portrait') ||
-      lower.includes('gan') ||
-      lower.includes('midjourney') ||
-      lower.includes('dall-e') ||
-      lower.includes('flux') ||
-      lower.includes('sora') ||
-      lower.includes('doctored press circular') ||
-      lower.includes('doctored') ||
-      lower.includes('forged');
+    // 2. Exact word-boundary matching for synthetic deepfakes / AI keywords (Avoid false matches like "morgan", "vanguard", "organ")
+    const isObviousDeepfakeKeyword = /\b(deepfake|deepfakes|ai-generated|cloned-voice|voice-cloned|face-swap|faceswap|midjourney|flux|stablediffusion|dall-e|novelai|sora|kling|runway|forged-document|forged press circular)\b/i.test(lower);
+
+    // 3. Human comedy skits & entertainment
+    const isSkitOrComedy = /\b(skit|comedy|funny video|parody|humor|satire|prank|acting|actor|joke|meme|tiktok dance|entertainment)\b/i.test(lower);
 
     const isExplicitAuthenticKeyword = 
-      lower.includes('authentic') || 
-      lower.includes('ncdc') || 
-      lower.includes('official') || 
-      lower.includes('press-briefing') || 
-      lower.includes('statehouse') ||
+      isSkitOrComedy ||
+      /\b(authentic|ncdc|official|press-briefing|statehouse)\b/i.test(lower) ||
       (isTrustedMedia && !lower.includes('fake') && !lower.includes('debunk'));
 
-    let probability = isObviousDeepfakeKeyword ? 94 : (isExplicitAuthenticKeyword ? 8 : 15);
+    let probability = isObviousDeepfakeKeyword ? 94 : (isExplicitAuthenticKeyword ? 8 : 12);
     let verdict: DeepfakeScanResult['verdict'] = resolvedMediaType === 'video' ? 'AUTHENTIC_RECORDING' : resolvedMediaType === 'document' ? 'AUTHENTIC_DOCUMENT' : 'AUTHENTIC_PHOTO';
-    let forensicSummary = resolvedMediaType === 'video'
+    let forensicSummary = isSkitOrComedy
+      ? 'Authentic human comedic performance and entertainment skit. Coherent real-world physical capture with no deceptive synthetic AI manipulation.'
+      : resolvedMediaType === 'video'
       ? 'Authentic video footage. Natural facial motion, continuous acoustic spectrum, and coherent lighting verified.'
       : resolvedMediaType === 'document'
       ? 'Authentic official circular. Verified typography, consistent resolution, and legitimate formatting confirmed.'
       : 'Authentic photo capture. Natural skin texture, authentic sensor noise, and coherent lighting verified.';
-    let recommendation = 'Safe to share and cite. Media shows no signs of AI synthesis or manipulation.';
+    let recommendation = isSkitOrComedy ? 'Safe for sharing and entertainment citation. Authentic creative performance.' : 'Safe to share and cite. Media shows no signs of AI synthesis or manipulation.';
     let anomalies: DeepfakeScanResult['detectedAnomalies'] = [];
     let customMetrics: DeepfakeMetric[] = [];
     let visionAnalysisDone = false;

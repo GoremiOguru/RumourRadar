@@ -183,5 +183,43 @@ describe('Deepfake Scanner Video & Image Tests', () => {
       expect(data.result.verdict).toBe('SYNTHETIC_DEEPFAKE');
       expect(data.result.deepfakeProbability).toBeGreaterThanOrEqual(90);
     });
+
+    it('should correctly classify human comedy skits as authentic entertainment', async () => {
+      const sampleBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+      const req = new NextRequest('http://localhost:3000/api/deepfake/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoName: 'Funny TikTok comedy skit - Waiter dropping coffee meme prank',
+          mediaType: 'video',
+          cleanFrames: [sampleBase64, sampleBase64]
+        })
+      });
+
+      const res = await POST(req);
+      const data = await res.json();
+      console.log('TikTok skit verdict:', data.result.verdictDisplay, data.result.deepfakeProbability);
+      expect(data.result.verdict).toBe('AUTHENTIC_RECORDING');
+      expect(data.result.deepfakeProbability).toBeLessThanOrEqual(25);
+    });
+
+    it('should correctly classify real everyday photos and Vanguard news media without false positives', async () => {
+      const sampleBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+      const req = new NextRequest('http://localhost:3000/api/deepfake/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoName: 'Vanguard News special report on agriculture economy',
+          mediaType: 'video',
+          cleanFrames: [sampleBase64, sampleBase64]
+        })
+      });
+
+      const res = await POST(req);
+      const data = await res.json();
+      console.log('Vanguard report verdict:', data.result.verdictDisplay, data.result.deepfakeProbability);
+      expect(data.result.verdict).toBe('AUTHENTIC_RECORDING');
+      expect(data.result.deepfakeProbability).toBeLessThanOrEqual(25);
+    }, 15000);
   });
 });
