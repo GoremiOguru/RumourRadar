@@ -88,7 +88,6 @@ export async function executeLlmWithFailover(
       }
     }
   }
-  }
 
   // 2. SECONDARY RAIL: High-Speed OpenRouter (OpenAI GPT-4o-mini & GPT-4.1-mini for vision / text)
   if (openRouterApiKey) {
