@@ -149,11 +149,14 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
     });
   };
 
+  const [claimContext, setClaimContext] = useState('');
+  const [clientMetrics, setClientMetrics] = useState<any>(null);
+
   /**
    * Client-Side Forensic Image Frame Extractor
-   * Generates visual inspection keyframes for uploaded AI images/photos while preserving clean compressed frame
+   * Computes raw uncompressed pixel block variance & noise entropy directly on canvas
    */
-  const extractImageForensicFrames = async (file: File): Promise<{ uiFrames: string[]; cleanFrame: string | null }> => {
+  const extractImageForensicFrames = async (file: File): Promise<{ uiFrames: string[]; cleanFrame: string | null; metrics: any }> => {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = () => {
@@ -163,17 +166,59 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
         img.onload = () => {
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
-          if (!ctx) return resolve({ uiFrames: [], cleanFrame: rawDataUrl });
+          if (!ctx) return resolve({ uiFrames: [], cleanFrame: rawDataUrl, metrics: null });
 
-          // Scale down gracefully to max 1280px for fast API transfer and crisp AI analysis
           const maxDim = 1280;
           const scale = Math.min(1, maxDim / Math.max(img.width || 800, img.height || 600));
           canvas.width = Math.round((img.width || 800) * scale);
           canvas.height = Math.round((img.height || 600) * scale);
 
-          // 1. First draw clean, unadorned image to get the pure base64 for AI Vision
+          // 1. Draw raw clean image
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           const cleanFrame = canvas.toDataURL('image/jpeg', 0.92);
+
+          // 2. Compute raw uncompressed RGBA pixel block variance
+          let calculatedMetrics = null;
+          try {
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+            let totalVar = 0;
+            let blockCount = 0;
+            const startX = Math.floor(canvas.width * 0.15);
+            const endX = Math.floor(canvas.width * 0.85);
+            const startY = Math.floor(canvas.height * 0.15);
+            const endY = Math.floor(canvas.height * 0.85);
+
+            for (let y = startY; y < endY - 8; y += 16) {
+              for (let x = startX; x < endX - 8; x += 16) {
+                let sum = 0;
+                let sumSq = 0;
+                let count = 0;
+                for (let dy = 0; dy < 8; dy++) {
+                  for (let dx = 0; dx < 8; dx++) {
+                    const idx = ((y + dy) * canvas.width + (x + dx)) * 4;
+                    const gray = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+                    sum += gray;
+                    sumSq += gray * gray;
+                    count++;
+                  }
+                }
+                const mean = sum / count;
+                const variance = Math.max(0, (sumSq / count) - (mean * mean));
+                totalVar += variance;
+                blockCount++;
+              }
+            }
+
+            const avgVariance = blockCount > 0 ? totalVar / blockCount : 50;
+            const smoothness = avgVariance < 45 ? 0.85 : avgVariance < 90 ? 0.45 : 0.15;
+            calculatedMetrics = {
+              noiseVariance: avgVariance,
+              smoothnessScore: smoothness
+            };
+          } catch (e) {
+            console.warn('Canvas pixel extraction notice:', e);
+          }
 
           const uiFrames: string[] = [];
 
@@ -205,11 +250,11 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           uiFrames.push(canvas.toDataURL('image/jpeg', 0.8));
 
-          resolve({ uiFrames, cleanFrame });
+          resolve({ uiFrames, cleanFrame, metrics: calculatedMetrics });
         };
-        img.onerror = () => resolve({ uiFrames: [], cleanFrame: rawDataUrl });
+        img.onerror = () => resolve({ uiFrames: [], cleanFrame: rawDataUrl, metrics: null });
       };
-      reader.onerror = () => resolve({ uiFrames: [], cleanFrame: null });
+      reader.onerror = () => resolve({ uiFrames: [], cleanFrame: null, metrics: null });
       reader.readAsDataURL(file);
     });
   };
@@ -225,10 +270,11 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
 
     try {
       if (file.type.startsWith('image/')) {
-        const { uiFrames, cleanFrame } = await extractImageForensicFrames(file);
+        const { uiFrames, cleanFrame, metrics } = await extractImageForensicFrames(file);
         setExtractedFrames(uiFrames);
         setRawImageBase64(cleanFrame);
         setRawCleanFrames(cleanFrame ? [cleanFrame] : []);
+        setClientMetrics(metrics);
       } else {
         const { uiFrames, cleanFrames } = await extractRealVideoFrames(file);
         setExtractedFrames(uiFrames);
@@ -251,7 +297,7 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
     setResult(null);
     setScanningStage(
       isImage
-        ? (isPidgin ? 'We dey scan photo pixels, GAN noise & facial alignment...' : 'Analyzing spatial pixel noise, GAN artifacts & facial mesh alignment...')
+        ? (isPidgin ? 'We dey search news fact-checks & scan photo pixels...' : 'Cross-checking live fact-checks & analyzing spatial pixel noise...')
         : isDoc
         ? (isPidgin ? 'We dey inspect document stamp, text resolution & header...' : 'Examining document letterhead typography, digital noise & stamp forgery...')
         : (isPidgin ? 'We dey inspect multi-frame video timestamps & neural voice...' : 'Extracting temporal video keyframes & analyzing lip-sync optical flow...')
@@ -275,18 +321,20 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
       ), 1200);
 
       const targetMediaType = overrideMediaType || (isDoc ? 'document' : isImage ? 'image' : isVideo ? 'video' : 'image');
+      const scanTitle = overrideTitle || claimContext || selectedFile?.name || (targetMediaType === 'image' ? 'Uploaded AI Image Sample' : targetMediaType === 'document' ? 'Uploaded Official Circular' : 'Uploaded Video Sample');
 
       const res = await fetch('/api/deepfake/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           videoUrl: overrideUrl || videoUrl || undefined,
-          videoName: overrideTitle || selectedFile?.name || (targetMediaType === 'image' ? 'Uploaded AI Image Sample' : targetMediaType === 'document' ? 'Uploaded Official Circular' : 'Uploaded Video Sample'),
+          videoName: scanTitle,
           mediaType: targetMediaType,
           framesCount: extractedFrames.length || 4,
           firstFrameBase64: extractedFrames[0] || undefined,
           rawImageBase64: rawImageBase64 || undefined,
-          cleanFrames: rawCleanFrames.length > 0 ? rawCleanFrames : undefined
+          cleanFrames: rawCleanFrames.length > 0 ? rawCleanFrames : undefined,
+          clientMetrics: clientMetrics || undefined
         })
       });
 
@@ -437,6 +485,25 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
             </div>
           </div>
         )}
+
+        {/* Optional Subject / Public Figure / Claim Context Input */}
+        <div className="space-y-1.5 p-3 rounded-xl bg-slate-950/60 border border-purple-500/20">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-semibold text-slate-200">
+              {isPidgin ? 'Person, Celebrity or Claim (Optional)' : 'Subject, Politician, Celebrity or Claim (Optional)'}
+            </label>
+            <span className="text-[10px] text-purple-400 font-mono font-bold bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/30">
+              Live Google Fact Check & News Search
+            </span>
+          </div>
+          <input
+            type="text"
+            value={claimContext}
+            onChange={(e) => setClaimContext(e.target.value)}
+            placeholder={isPidgin ? 'e.g. Tinubu for hospital with Anthony Joshua, Davido giveaway, Dangote 50k promo' : 'e.g. Tinubu visiting Anthony Joshua in hospital, Davido wedding video, Dangote cash promo'}
+            className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700/80 focus:border-purple-500 text-xs text-slate-100 placeholder-slate-500 outline-none transition-all"
+          />
+        </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
           <input

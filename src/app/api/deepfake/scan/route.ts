@@ -192,8 +192,8 @@ export async function POST(req: NextRequest) {
     if (frameImagesList.length > 0) {
       const isVideoMultiFrame = resolvedMediaType === 'video' && frameImagesList.length > 1;
       const cvReport = isVideoMultiFrame
-        ? analyzeVideoMultiFrameForensics(frameImagesList.map(f => f.base64), title)
-        : analyzeImageBufferForensics(frameImagesList[0].base64, title, resolvedMediaType === 'video' ? 'video' : resolvedMediaType === 'document' ? 'document' : 'image');
+        ? await analyzeVideoMultiFrameForensics(frameImagesList.map(f => f.base64), title, body.clientMetrics)
+        : await analyzeImageBufferForensics(frameImagesList[0].base64, title, resolvedMediaType === 'video' ? 'video' : resolvedMediaType === 'document' ? 'document' : 'image', body.clientMetrics);
       
       probability = cvReport.deepfakeProbability;
       verdict = cvReport.verdict as any;

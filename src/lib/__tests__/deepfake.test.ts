@@ -21,7 +21,7 @@ describe('Deepfake Scanner Video & Image Tests', () => {
     const data = await res.json();
     console.log('Image Result probability:', data.result.deepfakeProbability);
     expect(data.result.deepfakeProbability).not.toBe(68);
-  });
+  }, 15000);
 
   it('should analyze multi-frame authentic video recording', async () => {
     const frame1 = 'data:image/jpeg;base64,' + Buffer.from('REAL_CAMERA_FRAME_1_WITH_NATURAL_NOISE_' + 'A'.repeat(500)).toString('base64');
