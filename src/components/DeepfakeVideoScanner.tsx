@@ -65,7 +65,8 @@ interface DeepfakeVideoScannerProps {
 }
 
 export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: DeepfakeVideoScannerProps) {
-  const isPidgin = appLanguage === 'pcm';
+  const [forcePidginOverride, setForcePidginOverride] = useState<boolean | null>(null);
+  const isPidgin = forcePidginOverride !== null ? forcePidginOverride : (appLanguage === 'pcm');
   const [videoUrl, setVideoUrl] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [rawImageBase64, setRawImageBase64] = useState<string | null>(null);
@@ -767,7 +768,7 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
                 
                 {/* Pidgin / English Switcher */}
                 <button
-                  onClick={() => setIsPidgin(!isPidgin)}
+                  onClick={() => setForcePidginOverride(!isPidgin)}
                   className="px-2.5 py-1 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-[11px] font-mono font-bold flex items-center gap-1 transition-all active:scale-95"
                 >
                   <Languages className="w-3.5 h-3.5" />
