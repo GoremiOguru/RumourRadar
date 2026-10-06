@@ -222,7 +222,7 @@ STRICT OPERATIONAL DIRECTIVES:
    - "CONTRADICTED": Proven false, fabricated, or debunked by official bulletins/fact-checkers.
    - "MISLEADING": Real event distorted with false dates, altered figures, or clickbait framing.
    - "SATIRE_PARODY": Humor, satire page, comedy banter, or political parody (NOT meant as malicious factual deception).
-   - "UNVERIFIED": Insufficient authoritative evidence or breaking event too fresh (<60% confidence).
+   - "UNVERIFIED": Insufficient authoritative evidence or unproven circulating claim (<60% confidence). Label clearly as an UNVERIFIED RUMOUR because it remains a rumour until proven by official records.
 3. DESIGNED HUMILITY (<60% RULE): If the evidence is insufficient or ambiguous, yield "UNVERIFIED" with confidenceScore < 60.
 4. DUAL EXPLANATIONS: Provide an authoritative English explanation and an authentic Nigerian Pidgin ("Naija Pidgin") summary.
 

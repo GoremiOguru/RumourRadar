@@ -25,7 +25,8 @@ import {
   Image as ImageIcon,
   HelpCircle,
   Copy,
-  Sun
+  Sun,
+  Languages
 } from 'lucide-react';
 import { DeepfakeScanResult, DeepfakeMetric } from '@/app/api/deepfake/scan/route';
 import { ScrollReveal } from '@/components/ScrollReveal';
@@ -757,13 +758,33 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
 
           {/* Forensic Summary & Recommendation */}
           <div className="space-y-3">
-            <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1.5">
-              <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-purple-400" />
-                <span>Forensic Finding Summary</span>
-              </span>
+            <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-purple-400" />
+                  <span>{isPidgin ? 'Wetin We Discover (Forensic Finding)' : 'Forensic Finding Summary'}</span>
+                </span>
+                
+                {/* Pidgin / English Switcher */}
+                <button
+                  onClick={() => setIsPidgin(!isPidgin)}
+                  className="px-2.5 py-1 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-[11px] font-mono font-bold flex items-center gap-1 transition-all active:scale-95"
+                >
+                  <Languages className="w-3.5 h-3.5" />
+                  <span>{isPidgin ? 'Read in English' : '🗣️ Translate to Naija Pidgin'}</span>
+                </button>
+              </div>
+
               <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
-                {result.forensicSummary}
+                {isPidgin ? (
+                  result.deepfakeProbability >= 70
+                    ? `AI Computer Fake Tori: Dis media get high chance say na AI computer do am (${result.deepfakeProbability}% confidence). Our forensic scanner discover say the skin smooth pass normal person, the lighting scatter, and computer tool create fake movement wey no fit happen for real life.`
+                    : result.deepfakeProbability >= 40
+                    ? `Ambiguous Tori: Dis media get some suspicious signs (${result.deepfakeProbability}% rating). E fit be say dem edit or compress am too much. Make you double check before you forward am.`
+                    : `Confirm Real Media: Dis media na authentic real camera capture (${100 - result.deepfakeProbability}% confidence). Natural camera lens focus, authentic skin pores/grain, and natural light shadow confirm say na real human camera capture dis one.`
+                ) : (
+                  result.forensicSummary
+                )}
               </p>
             </div>
 
@@ -772,7 +793,14 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
                 ? 'bg-rose-950/40 border-rose-800/40 text-rose-300'
                 : 'bg-emerald-950/40 border-emerald-800/40 text-emerald-300'
             }`}>
-              <strong>Advisory:</strong> {result.recommendation}
+              <strong>{isPidgin ? 'Wetin You Suppose Do (Advisory):' : 'Advisory:'}</strong>{' '}
+              {isPidgin ? (
+                result.deepfakeProbability >= 60
+                  ? 'NO SHARE DIS MEDIA! Dis picture/video na AI generation or manipulated content. No use am as true evidence or believe say na real thing happen.'
+                  : 'You fit share and trust dis media. Everything show say na authentic real recording.'
+              ) : (
+                result.recommendation
+              )}
             </div>
           </div>
 

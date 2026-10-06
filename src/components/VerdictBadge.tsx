@@ -5,51 +5,52 @@ import { CheckCircle2, XCircle, AlertTriangle, HelpCircle } from 'lucide-react';
 interface VerdictBadgeProps {
   verdict: VerdictType;
   size?: 'sm' | 'md' | 'lg';
+  isPidgin?: boolean;
 }
 
-export const VerdictBadge: React.FC<VerdictBadgeProps> = ({ verdict, size = 'md' }) => {
+export const VerdictBadge: React.FC<VerdictBadgeProps> = ({ verdict, size = 'md', isPidgin = false }) => {
   const configs = {
     SUPPORTED: {
-      label: 'LIKELY TRUE / SUPPORTED',
+      label: isPidgin ? 'TRUE / CONFIRMED (TRUE TORI)' : 'LIKELY TRUE / SUPPORTED',
       icon: CheckCircle2,
       bg: 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400',
-      glow: 'shadow-[0_0_20px_rgba(16,185,129,0.25)]',
-      desc: 'Corroborated by official bulletins & direct reporting'
+      glow: 'shadow-[0_0_20px_rgba(160,185,129,0.25)]',
+      desc: isPidgin ? 'Government paper and verified news confirm am' : 'Corroborated by official bulletins & direct reporting'
     },
     CONTRADICTED: {
-      label: 'FALSE / CONTRADICTED',
+      label: isPidgin ? 'FAKE TORI / DEBUNKED (LIE LIE)' : 'FALSE / CONTRADICTED',
       icon: XCircle,
       bg: 'bg-rose-500/10 border-rose-500/40 text-rose-400',
       glow: 'shadow-[0_0_20px_rgba(244,63,94,0.25)]',
-      desc: 'Refuted by verified authorities & fact-checking desks'
+      desc: isPidgin ? 'Official bodies don debunk dis tori as fake' : 'Refuted by verified authorities & fact-checking desks'
     },
     MISLEADING: {
-      label: 'MISLEADING / OUT OF CONTEXT',
+      label: isPidgin ? 'MISLEADING (DON MIX LIE JOIN)' : 'MISLEADING / OUT OF CONTEXT',
       icon: AlertTriangle,
       bg: 'bg-amber-500/10 border-amber-500/40 text-amber-400',
       glow: 'shadow-[0_0_20px_rgba(245,158,11,0.25)]',
-      desc: 'Contains distorted context or conflated policies'
+      desc: isPidgin ? 'Some part correct but dem twist the meaning' : 'Contains distorted context or conflated policies'
     },
     SATIRE_PARODY: {
-      label: 'SATIRE / PARODY / JOKE',
+      label: isPidgin ? 'JOKE / COMEDY SKIT (NO BE NEWS)' : 'SATIRE / PARODY / JOKE',
       icon: AlertTriangle,
       bg: 'bg-purple-500/10 border-purple-500/40 text-purple-400',
       glow: 'shadow-[0_0_20px_rgba(168,85,247,0.25)]',
-      desc: 'Humor, social media parody, or comedy banter (not factual news)'
+      desc: isPidgin ? 'Na cruise, comedy or meme — no be real news' : 'Humor, social media parody, or comedy banter (not factual news)'
     },
     NON_CLAIM: {
-      label: 'NOT A NEWS CLAIM / GREETING',
+      label: isPidgin ? 'GREETING / NO BE NEWS CLAIM' : 'NOT A NEWS CLAIM / GREETING',
       icon: HelpCircle,
       bg: 'bg-cyan-500/10 border-cyan-500/40 text-cyan-300',
       glow: 'shadow-[0_0_20px_rgba(6,182,212,0.2)]',
-      desc: 'Input is a greeting or question, not a testable news claim'
+      desc: isPidgin ? 'Na ordinary talk or question, no be news claim' : 'Input is a greeting or question, not a testable news claim'
     },
     UNVERIFIED: {
-      label: 'UNVERIFIED / TOO RECENT',
+      label: isPidgin ? 'UNVERIFIED / RUMOUR (NO PROOF YET)' : 'UNVERIFIED / RUMOUR',
       icon: HelpCircle,
       bg: 'bg-slate-500/10 border-slate-500/40 text-slate-300',
       glow: 'shadow-[0_0_20px_rgba(148,163,184,0.15)]',
-      desc: 'Too recent to confirm or no primary regulatory bulletin found'
+      desc: isPidgin ? 'Tori never get proof from official record — na rumour until dem prove am' : 'Circulating uncorroborated claim or rumour — not yet proven by official records'
     }
   };
 

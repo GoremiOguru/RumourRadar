@@ -33,9 +33,9 @@ export function verifyClaimWithEvidence(
   let verdict: VerdictType = 'UNVERIFIED';
   let confidence: ConfidenceLevel = 'LOW';
   let confidenceScore = 45;
-  let shortExplanation = 'Insufficient official evidence was found to confirm or dispute this claim. Exercise caution before forwarding.';
-  let pidginExplanation = 'We never see solid proof from government or reliable news say dis matter na true or lie. Make you no rush share am.';
-  let reasoning = 'No authoritative regulatory statements or primary news items confirm this specific claim. In the absence of corroboration, Rumor Radar classifies this as Unverified to prevent false assumptions.';
+  let shortExplanation = 'UNVERIFIED / RUMOUR: Insufficient official evidence was found to confirm or dispute this claim. It remains an unverified rumour until proven by official records.';
+  let pidginExplanation = 'UNVERIFIED / RUMOUR: We never see solid proof from government or reliable news say dis matter na true or lie. E still remain rumour until dem confirm am, so make you no rush share am.';
+  let reasoning = 'No authoritative regulatory statements or primary news items confirm this specific claim. In the absence of corroboration, Rumour Radar classifies this as an Unverified Rumour to prevent false assumptions.';
   let keyQuote: string | undefined = undefined;
 
   // 0. Non-Claim / Conversational Greeting Guardrail
