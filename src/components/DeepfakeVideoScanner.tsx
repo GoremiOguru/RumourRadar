@@ -165,15 +165,15 @@ export function DeepfakeVideoScanner({ appLanguage = 'en', onOpenHelpModal }: De
           const ctx = canvas.getContext('2d');
           if (!ctx) return resolve({ uiFrames: [], cleanFrame: rawDataUrl });
 
-          // Scale down gracefully to max 1024px for fast API transfer and crisp AI analysis
-          const maxDim = 1024;
+          // Scale down gracefully to max 1280px for fast API transfer and crisp AI analysis
+          const maxDim = 1280;
           const scale = Math.min(1, maxDim / Math.max(img.width || 800, img.height || 600));
           canvas.width = Math.round((img.width || 800) * scale);
           canvas.height = Math.round((img.height || 600) * scale);
 
           // 1. First draw clean, unadorned image to get the pure base64 for AI Vision
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const cleanFrame = canvas.toDataURL('image/jpeg', 0.88);
+          const cleanFrame = canvas.toDataURL('image/jpeg', 0.92);
 
           const uiFrames: string[] = [];
 

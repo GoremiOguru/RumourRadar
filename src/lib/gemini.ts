@@ -4,14 +4,14 @@ import { ExtractedClaim, EvidenceItem, FactCheckMatch, VerdictType, ConfidenceLe
 const rawGeminiKey = process.env.GEMINI_API_KEY || '';
 const openRouterApiKey = process.env.OPENROUTER_API_KEY || '';
 
-// Valid Google AI Studio keys start with 'AIzaSy'
-const isGeminiKeyValid = rawGeminiKey.startsWith('AIzaSy');
+// Valid Google AI Studio keys typically start with 'AIzaSy' or non-empty string
+const isGeminiKeyValid = Boolean(rawGeminiKey && rawGeminiKey.trim().length > 10);
 let isGeminiDisabled = !isGeminiKeyValid;
 
 let genAI: GoogleGenerativeAI | null = null;
 if (isGeminiKeyValid) {
   try {
-    genAI = new GoogleGenerativeAI(rawGeminiKey);
+    genAI = new GoogleGenerativeAI(rawGeminiKey.trim());
   } catch (e) {
     console.warn('[LLM] Gemini initialization warning:', e);
   }
@@ -33,7 +33,7 @@ export async function executeLlmWithFailover(
   }
 ): Promise<string | null> {
   const temp = options?.temperature ?? 0.1;
-  const maxTokens = options?.maxTokens || 1000;
+  const maxTokens = Math.min(options?.maxTokens || 1000, 1500);
 
   // Prepare normalized image list
   const imageList: Array<{ dataUrl: string; cleanBase64: string; mimeType: string }> = [];
@@ -85,13 +85,13 @@ export async function executeLlmWithFailover(
     }
   }
 
-  // 2. SECONDARY RAIL: High-Speed OpenRouter (Google Gemini 2.5 Flash for vision / gpt-4o-mini for text)
+  // 2. SECONDARY RAIL: High-Speed OpenRouter (OpenAI GPT-4o-mini & GPT-4.1-mini for vision / text)
   if (openRouterApiKey) {
     const candidateModels = options?.openRouterModel 
       ? [options.openRouterModel]
       : imageList.length > 0
-      ? ['google/gemini-2.5-flash', 'qwen/qwen-2.5-vl-72b-instruct', 'openai/gpt-4o-mini']
-      : ['openai/gpt-4o-mini', 'google/gemini-2.5-flash'];
+      ? ['openai/gpt-4o-mini', 'openai/gpt-4.1-mini']
+      : ['openai/gpt-4o-mini', 'openai/gpt-4.1-mini', 'nvidia/nemotron-3.5-lightning:free'];
 
     for (const selectedModel of candidateModels) {
       try {

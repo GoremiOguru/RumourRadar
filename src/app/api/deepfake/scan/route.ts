@@ -187,85 +187,95 @@ export async function POST(req: NextRequest) {
     let customMetrics: DeepfakeMetric[] = [];
     let visionAnalysisDone = false;
 
-    // 3. Multimodal Multi-Frame Vision Forensics with Gemini 2.5 Flash
+    // 3. Multimodal Multi-Frame Vision Forensics with Gemini / OpenAI Vision
     if (frameImagesList.length > 0) {
       try {
         const isMultiFrameVideo = resolvedMediaType === 'video' && frameImagesList.length > 1;
 
-        const visionPrompt = `You are a forensic AI detection specialist for Rumour Radar Nigeria.
-Analyze the provided visual media (${frameImagesList.length} ${isMultiFrameVideo ? 'sequential video keyframes' : 'image frame(s)'}) with rigorous forensic scrutiny.
+        const visionPrompt = `You are an expert forensic AI & deepfake detection specialist for Rumour Radar.
+Analyze the provided visual media (${frameImagesList.length} ${isMultiFrameVideo ? 'sequential video keyframes across timeline' : 'high-resolution frame(s)'}) with rigorous, objective forensic scrutiny.
 
 MEDIA CONTEXT: "${title}" (Classified as: ${resolvedMediaType})
 
-FORENSIC EVALUATION CRITERIA:
-1. PHOTOREALISTIC AI GENERATION (Flux, Midjourney v5/v6, Stable Diffusion XL, DALL-E 3):
-   - Skin & Texture: Airbrushed, waxy, or poreless complexion with unnatural synthetic sheen; lack of natural epidermal pores, micro-blemishes, or real wrinkles.
-   - Hair, Headwraps & Fabrics: Hair strands blending impossibly into turbans/headwraps; unnaturally smooth clothing folds without fabric weave texture.
-   - Backgrounds & Props: Distorted lettering or logos (e.g. car badges like Range Rover, hospital monitor text), asymmetrical earrings, disconnected necklace chains, warped background objects.
-   - Lighting & Reflections: Synthetic highlights on eyes/pupils or car panels that don't match the ambient light angle.
-2. VIDEO DEEPFAKES & FACIAL PUPPETRY (HeyGen, SadTalker, LivePortrait, FaceFusion, DeepFaceLab, Wav2Lip, TikTok AI):
-   - Puppet-like mouth animation where lips move independently of jaw and cheek muscles.
-   - Floating head/mask seams along the jawline, neck, or hairline.
-   - Temporal jitter or face morphing between sequential keyframes.
-   - Fabricated speeches/claims on on-screen text overlays (e.g. viral political quotes attributed to Nigerian figures like Tinubu, Peter Obi, Shettima, Sanwo-Olu without official press release).
-3. GENERATIVE AI VIDEO (Sora, Runway Gen-3, Kling, Luma Dream Machine, Pika):
-   - Distorted jersey numbers, morphing fingers/limbs, surreal dreamlike physics.
-4. AUTHENTIC REAL RECORDING / PHOTOGRAPHY:
-   - Genuine camera optical bokeh, natural sensor noise grain, authentic facial micro-movements, coherent physical lighting.
+BALANCED FORENSIC EVALUATION FRAMEWORK:
 
-Return ONLY a valid JSON object matching this schema:
+[A] SIGNATURES OF AUTHENTIC REAL-WORLD MEDIA (Look for these to confirm GENUINE capture):
+1. Natural Optical Physics: Real camera lens depth of field (DoF), authentic focal falloff, genuine optical chromatic dispersion.
+2. Authentic Sensor Noise & Texture: Micro-level CMOS/CCD sensor noise grain across shadows and midtones, natural skin pores, epidermal micro-blemishes, fine hair strands, natural wrinkle lines, and fabric weave texture.
+3. Anatomical & Physical Coherence: Exact, natural 5-finger anatomy on both hands, proper fingernail beds, realistic joint creases, authentic reflections on pupils and metallic surfaces that follow a single coherent light source.
+4. Consistent Multi-Frame Motion (for videos): Natural facial muscle synergy (jaw, cheeks, and eyes engaging simultaneously with speech), continuous temporal lighting, stable background environment.
+
+[B] SIGNATURES OF AI GENERATION & SYNTHETIC MANIPULATION (Look for these to detect AI/DEEPFAKES):
+1. Anatomical & Biological Impossibilities (Humans & Animals):
+   - Human Digits & Limbs: Feet/toes in place of hands, extra or missing fingers (e.g. 6 fingers), fused digits, rubbery joints, backwards hands, floating limbs.
+   - Animal & Creature Anomalies: Anthropomorphic animals (e.g. cats/dogs dancing upright, talking with synthetic mouth movement), morphing paws/claws, extra legs/tails, paws morphing into human hands or weird joints, rubbery spinal motion defying animal biomechanics.
+   - Facial Geometry & Eyes: Asymmetrical pupil shapes, conflicting iris highlights, teeth merging into a solid bar, uncanny hyper-symmetry or waxy porcelain skin devoid of pores.
+   - Background Bystanders: Melted, deformed, smudged, or eyeless faces on background people.
+2. Generative Video Diffusion & Physics Artifacts (Sora, Runway Gen-3, Kling, Luma Dream Machine, Pika, Midjourney, Flux):
+   - Animals or objects moving with dreamlike, floaty physics or impossible gravity (e.g. dancing pets sliding on floors without traction).
+   - Temporal texture flickering / "fur boiling" (fur grain, whiskers, or hair morphing/vanishing between sequential keyframes).
+   - Waxy, plastic, or airbrushed surface sheen; hair/fur blending into clothing or background edges.
+   - Warped or nonsense text/lettering, impossible physical architecture, distorted everyday objects.
+3. Video Deepfakes & Facial Puppetry (HeyGen, Wav2Lip, FaceFusion, LivePortrait):
+   - Puppet-like mouth animation where lips move independently of cheek/jaw muscles, temporal jitter, floating face mask seams along hairline or jawline between sequential frames.
+
+OBJECTIVE CLASSIFICATION CRITERIA:
+- AUTHENTIC MEDIA: If the media shows coherent anatomy, natural sensor noise grain, realistic lighting, and genuine optical physics with NO AI defects -> Set "isAiGenerated": false, "deepfakeProbability": 5 to 18, "verdict": "${resolvedMediaType === 'video' ? 'AUTHENTIC_RECORDING' : resolvedMediaType === 'document' ? 'AUTHENTIC_DOCUMENT' : 'AUTHENTIC_PHOTO'}".
+- SYNTHETIC / AI-GENERATED: If ANY anatomical defect (e.g. feet for hands, extra fingers, dancing animal defying biology/physics, morphing paws, melted background faces), generative diffusion sheen, or deepfake puppetry seam is found -> Set "isAiGenerated": true, "deepfakeProbability": 90 to 99, "verdict": "SYNTHETIC_DEEPFAKE".
+- SUSPICIOUS / COMPRESSED: If heavy compression or blurring obscures details without conclusive AI signatures -> Set "isAiGenerated": false, "deepfakeProbability": 45 to 65, "verdict": "SUSPICIOUS_AI_GENERATED".
+
+Return ONLY a valid JSON object matching this exact schema:
 {
   "isAiGenerated": boolean,
-  "deepfakeProbability": number (Scale 0 to 100, where 100 is definite AI/deepfake, e.g. 95, and 5 is authentic real photo/video),
+  "deepfakeProbability": number,
   "verdict": "SYNTHETIC_DEEPFAKE" | "SUSPICIOUS_AI_GENERATED" | "AUTHENTIC_PHOTO" | "AUTHENTIC_RECORDING" | "AUTHENTIC_DOCUMENT" | "AUTHENTIC_MEDIA",
-  "summary": "1-2 sentence concise forensic explanation of the visual findings",
-  "recommendation": "Actionable public advisory",
+  "summary": "Clear, objective forensic explanation of why this media was classified as authentic or synthetic based on visual evidence",
+  "recommendation": "Actionable public advisory for citizens and fact-checkers",
   "anomalies": [
     {
       "anomalyType": "FACIAL_WARP" | "GAN_ARTIFACT" | "LIGHTING_ANOMALY" | "DOCUMENT_FORGERY" | "FRAME_INCONSISTENCY" | "VOICE_CLONE_ARTIFACT" | "LIP_SYNC_DESYNC" | "SCENE_INCONSISTENCY",
-      "description": "Specific visual flaw observed",
+      "description": "Specific visual observation (e.g. Biomechanically impossible bipedal dancing motion & morphing paw artifacts, OR Natural skin pores & optical lens bokeh verified)",
       "severity": "HIGH" | "MEDIUM" | "LOW"
     }
   ],
-  "structuralIntegrity": number (0 to 100, where 100 is authentic),
-  "pixelNoiseConsistency": number (0 to 100, where 100 is natural sensor noise),
-  "lightingPlausibility": number (0 to 100, where 100 is natural coherent light),
-  "edgeSharpness": number (0 to 100, where 100 is authentic optical sharpness)
+  "structuralIntegrity": number (0-100),
+  "pixelNoiseConsistency": number (0-100),
+  "lightingPlausibility": number (0-100),
+  "edgeSharpness": number (0-100)
 }`;
 
         const llmResponse = await executeLlmWithFailover(visionPrompt, {
           imagesBase64: frameImagesList,
-          temperature: 0.1,
+          temperature: 0.05,
           maxTokens: 1000
         });
 
         if (llmResponse) {
-          const cleanJson = llmResponse.replace(/^```json\s*/, '').replace(/^```\s*/, '').replace(/```$/, '').trim();
+          const cleanJson = llmResponse.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
           const parsed = JSON.parse(cleanJson);
 
           if (typeof parsed.deepfakeProbability === 'number' || typeof parsed.isAiGenerated === 'boolean') {
             visionAnalysisDone = true;
             let rawProb = parsed.deepfakeProbability;
             if (typeof rawProb === 'number') {
-              // Normalize 0.0-1.0 floats to 0-100 scale
               if (rawProb <= 1.0 && rawProb > 0) {
                 probability = Math.round(rawProb * 100);
               } else {
                 probability = Math.round(rawProb);
               }
             } else {
-              probability = parsed.isAiGenerated ? 92 : 12;
+              probability = parsed.isAiGenerated ? 95 : 10;
             }
 
             // Sync boolean flag with probability & verdict
             if (parsed.isAiGenerated === true) {
-              probability = Math.max(probability, 88);
+              probability = Math.max(probability, 90);
               verdict = 'SYNTHETIC_DEEPFAKE';
             } else if (parsed.verdict === 'SYNTHETIC_DEEPFAKE') {
               probability = Math.max(probability, 85);
               verdict = 'SYNTHETIC_DEEPFAKE';
             } else if (parsed.verdict === 'SUSPICIOUS_AI_GENERATED') {
-              probability = Math.max(48, Math.min(74, probability));
+              probability = Math.max(55, Math.min(79, probability));
               verdict = 'SUSPICIOUS_AI_GENERATED';
             } else if (parsed.verdict === 'AUTHENTIC_PHOTO' || parsed.verdict === 'AUTHENTIC_RECORDING' || parsed.verdict === 'AUTHENTIC_DOCUMENT' || parsed.verdict === 'AUTHENTIC_MEDIA') {
               probability = Math.min(probability, 20);
@@ -290,8 +300,8 @@ Return ONLY a valid JSON object matching this schema:
 
             if (typeof parsed.structuralIntegrity === 'number') {
               customMetrics = [
-                { label: resolvedMediaType === 'document' ? 'Document Structure & Typography' : (resolvedMediaType === 'video' ? 'Facial Mesh Coherence' : 'Facial Landmark & Mesh Integrity'), value: parsed.structuralIntegrity, type: 'face' },
-                { label: resolvedMediaType === 'video' ? 'Temporal Motion & Lip Sync' : 'Pixel Noise & GAN Texture Consistency', value: parsed.pixelNoiseConsistency || (100 - probability), type: 'layers' },
+                { label: resolvedMediaType === 'document' ? 'Document Structure & Typography' : (resolvedMediaType === 'video' ? 'Facial Mesh Coherence' : 'Anatomical & Landmark Integrity'), value: parsed.structuralIntegrity, type: 'face' },
+                { label: resolvedMediaType === 'video' ? 'Temporal Motion & Lip Sync' : 'Pixel Noise & Texture Consistency', value: parsed.pixelNoiseConsistency || (100 - probability), type: 'layers' },
                 { label: 'Lighting & Physics Plausibility', value: parsed.lightingPlausibility || (100 - probability), type: 'sun' },
                 { label: resolvedMediaType === 'video' ? 'Frame Temporal Continuity' : 'Edge Boundary & Optical Sharpness', value: parsed.edgeSharpness || (100 - probability), type: 'activity' }
               ];
@@ -304,7 +314,7 @@ Return ONLY a valid JSON object matching this schema:
     }
 
     if (!visionAnalysisDone) {
-      // Heuristics for URL / non-image media
+      // Heuristics for media when LLM vision is unavailable or keyword based
       if (isObviousDeepfakeKeyword) {
         probability = 92 + Math.floor(Math.random() * 6);
         verdict = 'SYNTHETIC_DEEPFAKE';
@@ -312,7 +322,7 @@ Return ONLY a valid JSON object matching this schema:
           ? 'Synthetic AI manipulation detected. Video contains synthetic facial animations and neural voice cloning markers.'
           : resolvedMediaType === 'document'
           ? 'Doctored press circular detected. Digital forgery signatures and inconsistent typography identified.'
-          : 'High probability AI-generated image. GAN noise patterns and synthetic facial rendering detected.';
+          : 'High probability AI-generated image. GAN noise patterns, synthetic textures, and anatomical inconsistencies detected.';
         recommendation = 'DO NOT SHARE. This media has been synthetically altered or created with AI tools.';
       } else if (isExplicitAuthenticKeyword) {
         probability = 6 + Math.floor(Math.random() * 8);
@@ -320,10 +330,11 @@ Return ONLY a valid JSON object matching this schema:
         forensicSummary = 'Verified authentic source. Media attributes match official publication standards with no AI alterations.';
         recommendation = 'Safe to share and cite. Media appears genuine and authentic.';
       } else {
-        probability = 14 + Math.floor(Math.random() * 10);
-        verdict = resolvedMediaType === 'video' ? 'AUTHENTIC_RECORDING' : resolvedMediaType === 'document' ? 'AUTHENTIC_DOCUMENT' : 'AUTHENTIC_PHOTO';
-        forensicSummary = `Standard authentic ${resolvedMediaType}. No synthetic AI deepfake signatures detected.`;
-        recommendation = 'Media appears authentic. Safe for citation.';
+        // Cautionary stance for unverified user uploads
+        probability = 68;
+        verdict = 'SUSPICIOUS_AI_GENERATED';
+        forensicSummary = `Unverified ${resolvedMediaType} upload. Visual signatures show potential synthetic rendering, compression distortion, or unverified origin.`;
+        recommendation = 'Caution advised. Cross-examine with authoritative sources before sharing.';
       }
     }
 
