@@ -17,21 +17,21 @@ const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
  * Strips whitespace, punctuation, and common formatting artifacts so that
  * minor query variations hit the same cache entry.
  */
-export function computeClaimHash(queryText: string): string {
+export function computeClaimHash(queryText: string, locale = 'en'): string {
   const normalized = queryText
     .toLowerCase()
     .replace(/[^\w\s]/g, '') // remove punctuation
     .replace(/\s+/g, ' ')     // collapse whitespace
     .trim();
 
-  return crypto.createHash('sha256').update(normalized).digest('hex');
+  return crypto.createHash('sha256').update(`${locale}:${normalized}`).digest('hex');
 }
 
 /**
  * Retrieves a cached VerificationResult if available and not expired.
  */
-export function getCachedResult(queryText: string): VerificationResult | null {
-  const hash = computeClaimHash(queryText);
+export function getCachedResult(queryText: string, locale = 'en'): VerificationResult | null {
+  const hash = computeClaimHash(queryText, locale);
   const entry = claimCache.get(hash);
 
   if (!entry) {
@@ -52,10 +52,10 @@ export function getCachedResult(queryText: string): VerificationResult | null {
 }
 
 /**
- * Caches a verification result keyed by its SHA-256 claim hash.
+ * Caches a verification result keyed by its SHA-256 claim hash and locale.
  */
-export function setCachedResult(queryText: string, result: VerificationResult): void {
-  const hash = computeClaimHash(queryText);
+export function setCachedResult(queryText: string, result: VerificationResult, locale = 'en'): void {
+  const hash = computeClaimHash(queryText, locale);
   claimCache.set(hash, {
     result,
     timestamp: Date.now()

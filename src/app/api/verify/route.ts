@@ -32,7 +32,7 @@ import { verifyClaimWithEvidence } from '@/lib/verifier';
 import { scrapeArticleIfUrl } from '@/lib/url-scraper';
 import { getCachedResult, setCachedResult } from '@/lib/cache';
 import { saveVerificationToDB } from '@/lib/supabase';
-import { checkPaymentRedFlag } from '@/lib/bmoni';
+import { checkPaymentRedFlag } from '@/lib/paga';
 import { generateMultilingualExplanations } from '@/lib/naijaml';
 import { VerificationResult } from '@/types';
 
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   const startTime = Date.now();
   try {
     const body = await req.json();
-    const { query, imageBase64, mimeType } = body;
+    const { query, imageBase64, mimeType, locale = 'en' } = body;
 
     if ((!query || typeof query !== 'string' || query.trim().length === 0) && !imageBase64) {
       return NextResponse.json({ error: 'Query text or image is required' }, { status: 400 });
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 
     // Stage 0: Check SHA-256 Claim Cache for instant (<100ms) repeat response (text-only)
     if (!imageBase64) {
-      const cached = getCachedResult(effectiveQuery);
+      const cached = getCachedResult(effectiveQuery, locale);
       if (cached) {
         return NextResponse.json(cached);
       }
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     const claim = geminiClaim || await extractClaim(textToProcess);
 
 
-    // Stage 2: Parallel Tri-Channel Retrieval (Google Fact Check + Nigeria-First Authority Router + BMONI Bank Rail)
+    // Stage 2: Parallel Tri-Channel Retrieval (Google Fact Check + Nigeria-First Authority Router + Paga Bank Rail)
     const [factCheckMatch, rawEvidence, paymentResult] = await Promise.all([
       lookupGoogleFactCheck(claim.normalizedClaim),
       searchAuthoritativeEvidence(claim),
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
           { stage: '1. Live URL & Claim Extraction (Gemini AI)', status: 'completed', durationMs: Math.round(duration * 0.18), details: `Entity: "${claim.entity}" | Category: ${claim.category}` },
           { stage: '2. Google Fact Check Tools API', status: factCheckMatch ? 'completed' : 'fallback', durationMs: Math.round(duration * 0.18), details: factCheckMatch ? `Match: ${factCheckMatch.publisher}` : 'Checked Global Registry' },
           { stage: '3. Nigeria-First Authority Search (Serper/Live)', status: 'completed', durationMs: Math.round(duration * 0.25), details: `Scanned ${rankedEvidence.length} Nigerian authoritative sources` },
-          { stage: '4. BMONI BVN Payment Detail & Fraud Rail', status: paymentResult ? 'completed' : 'skipped', durationMs: Math.round(duration * 0.15), details: paymentResult ? paymentResult.evidenceSummary : 'No NUBAN payment details detected' },
+          { stage: '4. Paga NUBAN Payment Detail & Fraud Rail', status: paymentResult ? 'completed' : 'skipped', durationMs: Math.round(duration * 0.15), details: paymentResult ? paymentResult.evidenceSummary : 'No NUBAN payment details detected' },
           { stage: '5. Multi-Factor Formula Ranking Engine', status: 'completed', durationMs: Math.round(duration * 0.08), details: `Formula: 0.30×Auth + 0.25×Rel + 0.20×Rec + 0.15×Corr + 0.10×Ctx` },
           { stage: '6. Evidence-Grounded Synthesis (Gemini AI)', status: 'completed', durationMs: Math.round(duration * 0.16), details: `Verdict: ${geminiSynthesis.verdict} (${geminiSynthesis.confidenceScore}% Confidence)` }
         ]
@@ -123,21 +123,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Stage 4.5: Hard Evidence Overrides from BMONI Payment Rail
+    // Stage 4.5: Hard Evidence Overrides from Paga Payment Rail
     if (paymentResult) {
       result.paymentVerification = paymentResult;
       if (paymentResult.status === 'ACCOUNT_VERIFIED_MISMATCH' || paymentResult.status === 'ACCOUNT_NOT_FOUND') {
         result.verdict = 'CONTRADICTED';
         result.confidence = 'HIGH';
         result.confidenceScore = 96;
-        result.shortExplanation = `FINANCIAL FRAUD ALERT: BMONI BVN verification confirms bank account ${paymentResult.detectedNuban} (${paymentResult.detectedBank}) is registered to "${paymentResult.actualAccountHolder || 'unverified holder'}", which conflicts with the claimed official entity.`;
-        result.pidginExplanation = `BEWARE FRAUD SCAM! BMONI bank lookup show say dis account ${paymentResult.detectedNuban} for ${paymentResult.detectedBank} belong to personal holder "${paymentResult.actualAccountHolder}", no be official government agency. No send money!`;
-        result.reasoning = `BMONI Bank Account Verification Rail explicitly confirms an account detail mismatch. ${paymentResult.evidenceSummary}`;
+        result.shortExplanation = `FINANCIAL FRAUD ALERT: Paga verification confirms bank account ${paymentResult.detectedNuban} (${paymentResult.detectedBank}) is registered to "${paymentResult.actualAccountHolder || 'unverified holder'}", which conflicts with the claimed official entity.`;
+        result.pidginExplanation = `BEWARE FRAUD SCAM! Paga bank lookup show say dis account ${paymentResult.detectedNuban} for ${paymentResult.detectedBank} belong to personal holder "${paymentResult.actualAccountHolder}", no be official government agency. No send money!`;
+        result.reasoning = `Paga Bank Account Verification Rail explicitly confirms an account detail mismatch. ${paymentResult.evidenceSummary}`;
       }
     }
 
-    // Stage 5: Cache & Persist
-    setCachedResult(query, result);
+    // If locale is Nigerian Pidgin (pcm), use the Pidgin explanation as the primary summary
+    if (locale === 'pcm' && result.pidginExplanation) {
+      result.shortExplanation = result.pidginExplanation;
+    }
+
+    // Stage 5: Cache & Persist Keyed by (query + locale)
+    setCachedResult(query, result, locale);
     // Background async persist to Supabase / local DB
     saveVerificationToDB(result).catch(err => console.warn('Background save notice:', err));
 

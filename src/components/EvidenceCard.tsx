@@ -1,6 +1,7 @@
 import React from 'react';
 import { EvidenceItem } from '@/types';
-import { Landmark, Newspaper, Award, ArrowUpRight } from 'lucide-react';
+import { Landmark, Newspaper, ArrowUpRight } from 'lucide-react';
+import { useTranslations } from '@/context/LanguageContext';
 
 interface EvidenceCardProps {
   evidence: EvidenceItem;
@@ -8,72 +9,50 @@ interface EvidenceCardProps {
 }
 
 export const EvidenceCard: React.FC<EvidenceCardProps> = ({ evidence, rank }) => {
+  const { isPidgin } = useTranslations();
+
   return (
-    <article className="glass-panel-subtle group relative rounded-xl p-4 transition-all duration-200 hover:border-emerald-500/40 hover:bg-slate-900/70">
-      <div className="flex items-start justify-between gap-3">
-        {/* Source Badge & Rank */}
-        <div className="flex items-center space-x-2">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-[11px] font-mono text-slate-300 font-bold border border-slate-700">
+    <article className="group rounded-xl p-3 sm:p-3.5 bg-white border border-[#D5E7FA] shadow-2xs hover:border-[#005b9c] hover:shadow-xs transition-all duration-150">
+      {/* Top Header Row: Rank + Authority Badge + Source Name + Direct Link */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center space-x-1.5 min-w-0">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#EAF3FC] text-[10px] font-mono text-[#005b9c] font-bold border border-[#D5E7FA] shrink-0">
             {rank}
           </span>
-          <div className="flex items-center space-x-1.5">
-            {evidence.isOfficialAuthority ? (
-              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
-                <Landmark className="w-3 h-3" />
-                Official Authority
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-md">
-                <Newspaper className="w-3 h-3" />
-                Reputable Media
-              </span>
-            )}
-            <span className="text-xs text-slate-400 font-mono">{evidence.domain}</span>
-          </div>
-        </div>
-
-        {/* Score Pill */}
-        <div className="flex items-center space-x-1 bg-slate-950/80 border border-slate-800 px-2 py-0.5 rounded-md">
-          <Award className="w-3 h-3 text-emerald-400" />
-          <span
-            className="evidence-score-pop text-[11px] font-mono font-bold text-slate-300"
-            style={{ animationDelay: `${Math.min((rank - 1) * 75, 300)}ms` }}
-          >
-            {evidence.score} pts
-          </span>
-        </div>
-      </div>
-
-      {/* Title */}
-      <h4 className="mt-2.5 font-semibold text-sm text-slate-100 group-hover:text-emerald-300 transition-colors line-clamp-2">
-        {evidence.title}
-      </h4>
-
-      {/* Snippet */}
-      <p className="mt-1.5 text-xs text-slate-400 leading-relaxed line-clamp-3">
-        {evidence.snippet}
-      </p>
-
-      {/* Footer Info & Link */}
-      <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex flex-col gap-2 text-[11px] sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0 text-slate-400">
-          <span className="block truncate">{evidence.sourceName}</span>
-          <span className="text-slate-500">
-            {evidence.isOfficialAuthority ? 'Official source' : 'Reported source'}
-            {evidence.publishedDate && ` • ${evidence.publishedDate}`}
-          </span>
+          {evidence.isOfficialAuthority ? (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#005b9c] bg-[#EAF3FC] px-1.5 py-0.5 rounded-full shrink-0">
+              <Landmark className="w-2.5 h-2.5 text-[#005b9c]" />
+              {isPidgin ? 'Official' : 'Official Authority'}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#2786D1] bg-sky-50 px-1.5 py-0.5 rounded-full shrink-0">
+              <Newspaper className="w-2.5 h-2.5 text-[#2786D1]" />
+              {isPidgin ? 'News Desk' : 'Verified Media'}
+            </span>
+          )}
+          <span className="text-xs font-semibold text-[#0b2540] truncate">{evidence.sourceName}</span>
         </div>
 
         <a
           href={evidence.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center space-x-1 text-emerald-400 hover:text-emerald-300 font-medium group-hover:underline"
+          className="inline-flex items-center space-x-0.5 text-xs text-[#005b9c] hover:text-[#00406e] font-semibold shrink-0 group-hover:underline"
         >
-          <span>Open source</span>
-          <ArrowUpRight className="w-3 h-3" />
+          <span>{isPidgin ? 'Check' : 'Source'}</span>
+          <ArrowUpRight className="w-3.5 h-3.5" />
         </a>
       </div>
+
+      {/* Short 1-Line Headline */}
+      <h4 className="mt-1.5 font-semibold text-xs sm:text-sm text-[#0b2540] group-hover:text-[#005b9c] transition-colors line-clamp-1">
+        {evidence.title}
+      </h4>
+
+      {/* Short 2-Line Key Snippet Excerpt */}
+      <p className="mt-1 text-xs text-[#4a6076] leading-relaxed line-clamp-2">
+        {evidence.snippet}
+      </p>
     </article>
   );
 };

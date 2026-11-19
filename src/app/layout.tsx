@@ -1,11 +1,10 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { cookies } from 'next/headers';
+import { LanguageProvider, AppLanguage } from '@/context/LanguageContext';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
-
 export const viewport: Viewport = {
-  themeColor: '#020617',
+  themeColor: '#005A9C',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -14,27 +13,29 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL || 
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://rumourradar.vercel.app')
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://truetalk.ng')
   ),
   title: {
-    default: 'Rumor Radar • Nigeria-First AI Fact-Checking & Evidence Engine',
-    template: '%s • Rumor Radar'
+    default: 'Truetalk • National Disinformation Surveillance & Evidence Verification',
+    template: '%s • Truetalk'
   },
-  description: 'Evidence-first AI disinformation verification system designed for Nigeria. Verifies viral WhatsApp forwards, breaking headlines, and social claims against CBN, INEC, NCDC, and certified fact-checkers.',
-  applicationName: 'Rumor Radar',
-  authors: [{ name: 'Rumor Radar Dev Team' }],
-  creator: 'Rumor Radar AI',
-  publisher: "BUILDXNACOS '26 Hackathon",
+  description: 'National Disinformation Surveillance & Evidence Verification engine for Nigeria by Team GODEC. Verifies viral WhatsApp forwards, breaking headlines, and social claims against CBN, INEC, NCDC, and certified fact-checkers.',
+  applicationName: 'Truetalk',
+  authors: [{ name: 'Team GODEC' }],
+  creator: 'Team GODEC',
+  publisher: 'Team GODEC',
   keywords: [
-    'Rumor Radar',
+    'Truetalk',
+    'Truetalk Nigeria',
+    'Team GODEC',
     'Fact Check Nigeria',
     'Fake News Detection Nigeria',
     'WhatsApp Forward Verifier',
     'CBN Rumors',
     'OPay Shutdown Hoax',
+    'Paga Financial Protection',
     'JAMB Cutoff Mark Verification',
     'NCDC Cholera Alert',
-    "BUILDXNACOS '26 Hackathon",
     'Nigerian Disinformation Engine',
     'Evidence Grounded AI'
   ],
@@ -45,15 +46,15 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_NG',
     url: '/',
-    title: 'Rumor Radar — Nigeria-First Evidence AI Fact-Checker',
+    title: 'Truetalk — National Disinformation Surveillance & Evidence Verification',
     description: 'Stop rumors before they spread in Nigeria. Live evidence retrieval, authority routing (CBN, INEC, NCDC), and zero-hallucination verification.',
-    siteName: 'Rumor Radar'
+    siteName: 'Truetalk'
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Rumor Radar — Nigeria-First Evidence AI Fact-Checker',
+    title: 'Truetalk — National Disinformation Surveillance & Evidence Verification',
     description: 'Verify viral WhatsApp forwards, breaking news, and social claims in Nigeria with real evidence and citations.',
-    creator: '@RumorRadarAI'
+    creator: '@TruetalkNG'
   },
   manifest: '/manifest.json',
   robots: {
@@ -69,36 +70,46 @@ export const metadata: Metadata = {
   }
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const cookieStore = await cookies();
+  const localeCookie = cookieStore.get('locale')?.value;
+  const initialLocale: AppLanguage = localeCookie === 'pcm' ? 'pcm' : 'en';
+
   return (
-    <html lang="en" className="dark">
+    <html lang={initialLocale} className="light">
       <head>
         <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/truetalk-logo.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
-      <body className={`${inter.className} bg-slate-950 text-slate-100 min-h-screen antialiased`}>
-        {children}
+      <body className="font-sans bg-[#F8FAFC] text-[#0C2340] min-h-screen antialiased selection:bg-[#005A9C]/20 selection:text-[#005A9C]">
+        <LanguageProvider initialLocale={initialLocale}>
+          {children}
+        </LanguageProvider>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebApplication",
-              "name": "RumourRadar Nigeria",
-              "alternateName": "Rumor Radar",
+              "name": "Truetalk Nigeria",
+              "alternateName": "Truetalk",
               "applicationCategory": "FactCheckingApplication",
               "operatingSystem": "All",
-              "description": "Evidence-first AI disinformation verification engine designed for Nigeria. Verifies viral WhatsApp forwards, breaking headlines, and financial scam claims against CBN, INEC, NCDC, and certified fact-checkers.",
-              "url": "https://rumourradar.vercel.app",
+              "description": "National Disinformation Surveillance & Evidence Verification engine for Nigeria by Team GODEC. Verifies viral WhatsApp forwards, breaking headlines, and financial scam claims against CBN, INEC, NCDC, and certified fact-checkers.",
+              "url": "https://truetalk.ng",
               "provider": {
                 "@type": "Organization",
-                "name": "RumourRadar AI Labs",
-                "url": "https://rumourradar.vercel.app"
+                "name": "Team GODEC",
+                "url": "https://truetalk.ng"
               },
               "offers": {
                 "@type": "Offer",
@@ -106,19 +117,6 @@ export default function RootLayout({
                 "priceCurrency": "NGN"
               }
             })
-          }}
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').catch(function(err) {
-                    console.log('SW registration notice:', err);
-                  });
-                });
-              }
-            `
           }}
         />
       </body>

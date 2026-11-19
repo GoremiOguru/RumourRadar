@@ -243,10 +243,10 @@ Return ONLY a valid JSON object matching this schema without markdown code block
   "verdict": "SUPPORTED" | "CONTRADICTED" | "MISLEADING" | "UNVERIFIED" | "SATIRE_PARODY",
   "confidence": "HIGH" | "MEDIUM" | "LOW",
   "confidenceScore": number (0 to 100),
-  "shortExplanation": "Clear, objective 2-sentence explanation citing the primary authority",
-  "pidginExplanation": "Engaging, authentic Nigerian Pidgin translation of the verdict and advice",
-  "reasoning": "Step-by-step reasoning explaining why the evidence supports or contradicts the claim",
-  "keyQuote": "Direct quote from primary authority snippet if available"
+  "shortExplanation": "Clear, direct 1-2 sentence verdict summary citing primary authority. STRICT LIMIT: under 25 words. Keep only essential facts.",
+  "pidginExplanation": "Authentic Nigerian Pidgin summary of the verdict. STRICT LIMIT: under 25 words. Straight to the point.",
+  "reasoning": "Brief 1-sentence reasoning linking evidence to verdict.",
+  "keyQuote": "Concise key quote from authority if available"
 }`;
 
   const responseText = await executeLlmWithFailover(prompt);

@@ -152,14 +152,14 @@ export function PidginVoicePlayer({ pidginText, englishText, multilingual, claim
     }
 
     const prefix = mode === 'pidgin'
-      ? 'Rumour Radar Naija voice report. '
+      ? 'Truetalk Naija voice report. '
       : mode === 'yoruba'
-      ? 'Akiyesi Rumour Radar ni ede Yoruba. '
+      ? 'Akiyesi Truetalk ni ede Yoruba. '
       : mode === 'hausa'
-      ? 'Bayanin Rumour Radar a harshen Hausa. '
+      ? 'Bayanin Truetalk a harshen Hausa. '
       : mode === 'igbo'
-      ? 'Nkowa Rumour Radar na asusu Igbo. '
-      : 'Rumour Radar Nigeria verification verdict. ';
+      ? 'Nkowa Truetalk na asusu Igbo. '
+      : 'Truetalk Nigeria verification verdict. ';
 
     const speechScript = `${prefix}${textToSpeak}`;
 
@@ -186,7 +186,7 @@ export function PidginVoicePlayer({ pidginText, englishText, multilingual, claim
   if (!isSupported) return null;
 
   return (
-    <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-slate-900/90 to-emerald-950/60 border border-emerald-500/30 shadow-xl backdrop-blur-md space-y-3">
+    <div className="p-4 rounded-3xl bg-white border border-[#D5E7FA] shadow-xs space-y-3">
       {/* Top Bar: Play, Title & Voice Mode Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Play Action & Active Track */}
@@ -195,8 +195,8 @@ export function PidginVoicePlayer({ pidginText, englishText, multilingual, claim
             onClick={handleTogglePlay}
             className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-md shrink-0 active:scale-95 ${
               isPlaying
-                ? 'bg-gradient-to-tr from-emerald-400 to-teal-300 text-slate-950 animate-pulse ring-2 ring-emerald-400/50 shadow-emerald-500/30'
-                : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/20'
+                ? 'bg-[#005A9C] text-white animate-pulse ring-2 ring-[#005A9C]/40'
+                : 'bg-[#005A9C] hover:bg-[#00477E] text-white'
             }`}
             title={isPlaying ? 'Pause Audio' : 'Listen Aloud in Local Language'}
           >
@@ -205,15 +205,15 @@ export function PidginVoicePlayer({ pidginText, englishText, multilingual, claim
 
           <div className="space-y-0.5 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-extrabold text-emerald-300 flex items-center gap-1.5 font-display">
-                <Volume2 className="w-4 h-4 text-emerald-400" />
+              <span className="text-xs font-black text-[#0C2340] flex items-center gap-1.5 font-display">
+                <Volume2 className="w-4 h-4 text-[#005A9C]" />
                 Audio Fact-Check (Naija Voice)
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-[10px] font-mono text-emerald-200 font-bold">
-                🔊 Listen in Native Dialect
+              <span className="px-2 py-0.5 rounded-full bg-[#EAF3FC] border border-[#D5E7FA] text-[10px] font-mono text-[#005A9C] font-bold">
+                🔊 Native Dialect Voice
               </span>
             </div>
-            <p className="text-[11px] text-slate-300 italic line-clamp-1 max-w-sm sm:max-w-md">
+            <p className="text-[11px] text-[#64748B] italic line-clamp-1 max-w-sm sm:max-w-md">
               &ldquo;{getTextForMode()}&rdquo;
             </p>
           </div>
@@ -222,19 +222,19 @@ export function PidginVoicePlayer({ pidginText, englishText, multilingual, claim
         {/* Action Button & Equalizer */}
         <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
           {isPlaying ? (
-            <div className="flex items-end gap-1 h-7 px-3 bg-emerald-950/80 rounded-xl border border-emerald-500/30 py-1">
-              <span className="w-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.3s] h-4"></span>
-              <span className="w-1 bg-emerald-300 rounded-full animate-bounce [animation-delay:-0.15s] h-5"></span>
-              <span className="w-1 bg-emerald-400 rounded-full animate-bounce h-3"></span>
-              <span className="w-1 bg-emerald-300 rounded-full animate-bounce [animation-delay:-0.25s] h-4.5"></span>
-              <span className="text-[10px] font-mono text-emerald-300 font-bold ml-1.5">Reading Aloud...</span>
+            <div className="flex items-end gap-1 h-7 px-3 bg-[#EAF3FC] rounded-xl border border-[#D5E7FA] py-1">
+              <span className="w-1 bg-[#005A9C] rounded-full animate-bounce [animation-delay:-0.3s] h-4"></span>
+              <span className="w-1 bg-[#2786D1] rounded-full animate-bounce [animation-delay:-0.15s] h-5"></span>
+              <span className="w-1 bg-[#005A9C] rounded-full animate-bounce h-3"></span>
+              <span className="w-1 bg-[#2786D1] rounded-full animate-bounce [animation-delay:-0.25s] h-4.5"></span>
+              <span className="text-[10px] font-mono text-[#005A9C] font-bold ml-1.5">Reading Aloud...</span>
             </div>
           ) : (
             <button
               onClick={handleTogglePlay}
-              className="text-xs font-bold text-emerald-300 hover:text-emerald-200 flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 transition-all shadow-sm"
+              className="text-xs font-bold text-[#005A9C] hover:text-[#00477E] flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#EAF3FC] hover:bg-blue-100 border border-[#D5E7FA] transition-all"
             >
-              <Volume2 className="w-4 h-4 text-emerald-400" />
+              <Volume2 className="w-4 h-4 text-[#005A9C]" />
               <span>Listen Now</span>
             </button>
           )}

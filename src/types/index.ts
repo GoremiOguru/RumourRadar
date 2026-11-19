@@ -143,7 +143,7 @@ export interface BrandShieldScanResult {
   debunkKit?: DebunkKit;
 }
 
-export interface BmoniVirtualAccount {
+export interface PagaVirtualAccount {
   accountNumber: string;
   bankName: string;
   accountHolderName: string;
@@ -152,6 +152,8 @@ export interface BmoniVirtualAccount {
   expiresAt: string;
   status: 'ACTIVE' | 'PENDING_PAYMENT';
 }
+
+export type BmoniVirtualAccount = PagaVirtualAccount;
 
 export type MediaType = 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT_CIRCULAR';
 

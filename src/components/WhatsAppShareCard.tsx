@@ -90,11 +90,11 @@ export function WhatsAppShareCard({ result }: WhatsAppShareCardProps) {
     const conf = `${result.confidenceScore}%`;
     const summary = result.shortExplanation;
     const pidgin = result.pidginExplanation || 'Make una verify claims before una share!';
-    const permalink = `https://rumourradar.vercel.app/check/${result.id}`;
+    const permalink = `https://truetalk.ng/check/${result.id}`;
 
     switch (platform) {
       case 'whatsapp':
-        return `🚨 *RUMOUR RADAR NIGERIA FACT-CHECK*\n\n` +
+        return `🚨 *TRUETALK NIGERIA FACT-CHECK*\n\n` +
           `📌 *CLAIM:* "${claim}"\n` +
           `⚖️ *VERDICT:* ${verdict} (${conf} Confidence)\n\n` +
           `📝 *Summary:* ${summary}\n\n` +
@@ -106,10 +106,10 @@ export function WhatsAppShareCard({ result }: WhatsAppShareCardProps) {
         return `🚨 FACT-CHECK [${verdict} - ${conf}]\n\n` +
           `Claim: "${claim.slice(0, 100)}${claim.length > 100 ? '...' : ''}"\n\n` +
           `Verdict: ${summary.slice(0, 120)}...\n\n` +
-          `Full evidence breakdown via @RumourRadarNG 👇\n${permalink} #FactCheckNG #RumourRadar`;
+          `Full evidence breakdown via @TruetalkNG 👇\n${permalink} #FactCheckNG #Truetalk`;
 
       case 'telegram':
-        return `🚨 <b>RUMOUR RADAR NIGERIA FACT-CHECK</b>\n\n` +
+        return `🚨 <b>TRUETALK NIGERIA FACT-CHECK</b>\n\n` +
           `📌 <b>Claim:</b> <i>"${claim}"</i>\n` +
           `⚖️ <b>Verdict:</b> <b>${verdict}</b> (${conf})\n\n` +
           `📝 <b>Findings:</b> ${summary}\n\n` +
@@ -117,14 +117,14 @@ export function WhatsAppShareCard({ result }: WhatsAppShareCardProps) {
 
       case 'linkedin':
         return `🚨 PUBLIC INFORMATION & VERIFICATION ADVISORY\n\n` +
-          `Rumour Radar has evaluated the viral statement:\n"${claim}"\n\n` +
+          `Truetalk has evaluated the viral statement:\n"${claim}"\n\n` +
           `Official Finding: ${verdict} (${conf} Evidence Grounding)\n\n` +
           `Analysis: ${summary}\n\n` +
           `Primary Source Verification: ${result.evidence[0]?.sourceName || 'Accredited Authority'}\n\n` +
-          `Detailed institutional audit report: ${permalink}\n\n#FactChecking #Disinformation #Nigeria #RumourRadar`;
+          `Detailed institutional audit report: ${permalink}\n\n#FactChecking #Disinformation #Nigeria #Truetalk`;
 
       case 'instagram':
-        return `FACT CHECK: ${verdict} (${conf})\n\nClaim: "${claim}"\n\nSummary: ${summary}\n\n🇳🇬 Naija Pidgin: ${pidgin}\n\n👉 Tap link in bio or visit rumourradar.vercel.app to view verified primary source evidence! #RumourRadar #NigeriaNews #FactCheck`;
+        return `FACT CHECK: ${verdict} (${conf})\n\nClaim: "${claim}"\n\nSummary: ${summary}\n\n🇳🇬 Naija Pidgin: ${pidgin}\n\n👉 Tap link in bio or visit truetalk.ng to view verified primary source evidence! #Truetalk #NigeriaNews #FactCheck`;
     }
   };
 
@@ -137,7 +137,7 @@ export function WhatsAppShareCard({ result }: WhatsAppShareCardProps) {
 
   const handleDirectShare = () => {
     const text = getFormattedSocialText(activePlatform);
-    const permalink = `https://rumourradar.vercel.app/check/${result.id}`;
+    const permalink = `https://truetalk.ng/check/${result.id}`;
 
     switch (activePlatform) {
       case 'whatsapp':
@@ -278,7 +278,7 @@ export function WhatsAppShareCard({ result }: WhatsAppShareCardProps) {
       // Top Header Row
       ctx.fillStyle = '#10B981';
       ctx.font = 'bold 36px sans-serif';
-      ctx.fillText('📡 RUMOUR RADAR NIGERIA', 80, 115);
+      ctx.fillText('📡 TRUETALK NIGERIA', 80, 115);
 
       ctx.fillStyle = '#94A3B8';
       ctx.font = '500 20px monospace';
@@ -376,7 +376,7 @@ export function WhatsAppShareCard({ result }: WhatsAppShareCardProps) {
       // Verified URL & Timestamp
       ctx.fillStyle = '#94A3B8';
       ctx.font = '500 20px monospace';
-      ctx.fillText(`Verified: ${result.verifiedAt} WAT  •  rumourradar.vercel.app`, 80, footerY + 36);
+      ctx.fillText(`Verified: ${result.verifiedAt} WAT  •  truetalk.ng`, 80, footerY + 36);
 
       // Shield Verification Watermark Pill on Bottom Right
       drawRoundedRect(ctx, 770, footerY - 15, 230, 48, 12, 'rgba(15, 23, 42, 0.9)', '#334155', 1);
@@ -386,7 +386,7 @@ export function WhatsAppShareCard({ result }: WhatsAppShareCardProps) {
 
       // Download trigger
       const link = document.createElement('a');
-      link.download = `RumourRadar_Debunk_${result.id}_${aspectRatio.replace(':', 'x')}.png`;
+      link.download = `Truetalk_Debunk_${result.id}_${aspectRatio.replace(':', 'x')}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
     } catch (e) {
@@ -404,7 +404,7 @@ export function WhatsAppShareCard({ result }: WhatsAppShareCardProps) {
           <div className="flex items-center gap-2">
             <img 
               src="/images/logowhite.jpeg" 
-              alt="RumourRadar Logo" 
+              alt="Truetalk Logo" 
               className="w-6 h-6 rounded-md object-cover border border-emerald-500/40 shadow-sm shrink-0" 
             />
             <h3 className="text-sm sm:text-base font-black text-white">

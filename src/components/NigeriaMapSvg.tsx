@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { MapPin, Flame, Activity } from 'lucide-react';
+import { MapPin, Flame, Activity, ShieldCheck } from 'lucide-react';
+import zonesData from '@/lib/nigeria-zones-data.json';
+import { useTranslations } from '@/context/LanguageContext';
 
 export type GeopoliticalZone = 
   | 'South West' 
@@ -24,212 +26,295 @@ export function NigeriaMapSvg({
   zoneThreatCounts,
   zoneCriticalCounts
 }: NigeriaMapSvgProps) {
+  const { t } = useTranslations();
   const [hoveredZone, setHoveredZone] = useState<GeopoliticalZone | null>(null);
 
-  // SVG paths for the 6 Nigerian Geopolitical Zones (viewBox 0 0 800 650)
-  const ZONES_DATA: Array<{
-    id: GeopoliticalZone;
+  // Metadata for the 6 Geopolitical Zones
+  const ZONE_META: Record<GeopoliticalZone, {
     label: string;
-    path: string;
     center: [number, number];
     statesText: string;
     baseColor: string;
+    hoverColor: string;
     activeColor: string;
-  }> = [
-    {
-      id: 'North West',
+  }> = {
+    'North West': {
       label: 'North West',
-      // Northwest polygon covering Sokoto, Zamfara, Katsina, Kano, Jigawa, Kebbi, Kaduna
-      path: 'M 70 80 L 260 50 L 440 60 L 460 180 L 400 240 L 330 260 L 220 280 L 140 230 L 70 190 Z',
-      center: [260, 160],
+      center: [330, 160],
       statesText: 'Kano, Kaduna, Katsina, Sokoto, Kebbi, Zamfara, Jigawa',
-      baseColor: '#38bdf8', // Light Blue / Sky
-      activeColor: '#0284c7'
+      baseColor: '#D5E7FA',
+      hoverColor: '#93C5FD',
+      activeColor: '#005A9C'
     },
-    {
-      id: 'North East',
+    'North East': {
       label: 'North East',
-      // Northeast polygon covering Borno, Yobe, Adamawa, Bauchi, Gombe, Taraba
-      path: 'M 440 60 L 680 40 L 750 150 L 730 330 L 620 400 L 530 350 L 460 270 L 460 180 Z',
-      center: [580, 190],
+      center: [680, 220],
       statesText: 'Borno, Yobe, Adamawa, Bauchi, Gombe, Taraba',
-      baseColor: '#a855f7', // Purple
-      activeColor: '#7e22ce'
+      baseColor: '#E2E8F0',
+      hoverColor: '#CBD5E1',
+      activeColor: '#2786D1'
     },
-    {
-      id: 'North Central',
-      label: 'North Central (Middle Belt)',
-      // Middle Belt covering Niger, Kwara, FCT Abuja, Plateau, Benue, Kogi, Nasarawa
-      path: 'M 140 230 L 220 280 L 330 260 L 400 240 L 460 270 L 530 350 L 580 450 L 470 480 L 330 460 L 200 410 L 120 340 Z',
-      center: [340, 360],
+    'North Central': {
+      label: 'North Central',
+      center: [410, 380],
       statesText: 'Abuja (FCT), Plateau, Benue, Niger, Kwara, Kogi, Nasarawa',
-      baseColor: '#f59e0b', // Amber
-      activeColor: '#d97706'
+      baseColor: '#EAF3FC',
+      hoverColor: '#BFDBFE',
+      activeColor: '#005A9C'
     },
-    {
-      id: 'South West',
+    'South West': {
       label: 'South West',
-      // Southwest covering Lagos, Oyo, Ogun, Osun, Ondo, Ekiti
-      path: 'M 120 340 L 200 410 L 260 440 L 240 550 L 170 570 L 80 520 L 70 420 Z',
-      center: [160, 470],
+      center: [180, 500],
       statesText: 'Lagos, Oyo, Ogun, Osun, Ondo, Ekiti',
-      baseColor: '#10b981', // Emerald / Teal
-      activeColor: '#059669'
+      baseColor: '#E0F2FE',
+      hoverColor: '#7DD3FC',
+      activeColor: '#0284C7'
     },
-    {
-      id: 'South South',
-      label: 'South South (Niger Delta)',
-      // South South covering Edo, Delta, Bayelsa, Rivers, Akwa Ibom, Cross River
-      path: 'M 240 550 L 260 440 L 330 460 L 400 480 L 420 540 L 520 560 L 490 620 L 320 620 L 230 590 Z',
-      center: [360, 560],
-      statesText: 'Rivers, Delta, Edo, Akwa Ibom, Bayelsa, Cross River',
-      baseColor: '#f43f5e', // Rose / Red
-      activeColor: '#e11d48'
-    },
-    {
-      id: 'South East',
+    'South East': {
       label: 'South East',
-      // South East covering Enugu, Anambra, Imo, Abia, Ebonyi
-      path: 'M 400 480 L 470 480 L 500 550 L 420 540 Z',
-      center: [450, 510],
+      center: [420, 555],
       statesText: 'Enugu, Anambra, Imo, Abia, Ebonyi',
-      baseColor: '#06b6d4', // Cyan
-      activeColor: '#0891b2'
+      baseColor: '#FEF3C7',
+      hoverColor: '#FDE68A',
+      activeColor: '#E6A23C'
+    },
+    'South South': {
+      label: 'South South',
+      center: [380, 630],
+      statesText: 'Rivers, Delta, Edo, Akwa Ibom, Bayelsa, Cross River',
+      baseColor: '#DCFCE7',
+      hoverColor: '#86EFAC',
+      activeColor: '#16A36A'
     }
-  ];
+  };
+
+  const zonesList = Object.keys(ZONE_META) as GeopoliticalZone[];
 
   return (
-    <div className="relative w-full rounded-2xl bg-slate-950/90 border border-slate-800 p-3 sm:p-5 overflow-hidden shadow-2xl">
-      {/* Map Header & Info Pill */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-2 border-b border-slate-800/80">
-        <div className="flex items-center gap-2">
-          <MapPin className="w-4 h-4 text-emerald-400 animate-bounce" />
-          <span className="text-xs sm:text-sm font-bold text-slate-200">
-            Interactive Geopolitical Zone Selector
-          </span>
+    <div className="relative w-full rounded-3xl bg-white border border-[#D5E7FA] p-3 sm:p-5 shadow-sm overflow-hidden select-none">
+      {/* Map Controls & Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2 pb-3 border-b border-[#D5E7FA]">
+        <div>
+          <div className="flex items-center space-x-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-[#16A36A] animate-pulse" />
+            <h4 className="text-sm font-bold text-[#0C2340] font-display">
+              {t('map.subhead')}
+            </h4>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#EAF3FC] text-[#005A9C] font-bold border border-[#D5E7FA]">
+              36 States &amp; FCT
+            </span>
+          </div>
+          <p className="text-xs text-[#64748B] mt-0.5">
+            {t('map.instruction')}
+          </p>
         </div>
 
-        <div className="flex items-center gap-2 text-[11px] font-mono">
-          <button
-            onClick={() => onSelectZone('ALL')}
-            className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
-              selectedZone === 'ALL'
-                ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/20'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            🇳🇬 All Nigeria View
-          </button>
-          <span className="text-slate-400 hidden sm:inline">• Tap any zone to filter</span>
-        </div>
+        {/* Reset / All filter pill */}
+        <button
+          onClick={() => onSelectZone('ALL')}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+            selectedZone === 'ALL'
+              ? 'bg-[#005A9C] text-white shadow-xs'
+              : 'bg-[#EAF3FC] text-[#005A9C] hover:bg-blue-100'
+          }`}
+        >
+          {t('map.viewAllBtn', { count: Object.values(zoneThreatCounts).reduce((a, b) => a + b, 0) })}
+        </button>
       </div>
 
-      {/* SVG Interactive Canvas */}
-      <div className="relative w-full aspect-[4/3] sm:aspect-[16/11] max-h-[380px] flex items-center justify-center">
+      {/* SVG Map Container */}
+      <div className="relative w-full aspect-[954/734] max-h-[520px] mx-auto flex items-center justify-center">
         <svg
-          viewBox="40 20 730 610"
-          className="w-full h-full drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] transition-transform duration-300"
+          viewBox="0 0 954 734"
+          className="w-full h-full drop-shadow-sm transition-all"
         >
-          {/* Subtle Nigeria Outer Border Glow */}
-          <defs>
-            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="6" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
-          </defs>
+          {/* Render All 6 Geopolitical Zones with realistic boundary paths */}
+          {zonesList.map((zone) => {
+            const meta = ZONE_META[zone];
+            const paths = (zonesData.zones as any)[zone] || [];
+            const isSelected = selectedZone === zone;
+            const isHovered = hoveredZone === zone;
+            const hasCritical = (zoneCriticalCounts[zone] || 0) > 0;
 
-          {ZONES_DATA.map((zone) => {
-            const isSelected = selectedZone === zone.id;
-            const isHovered = hoveredZone === zone.id;
-            const threatCount = zoneThreatCounts[zone.id] || 0;
-            const criticalCount = zoneCriticalCounts[zone.id] || 0;
-            const hasFocusedCriticalAlert = criticalCount > 0 && (selectedZone === 'ALL' || isSelected);
+            let fillColor = meta.baseColor;
+            if (isSelected) {
+              fillColor = meta.activeColor;
+            } else if (isHovered) {
+              fillColor = meta.hoverColor;
+            }
 
             return (
               <g
-                key={zone.id}
-                onClick={() => onSelectZone(isSelected ? 'ALL' : zone.id)}
-                onMouseEnter={() => setHoveredZone(zone.id)}
+                key={zone}
+                className="cursor-pointer transition-all duration-200"
+                onClick={() => onSelectZone(zone)}
+                onMouseEnter={() => setHoveredZone(zone)}
                 onMouseLeave={() => setHoveredZone(null)}
-                className="cursor-pointer transition-all duration-300"
               >
-                {/* Zone Polygon Path */}
-                <path
-                  d={zone.path}
-                  fill={isSelected ? zone.activeColor : zone.baseColor}
-                  fillOpacity={isSelected ? 0.85 : isHovered ? 0.6 : 0.25}
-                  stroke={isSelected ? '#ffffff' : isHovered ? zone.baseColor : '#334155'}
-                  strokeWidth={isSelected ? 3.5 : isHovered ? 2.5 : 1.5}
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                  filter={isSelected ? 'url(#glow)' : undefined}
-                  className={`transition-all duration-300 hover:scale-[1.01] transform-gpu origin-center ${
-                    hasFocusedCriticalAlert ? 'zone-alert-pulse' : ''
-                  }`}
+                {paths.map((p: any, idx: number) => (
+                  <path
+                    key={`${zone}-${idx}`}
+                    d={p.d}
+                    fill={fillColor}
+                    stroke={isSelected ? '#0C2340' : '#FFFFFF'}
+                    strokeWidth={isSelected ? '2.5' : '1.2'}
+                    strokeLinejoin="round"
+                    className="transition-colors duration-200"
+                  />
+                ))}
+              </g>
+            );
+          })}
+
+          {/* Render Detailed State Internal & External Boundaries */}
+          {zonesData.boundaries && zonesData.boundaries.map((b: any, idx: number) => (
+            <path
+              key={`boundary-${idx}`}
+              d={b.d}
+              fill="none"
+              stroke="#CBD5E1"
+              strokeWidth="0.8"
+              strokeDasharray="2,2"
+              pointerEvents="none"
+            />
+          ))}
+
+          {/* Zone Labels, Pins and Threat Badges */}
+          {zonesList.map((zone) => {
+            const meta = ZONE_META[zone];
+            const [cx, cy] = meta.center;
+            const count = zoneThreatCounts[zone] || 0;
+            const critical = zoneCriticalCounts[zone] || 0;
+            const isSelected = selectedZone === zone;
+            const isHovered = hoveredZone === zone;
+
+            return (
+              <g
+                key={`label-${zone}`}
+                transform={`translate(${cx}, ${cy})`}
+                className="pointer-events-none transition-transform duration-200"
+                style={{ transform: isHovered || isSelected ? `translate(${cx}px, ${cy - 4}px) scale(1.08)` : `translate(${cx}px, ${cy}px)` }}
+              >
+                {/* Zone Pin Anchor */}
+                <circle
+                  cx="0"
+                  cy="0"
+                  r={isSelected ? "18" : "15"}
+                  fill={isSelected ? "#0C2340" : "#FFFFFF"}
+                  stroke={isSelected ? "#FFFFFF" : meta.activeColor}
+                  strokeWidth="2.5"
+                  className="shadow-md"
                 />
 
-                {/* Zone Center Label Pill (Compact, translucent so map geometry is never blocked) */}
-                <g transform={`translate(${zone.center[0]}, ${zone.center[1]})`}>
+                {critical > 0 && (
+                  <circle
+                    cx="0"
+                    cy="0"
+                    r="22"
+                    fill="none"
+                    stroke="#E11D48"
+                    strokeWidth="1.5"
+                    className="animate-ping opacity-60"
+                  />
+                )}
+
+                {/* Badge text / threat count inside pin */}
+                <text
+                  x="0"
+                  y="4"
+                  textAnchor="middle"
+                  fontSize="10"
+                  fontWeight="900"
+                  fill={isSelected ? "#FFFFFF" : meta.activeColor}
+                >
+                  {count}
+                </text>
+
+                {/* Zone Name Label Card */}
+                <g transform="translate(0, 24)">
                   <rect
-                    x="-52"
-                    y="-14"
-                    width="104"
-                    height="28"
-                    rx="6"
-                    fill="#020617"
-                    fillOpacity="0.78"
-                    stroke={isSelected ? '#ffffff' : zone.baseColor}
-                    strokeWidth={isSelected ? 1.5 : 0.8}
+                    x="-55"
+                    y="-10"
+                    width="110"
+                    height="20"
+                    rx="10"
+                    fill={isSelected ? "#0C2340" : "#FFFFFF"}
+                    stroke={isSelected ? "#005A9C" : "#D5E7FA"}
+                    strokeWidth="1.5"
+                    filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.08))"
                   />
                   <text
                     x="0"
-                    y="-2"
+                    y="3"
                     textAnchor="middle"
-                    fill="#f8fafc"
                     fontSize="9.5"
-                    fontWeight="bold"
-                    fontFamily="sans-serif"
+                    fontWeight="800"
+                    fill={isSelected ? "#FFFFFF" : "#0C2340"}
                   >
-                    {zone.label}
-                  </text>
-                  <text
-                    x="0"
-                    y="8"
-                    textAnchor="middle"
-                    fill={criticalCount > 0 ? '#f43f5e' : '#34d399'}
-                    fontSize="8"
-                    fontWeight="600"
-                    fontFamily="monospace"
-                  >
-                    {threatCount} alerts {criticalCount > 0 ? `• 🔥 ${criticalCount} crit` : ''}
+                    {zone}
                   </text>
                 </g>
               </g>
             );
           })}
         </svg>
+
+        {/* Hover / Active Floating Tooltip (Supports Mobile Tap & Desktop Hover) */}
+        {(() => {
+          const activeZone = hoveredZone || (selectedZone !== 'ALL' ? selectedZone : null);
+          if (!activeZone) return null;
+          return (
+            <div className="absolute bottom-3 left-3 sm:left-4 z-20 pointer-events-none bg-white/95 backdrop-blur-md border border-[#D5E7FA] rounded-2xl p-3 shadow-xl max-w-xs animate-in fade-in">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-bold text-xs text-[#0C2340] font-display">
+                  {activeZone}
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EAF3FC] text-[#005A9C]">
+                  {t('map.liveRumors', { count: zoneThreatCounts[activeZone] || 0 })}
+                </span>
+              </div>
+              <p className="text-[11px] text-[#64748B] mt-1 leading-snug">
+                {ZONE_META[activeZone].statesText}
+              </p>
+              {zoneCriticalCounts[activeZone] > 0 && (
+                <div className="mt-1.5 flex items-center gap-1 text-[10px] font-bold text-rose-600">
+                  <Flame className="w-3 h-3 text-rose-500" />
+                  <span>{t('map.highVelocityDetected', { count: zoneCriticalCounts[activeZone] })}</span>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
-      {/* Active Zone & Telemetry Bar Below Map (No Overlap) */}
-      <div className="mt-3 pt-3 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
-          <span className="font-bold text-slate-100">
-            {hoveredZone || (selectedZone !== 'ALL' ? selectedZone : 'All 6 Geopolitical Zones Active')}
-          </span>
-          <span className="text-slate-400 text-[11px] hidden md:inline">
-            ({ZONES_DATA.find(z => z.id === (hoveredZone || selectedZone))?.statesText || 'National Federal Coverage'})
-          </span>
-        </div>
-
-        <div className="flex items-center gap-3 text-[11px] font-mono self-end sm:self-auto">
-          <span className="text-slate-300">
-            Total Monitored: <strong className="text-emerald-400">{Object.values(zoneThreatCounts).reduce((a, b) => a + b, 0)}</strong>
-          </span>
-          <span className="text-rose-400 font-bold">
-            🔥 {Object.values(zoneCriticalCounts).reduce((a, b) => a + b, 0)} Critical
-          </span>
-        </div>
+      {/* Geopolitical Legend Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 mt-3 pt-3 border-t border-[#D5E7FA]">
+        {zonesList.map((z) => {
+          const isSelected = selectedZone === z;
+          return (
+            <button
+              key={`pill-${z}`}
+              onClick={() => onSelectZone(z)}
+              className={`p-2 rounded-xl text-left border transition-all ${
+                isSelected
+                  ? 'bg-[#EAF3FC] border-[#005A9C] shadow-xs'
+                  : 'bg-white border-slate-200 hover:border-slate-300'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className={`text-[11px] font-bold truncate ${isSelected ? 'text-[#005A9C]' : 'text-[#0C2340]'}`}>
+                  {z}
+                </span>
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-slate-100 text-[#64748B] font-bold">
+                  {zoneThreatCounts[z] || 0}
+                </span>
+              </div>
+              <p className="text-[9px] text-[#64748B] truncate mt-0.5">
+                {ZONE_META[z].statesText.split(',')[0]}...
+              </p>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

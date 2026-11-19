@@ -38,8 +38,8 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { VerifiedBrandNewsItem } from '@/app/api/brand-shield/scan/route';
-import { ScrollReveal } from '@/components/ScrollReveal';
 import { SectionHelpModal } from '@/components/SectionHelpModal';
+import { useTranslations } from '@/context/LanguageContext';
 
 interface BrandShieldDashboardProps {
   onOpenSubscriptionModal: () => void;
@@ -82,8 +82,9 @@ const ENTITY_PRESETS = {
 
 const DEFAULT_WATCHLIST = ['GTBank', 'Davido', 'Dangote Group', 'CBN', 'Burna Boy', 'Opay', 'Hilda Baci'];
 
-export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'en', initialBrand, onVerifyClaim }: BrandShieldDashboardProps) {
-  const isPidgin = appLanguage === 'pcm';
+export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage, initialBrand, onVerifyClaim }: BrandShieldDashboardProps) {
+  const { isPidgin: contextIsPidgin, t } = useTranslations();
+  const isPidgin = appLanguage === 'pcm' || contextIsPidgin;
   const [brandInput, setBrandInput] = useState(initialBrand || 'GTBank');
   const [watchlist, setWatchlist] = useState<string[]>(DEFAULT_WATCHLIST);
   const [newWatchlistInput, setNewWatchlistInput] = useState('');
@@ -101,6 +102,23 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
   const signalsScrollRef = useRef<HTMLDivElement>(null);
   const newsScrollRef = useRef<HTMLDivElement>(null);
 
+  // Sentinel Pro tier state
+  const [isProActive, setIsProActive] = useState<boolean>(false);
+  const [proOrgName, setProOrgName] = useState<string>('');
+
+  // 24/7 Sentinel Real-Time Telemetry & Alert State
+  const [isAlertConfigOpen, setIsAlertConfigOpen] = useState(false);
+  const [alertWhatsappNumber, setAlertWhatsappNumber] = useState('');
+  const [alertEmail, setAlertEmail] = useState('');
+  const [isAlertConfigSaved, setIsAlertConfigSaved] = useState(false);
+  const [sentinelLogs, setSentinelLogs] = useState<{ timestamp: string; message: string; type: 'info' | 'alert' | 'success' }[]>([]);
+  const [showLogs, setShowLogs] = useState(false);
+  const [latestNewArticleAlert, setLatestNewArticleAlert] = useState<VerifiedBrandNewsItem | null>(null);
+
+  // Debunk Kit Story Targeting State
+  const [selectedStoryForDebunk, setSelectedStoryForDebunk] = useState<{ title: string; summary: string; source: string } | null>(null);
+  const [isGeneratingDebunk, setIsGeneratingDebunk] = useState(false);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -116,76 +134,89 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
     };
   }, [isWhyModalOpen]);
 
-  // Pro & Enterprise Sentinel State
-  const [isProActive, setIsProActive] = useState(false);
-  const [proOrgName, setProOrgName] = useState('');
-  const [proTier, setProTier] = useState<'newsroom_pro' | 'enterprise_shield'>('enterprise_shield');
+  // Check Plus tier status from localStorage
+  const refreshProStatus = () => {
+    if (typeof window !== 'undefined') {
+      const active = localStorage.getItem('truetalk_plus_active') === 'true';
+      const org = localStorage.getItem('truetalk_org_name') || '';
+      setIsProActive(active);
+      setProOrgName(org);
 
-  // Real-Time Sentinel Article Alerts State
-  const [latestNewArticleAlert, setLatestNewArticleAlert] = useState<VerifiedBrandNewsItem | null>(null);
-  const [isAlertConfigOpen, setIsAlertConfigOpen] = useState(false);
-  const [alertWhatsappNumber, setAlertWhatsappNumber] = useState('');
-  const [alertEmail, setAlertEmail] = useState('');
-  const [isAlertConfigSaved, setIsAlertConfigSaved] = useState(false);
-  const [sentinelLogs, setSentinelLogs] = useState<Array<{ timestamp: string; message: string; type: 'info' | 'alert' | 'success' }>>([]);
-  const [showLogs, setShowLogs] = useState(false);
+      const savedPhone = localStorage.getItem('truetalk_alert_phone') || '';
+      const savedEmail = localStorage.getItem('truetalk_alert_email') || '';
+      if (savedPhone) setAlertWhatsappNumber(savedPhone);
+      if (savedEmail) setAlertEmail(savedEmail);
+    }
+  };
 
-  // Track known article links across sessions to detect REAL new articles
-  const seenArticleLinksRef = useRef<Set<string>>(new Set());
-  const initialScanDoneRef = useRef(false);
-
-  const [selectedStoryForDebunk, setSelectedStoryForDebunk] = useState<{ title: string; snippet?: string; source?: string } | null>(null);
-  const [isGeneratingDebunk, setIsGeneratingDebunk] = useState(false);
-
-  // Load Pro status from localStorage
   useEffect(() => {
-    const checkProStatus = () => {
-      if (typeof window !== 'undefined') {
-        const active = localStorage.getItem('rumourradar_pro_active') === 'true';
-        const org = localStorage.getItem('rumourradar_org_name') || '';
-        const tier = (localStorage.getItem('rumourradar_tier') as any) || 'enterprise_shield';
-        const savedPhone = localStorage.getItem('rumourradar_alert_phone') || '';
-        const savedEmail = localStorage.getItem('rumourradar_alert_email') || '';
-        const savedWatchlist = localStorage.getItem('rumourradar_brand_watchlist');
+    refreshProStatus();
+    const handleUpdate = () => refreshProStatus();
+    window.addEventListener('truetalk_plus_updated', handleUpdate);
+    return () => window.removeEventListener('truetalk_plus_updated', handleUpdate);
+  }, []);
 
-        setIsProActive(active);
-        setProOrgName(org);
-        setProTier(tier);
-        if (savedPhone) setAlertWhatsappNumber(savedPhone);
-        if (savedEmail) setAlertEmail(savedEmail);
-        if (savedWatchlist) {
-          try {
-            const parsed = JSON.parse(savedWatchlist);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setWatchlist(parsed);
-            }
-          } catch (e) {
-            // ignore JSON parse error
+  // Execute scan for given brand
+  const executeScan = async (targetBrand?: string, isSilentPoll = false) => {
+    const brandToQuery = (targetBrand || brandInput || 'GTBank').trim();
+    if (!brandToQuery) return;
+
+    if (!isSilentPoll) {
+      setIsScanning(true);
+    }
+
+    try {
+      const res = await fetch(`/api/brand-shield/scan?brand=${encodeURIComponent(brandToQuery)}&entityType=${entityCategory}&lang=${appLanguage || 'en'}`);
+      const data = await res.json();
+      if (data && data.brandName) {
+        setScanResult(data);
+        const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        setLastScannedTime(timeNow);
+
+        setSentinelLogs(prev => [
+          {
+            timestamp: timeNow,
+            message: `Ingested ${data.recentWeeklyNews?.length || 0} stories & ${data.alerts?.length || 0} signals for ${brandToQuery}`,
+            type: data.alerts?.length > 0 ? 'alert' : 'info'
+          },
+          ...prev.slice(0, 19)
+        ]);
+
+        if (data.recentWeeklyNews && data.recentWeeklyNews.length > 0) {
+          const newest = data.recentWeeklyNews[0];
+          if (newest.isNewlyIngested) {
+            setLatestNewArticleAlert(newest);
           }
         }
       }
-    };
+    } catch (err) {
+      console.error('Failed to run brand scan:', err);
+    } finally {
+      if (!isSilentPoll) {
+        setIsScanning(false);
+      }
+    }
+  };
 
-    checkProStatus();
-    window.addEventListener('rumourradar_pro_updated', checkProStatus);
-    window.addEventListener('storage', checkProStatus);
-
-    return () => {
-      window.removeEventListener('rumourradar_pro_updated', checkProStatus);
-      window.removeEventListener('storage', checkProStatus);
-    };
+  // Initial scan on mount
+  useEffect(() => {
+    executeScan(brandInput);
   }, []);
 
-  const handleAddToWatchlist = (nameToAdd?: string) => {
-    const target = (nameToAdd || newWatchlistInput || brandInput).trim();
+  // 45-second Auto-Update Sentinel Poll
+  useEffect(() => {
+    if (!isAutoUpdating) return;
+    const interval = setInterval(() => {
+      executeScan(brandInput, true);
+    }, 45000);
+    return () => clearInterval(interval);
+  }, [isAutoUpdating, brandInput, entityCategory]);
+
+  const handleAddToWatchlist = (customBrand?: string) => {
+    const target = (customBrand || newWatchlistInput).trim();
     if (!target) return;
-    if (!watchlist.includes(target)) {
-      const updated = [target, ...watchlist];
-      setWatchlist(updated);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('rumourradar_brand_watchlist', JSON.stringify(updated));
-      }
-      addSentinelLog(`Added "${target}" to Multi-Entity Sentinel Watchlist`, 'success');
+    if (!watchlist.some(w => w.toLowerCase() === target.toLowerCase())) {
+      setWatchlist(prev => [...prev, target]);
     }
     setNewWatchlistInput('');
     setBrandInput(target);
@@ -194,157 +225,10 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
 
   const handleRemoveFromWatchlist = (target: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const updated = watchlist.filter(w => w !== target);
-    setWatchlist(updated);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('rumourradar_brand_watchlist', JSON.stringify(updated));
-    }
-    addSentinelLog(`Removed "${target}" from Watchlist`, 'info');
+    setWatchlist(prev => prev.filter(w => w.toLowerCase() !== target.toLowerCase()));
   };
-
-  const addSentinelLog = (message: string, type: 'info' | 'alert' | 'success' = 'info') => {
-    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    setSentinelLogs(prev => [{ timestamp: time, message, type }, ...prev.slice(0, 19)]);
-  };
-
-  const executeScan = async (targetBrand?: string) => {
-    const brand = targetBrand || brandInput;
-    if (!brand.trim()) return;
-
-    setIsScanning(true);
-    addSentinelLog(`Polling 15+ Nigerian media RSS endpoints & social feeds for "${brand}"...`, 'info');
-
-    try {
-      const res = await fetch('/api/brand-shield/scan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          brandName: brand,
-          entityCategory
-        })
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const result = data.result as BrandShieldScanResult & { recentWeeklyNews?: VerifiedBrandNewsItem[] };
-
-        // Check for newly discovered real articles since last check
-        const newArticles: VerifiedBrandNewsItem[] = [];
-        const enrichedWeeklyNews = (result.recentWeeklyNews || []).map(newsItem => {
-          const isBrandNew = initialScanDoneRef.current && !seenArticleLinksRef.current.has(newsItem.link);
-          if (isBrandNew) {
-            newArticles.push(newsItem);
-          }
-          seenArticleLinksRef.current.add(newsItem.link);
-          return {
-            ...newsItem,
-            isNewlyIngested: isBrandNew
-          };
-        });
-
-        if (!initialScanDoneRef.current) {
-          initialScanDoneRef.current = true;
-          // Populate initial set
-          (result.recentWeeklyNews || []).forEach(item => seenArticleLinksRef.current.add(item.link));
-        } else if (newArticles.length > 0) {
-          // Trigger REAL Live Alert Banner
-          const newest = newArticles[0];
-          setLatestNewArticleAlert(newest);
-          addSentinelLog(`🚨 NEW ARTICLE DETECTED: "${newest.title}" from ${newest.source}`, 'alert');
-        }
-
-        setScanResult({
-          ...result,
-          recentWeeklyNews: enrichedWeeklyNews
-        });
-
-        if (result.alerts.length > 0) {
-          setSelectedStoryForDebunk({
-            title: result.alerts[0].title,
-            snippet: result.alerts[0].summary,
-            source: result.alerts[0].sourceName
-          });
-        } else if (enrichedWeeklyNews.length > 0) {
-          setSelectedStoryForDebunk({
-            title: enrichedWeeklyNews[0].title,
-            snippet: enrichedWeeklyNews[0].snippet,
-            source: enrichedWeeklyNews[0].source
-          });
-        }
-
-        addSentinelLog(`Surveillance synchronized. ${enrichedWeeklyNews.length} articles indexed. Threat Level: ${result.threatLevel}`, 'success');
-      }
-    } catch (err) {
-      console.error('Brand Shield scan failed:', err);
-      addSentinelLog(`Scan error: Connection timeout with RSS crawler`, 'alert');
-    } finally {
-      setIsScanning(false);
-      setLastScannedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-    }
-  };
-
-  const handleGenerateDebunkForStory = async (title: string, snippet?: string, source?: string) => {
-    const brand = scanResult?.brandName || brandInput;
-    setSelectedStoryForDebunk({ title, snippet, source });
-    setActiveTab('debunk_kit');
-    setIsGeneratingDebunk(true);
-
-    try {
-      const res = await fetch('/api/brand-shield/scan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          brandName: brand,
-          entityCategory,
-          targetStoryTitle: title,
-          targetStorySnippet: snippet
-        })
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.result?.debunkKit) {
-          setScanResult(prev => prev ? { ...prev, debunkKit: data.result.debunkKit } : null);
-          addSentinelLog(`Generated tailored PR Debunk Kit for "${title.slice(0, 40)}..."`, 'success');
-        }
-      }
-    } catch (err) {
-      console.error('Failed to generate tailored debunk kit:', err);
-    } finally {
-      setIsGeneratingDebunk(false);
-    }
-  };
-
-  useEffect(() => {
-    if (initialBrand && initialBrand.trim().length > 0) {
-      setBrandInput(initialBrand);
-      executeScan(initialBrand);
-    }
-  }, [initialBrand]);
-
-  useEffect(() => {
-    executeScan('GTBank');
-  }, []);
-
-  // Auto-update polling (every 45s)
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    if (isAutoUpdating && scanResult?.brandName) {
-      interval = setInterval(() => {
-        executeScan(scanResult.brandName);
-      }, 45000);
-    }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isAutoUpdating, scanResult?.brandName]);
 
   const handleCopy = (text: string, key: string) => {
-    if (!isProActive) {
-      onOpenSubscriptionModal();
-      return;
-    }
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 2500);
@@ -352,48 +236,45 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
 
   const handleSaveAlertConfig = (e: React.FormEvent) => {
     e.preventDefault();
-    const formatted = formatNigerianWhatsappNumber(alertWhatsappNumber.trim());
     if (typeof window !== 'undefined') {
-      localStorage.setItem('rumourradar_alert_phone', formatted || alertWhatsappNumber.trim());
-      localStorage.setItem('rumourradar_alert_email', alertEmail.trim());
-    }
-    if (formatted && formatted !== alertWhatsappNumber) {
-      setAlertWhatsappNumber(formatted);
+      localStorage.setItem('truetalk_alert_phone', alertWhatsappNumber.trim());
+      localStorage.setItem('truetalk_alert_email', alertEmail.trim());
     }
     setIsAlertConfigSaved(true);
-    addSentinelLog(`WhatsApp notification armed for +${formatted || 'PR Desk'}`, 'success');
     setTimeout(() => {
       setIsAlertConfigSaved(false);
       setIsAlertConfigOpen(false);
     }, 1500);
   };
 
-  const handleQuickDispatchWhatsapp = (customText?: string) => {
-    if (!isProActive) {
-      onOpenSubscriptionModal();
-      return;
-    }
-    const brand = scanResult?.brandName || brandInput;
-    const cleanBrief = cleanHtmlEntities(scanResult?.alerts?.[0]?.summary) || 'Continuous live surveillance active. No critical rumors detected.';
-    const text = customText || (scanResult?.debunkKit?.whatsappBroadcastTemplate || `🚨 *RUMOUR RADAR SENTINEL ALERT*\n\nBrand Monitored: *${brand}*\nThreat Level: *${scanResult?.threatLevel || 'MODERATE'}*\n\nLatest Briefing: ${cleanBrief}\n\nVerified by Rumour Radar Nigeria: https://rumourradar.vercel.app`);
-    const encoded = encodeURIComponent(text);
-    const formattedPhone = formatNigerianWhatsappNumber(alertWhatsappNumber);
-    const phoneParam = formattedPhone ? `&phone=${formattedPhone}` : '';
-    window.open(`https://api.whatsapp.com/send?text=${encoded}${phoneParam}`, '_blank');
+  const handleQuickDispatchWhatsapp = (overrideText?: string) => {
+    const textToShare = overrideText || (
+      scanResult?.debunkKit
+        ? `*TRUETALK BRAND SHIELD ALERT*\n\nBrand: *${scanResult.brandName}*\nStatus: ${scanResult.threatLevel}\n\n*Official Debunk Statement:*\n${scanResult.debunkKit.whatsappBroadcastTemplate}\n\nSurveillance link: https://truetalk.ng`
+        : `*TRUETALK SURVEILLANCE REPORT*\n\nBrand: *${brandInput}*\nThreat Level: ALL CLEAR\nNo active disinformation signals circulating.`
+    );
+    const cleanNumber = formatNigerianWhatsappNumber(alertWhatsappNumber);
+    const waUrl = cleanNumber 
+      ? `https://wa.me/${cleanNumber}?text=${encodeURIComponent(textToShare)}`
+      : `https://api.whatsapp.com/send?text=${encodeURIComponent(textToShare)}`;
+    window.open(waUrl, '_blank');
   };
 
   const handleQuickDispatchTelegram = () => {
-    if (!isProActive) {
-      onOpenSubscriptionModal();
-      return;
-    }
-    const brand = scanResult?.brandName || brandInput;
-    const text = `🚨 *RUMOUR RADAR SENTINEL ALERT*\n\nBrand: *${brand}*\nThreat: *${scanResult?.threatLevel}*\n\n${scanResult?.alerts?.[0]?.summary || 'Live surveillance active.'}\n\nhttps://rumourradar.vercel.app`;
-    window.open(`https://t.me/share/url?url=https://rumourradar.vercel.app&text=${encodeURIComponent(text)}`, '_blank');
+    const textToShare = scanResult?.debunkKit
+      ? `🚨 TRUETALK BRAND SHIELD ALERT\nBrand: ${scanResult.brandName}\nStatus: ${scanResult.threatLevel}\n\nOfficial Statement:\n${scanResult.debunkKit.officialStatementDraft}`
+      : `TRUETALK SURVEILLANCE: ${brandInput} — Telemetry scan completed.`;
+    window.open(`https://t.me/share/url?url=${encodeURIComponent('https://truetalk.ng')}&text=${encodeURIComponent(textToShare)}`, '_blank');
   };
 
-  const getSocialPostText = (kit?: DebunkKit): string => {
-    if (!kit) return '';
+  const handleGenerateDebunkForStory = (title: string, summary: string, source: string) => {
+    setSelectedStoryForDebunk({ title, summary, source });
+    setActiveTab('debunk_kit');
+    setIsGeneratingDebunk(true);
+    setTimeout(() => setIsGeneratingDebunk(false), 600);
+  };
+
+  const getSocialPostText = (kit: DebunkKit) => {
     switch (activeSocialTab) {
       case 'twitter':
         return kit.twitterPost;
@@ -409,78 +290,68 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
   };
 
   return (
-    <div className="section-stagger space-y-6">
-      {/* Header Banner */}
-      <div className="p-4 sm:p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-blue-950/40 to-slate-900 border border-blue-500/30 shadow-2xl space-y-4">
+    <div className="space-y-6">
+      {/* 1. Header Banner — Modern Truetalk Brand Gradient */}
+      <div className="p-5 sm:p-7 rounded-[24px] sm:rounded-[28px] bg-gradient-to-r from-[#005b9c] to-[#0b2540] text-white shadow-lg border border-white/20 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[11px] font-mono font-bold flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5 text-blue-400" />
-                <span>{isPidgin ? 'BMONI BRAND & ENTITY SHIELD' : 'BMONI ENTERPRISE RADAR'}</span>
-              </span>
-              {isProActive && (
-                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono font-bold flex items-center gap-1">
-                  <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
-                  <span>ENTERPRISE SENTINEL ACTIVE</span>
-                </span>
-              )}
               {lastScannedTime && (
-                <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
-                  <Activity className="w-3 h-3 animate-pulse" /> Live Telemetry ({lastScannedTime})
+                <span className="text-[11px] text-white/75 flex items-center gap-1 font-mono">
+                  <Activity className="w-3 h-3 text-emerald-300 animate-pulse" /> Live Telemetry ({lastScannedTime})
                 </span>
               )}
             </div>
 
-            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-              {isPidgin ? 'Brand Shield: Live Misinformation & Crisis Radar for Brands & People' : 'Brand Shield: Real-Time Crisis & Misinformation Radar'}
+            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight leading-snug">
+              {isPidgin ? 'Brand Shield: Live Misinformation & Crisis Radar' : 'Brand Shield: Real-Time Crisis & Disinformation Radar'}
             </h2>
-            <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-[13px] text-white/80 max-w-2xl leading-relaxed">
               {isPidgin
-                ? 'Real-time surveillance for companies, creators, executives & public entities in Nigeria. Monitors viral WhatsApp forwards, fake news & generates 1-click PR Debunk Kits.'
-                : 'Surveillance for Nigerian institutions & entities. Monitors viral WhatsApp forwards, fake circulars, and all weekly brand news with auto-generated PR Debunk Kits.'}
+                ? 'Continuous surveillance for companies, banks, creators & executives in Nigeria. Monitors viral WhatsApp forwards, fake circulars & generates 1-click PR debunk kits.'
+                : 'Continuous 24/7 surveillance for Nigerian corporations, public figures & institutions. Tracks viral social claims and auto-generates multi-platform PR debunk statements.'}
             </p>
           </div>
 
           <button
             onClick={onOpenSubscriptionModal}
-            className={`flex items-center justify-center space-x-1.5 px-4 py-2.5 rounded-xl font-bold text-xs shadow-lg transition-all active:scale-95 shrink-0 self-start md:self-center ${
+            className={`flex items-center justify-center space-x-2 px-5 py-3 rounded-[16px] font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95 shrink-0 self-start md:self-center cursor-pointer ${
               isProActive 
-                ? 'bg-emerald-600/30 border border-emerald-500/50 text-emerald-300 hover:bg-emerald-600/50' 
-                : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-500 hover:to-indigo-500 shadow-blue-500/20 ring-1 ring-blue-400/50'
+                ? 'bg-emerald-500 hover:bg-emerald-600 text-white' 
+                : 'bg-white hover:bg-white/95 text-[#005b9c] shadow-blue-900/20'
             }`}
           >
-            {isProActive ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Lock className="w-4 h-4 text-amber-300" />}
-            <span>{isProActive ? (proOrgName ? `Pro Active (${proOrgName})` : 'BMoni Pro Active Tier') : '⚡ Create BMoni Pro Tier Account (₦50k/mo)'}</span>
+            {isProActive ? <CheckCircle2 className="w-4 h-4 text-white" /> : <Lock className="w-4 h-4 text-[#005b9c]" />}
+            <span>{isProActive ? (proOrgName ? `Plus Active: ${proOrgName}` : 'Paga Plus Active Tier') : '⚡ Upgrade to Paga Plus (₦50k/mo)'}</span>
           </button>
         </div>
 
         {/* Action Controls Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-800/80">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-white/15">
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setIsWhyModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 text-blue-300 text-xs font-bold transition-all shadow-sm active:scale-95"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-semibold transition-all cursor-pointer"
             >
-              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+              <Sparkles className="w-3.5 h-3.5 text-white" />
               <span>Why Brand Shield?</span>
             </button>
 
             <button
               onClick={() => setIsHelpOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all shadow-sm active:scale-95"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-semibold transition-all cursor-pointer"
             >
-              <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+              <HelpCircle className="w-3.5 h-3.5 text-white" />
               <span>How to Use?</span>
             </button>
           </div>
 
           <button
             onClick={() => setIsAutoUpdating(!isAutoUpdating)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
               isAutoUpdating
-                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                : 'bg-slate-800 text-slate-400 border-slate-700'
+                ? 'bg-emerald-400/25 text-emerald-100 border-emerald-400/40'
+                : 'bg-white/10 text-white/70 border-white/20'
             }`}
           >
             {isAutoUpdating ? '● Auto-Update ON (45s)' : '○ Auto-Update Paused'}
@@ -488,26 +359,26 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
         </div>
       </div>
 
-      {/* REAL-TIME ALERT BANNER WHEN NEW ARTICLE OR CRISIS IS DETECTED */}
+      {/* 2. Real-Time Sentinel Alert Banner */}
       {latestNewArticleAlert && (
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-rose-950/80 via-slate-900 to-rose-950/80 border-2 border-rose-500/60 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3">
+        <div className="p-4 sm:p-5 rounded-[20px] bg-rose-50 border border-rose-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in">
           <div className="flex items-start space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/50 flex items-center justify-center text-rose-400 shrink-0 mt-0.5">
+            <div className="w-10 h-10 rounded-xl bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-600 shrink-0 mt-0.5">
               <BellRing className="w-5 h-5 animate-bounce" />
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-mono font-black uppercase px-2 py-0.5 rounded bg-rose-500 text-white tracking-wider animate-pulse">
-                  🚨 REAL-TIME SENTINEL ALERT
+                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-rose-600 text-white tracking-wider">
+                  🚨 Real-Time Alert
                 </span>
-                <span className="text-xs font-mono text-slate-300">
-                  New Press Story Ingested Just Now ({latestNewArticleAlert.source})
+                <span className="text-xs text-[#4a6076]">
+                  New Press Story Ingested ({latestNewArticleAlert.source})
                 </span>
               </div>
-              <h4 className="text-sm font-bold text-white">
+              <h4 className="text-sm font-bold text-[#0b2540]">
                 "{latestNewArticleAlert.title}"
               </h4>
-              <p className="text-xs text-slate-300 line-clamp-1">
+              <p className="text-xs text-[#4a6076] line-clamp-1">
                 {latestNewArticleAlert.snippet}
               </p>
             </div>
@@ -515,16 +386,16 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
 
           <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
             <button
-              onClick={() => handleQuickDispatchWhatsapp(`🚨 *RUMOUR RADAR NEW STORY ALERT*\n\nBrand: *${brandInput}*\nStory: *${latestNewArticleAlert.title}*\nSource: ${latestNewArticleAlert.source}\nLink: ${latestNewArticleAlert.link}\n\nAutomated Sentinel Alert from RumourRadar.ng`)}
-              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
+              onClick={() => handleQuickDispatchWhatsapp(`🚨 *TRUETALK NEW STORY ALERT*\n\nBrand: *${brandInput}*\nStory: *${latestNewArticleAlert.title}*\nSource: ${latestNewArticleAlert.source}\nLink: ${latestNewArticleAlert.link}`)}
+              className="px-3.5 py-2 rounded-xl bg-[#005b9c] hover:bg-[#00406e] text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
             >
               <MessageSquare className="w-3.5 h-3.5" />
-              <span>Dispatch WhatsApp Alert</span>
+              <span>Dispatch Alert</span>
             </button>
 
             <button
               onClick={() => setLatestNewArticleAlert(null)}
-              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+              className="p-2 rounded-lg text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
               title="Dismiss Alert"
             >
               <X className="w-4 h-4" />
@@ -533,30 +404,30 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
         </div>
       )}
 
-      {/* Brand Search Bar & Presets */}
-      <div className="glass-panel p-4 sm:p-5 rounded-2xl border-blue-500/30 space-y-4 shadow-lg">
-        {/* Entity Type Filter Tabs - Fully Visible on Mobile & Desktop */}
+      {/* 3. Search Bar, Presets & Watchlist — Crisp White Home Card Styling */}
+      <div className="p-5 sm:p-6 rounded-[22px] sm:rounded-[26px] bg-white border border-[#D5E7FA] shadow-xs space-y-4">
+        {/* Category Selector Tabs */}
         <div className="space-y-1.5">
-          <span className="text-[11px] font-mono text-slate-400 font-bold block">
-            {isPidgin ? 'Target Entity Type (Choose one to scan):' : 'Target Entity Category (Select to scan):'}
+          <span className="text-xs font-semibold text-[#005b9c] uppercase tracking-wider block">
+            Target Entity Category:
           </span>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {[
-              { id: 'corporation', label: '🏢 Corporations & SMEs', desc: 'Banks, Fintechs, Telecoms' },
-              { id: 'creator', label: '👤 Personal Brands & Creators', desc: 'Celebrities, Influencers & Leaders' },
-              { id: 'agency', label: '🏛️ Government & Regulators', desc: 'CBN, INEC, EFCC, NCDC' }
+              { id: 'corporation', label: '🏢 Corporations & Banks', desc: 'Banks, Telecoms, Fintechs & FMCG' },
+              { id: 'creator', label: '👤 Public Figures & Creators', desc: 'Executives, Celebrities & Influencers' },
+              { id: 'agency', label: '🏛️ Government & Regulators', desc: 'CBN, INEC, EFCC, NCDC, JAMB' }
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setEntityCategory(tab.id as any)}
-                className={`p-2.5 rounded-xl text-xs font-bold transition-all text-left flex flex-col justify-between border ${
+                className={`p-3 rounded-[16px] text-xs font-semibold transition-all text-left flex flex-col justify-between border cursor-pointer ${
                   entityCategory === tab.id
-                    ? 'bg-blue-600 text-white border-blue-400 shadow-md ring-1 ring-blue-400'
-                    : 'bg-slate-900/80 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
+                    ? 'bg-[#005b9c] text-white border-[#005b9c] shadow-xs'
+                    : 'bg-[#f4f8fc] border-[#D5E7FA] text-[#0b2540] hover:bg-[#e6f1f8]'
                 }`}
               >
-                <span>{tab.label}</span>
-                <span className={`text-[10px] font-normal mt-0.5 ${entityCategory === tab.id ? 'text-blue-100' : 'text-slate-500'}`}>
+                <span className="font-bold">{tab.label}</span>
+                <span className={`text-[11px] mt-0.5 ${entityCategory === tab.id ? 'text-white/80' : 'text-[#4a6076]'}`}>
                   {tab.desc}
                 </span>
               </button>
@@ -565,23 +436,23 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
         </div>
 
         {/* Search Input Bar */}
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col sm:flex-row gap-2.5">
           <div className="relative flex-1">
-            <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4a6076]" />
             <input
               type="text"
               value={brandInput}
               onChange={(e) => setBrandInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && executeScan()}
               placeholder={isPidgin ? "Type company name, creator or public person to scan..." : "Search brand name, corporate entity, creator, or government agency..."}
-              className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/80 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
+              className="w-full h-12 pl-10 pr-4 rounded-[14px] bg-white border border-[#005b9c]/25 text-sm text-[#0b2540] placeholder-slate-400 focus:outline-none focus:ring-3 focus:ring-[#005b9c]/15 focus:border-[#005b9c] transition-all"
             />
           </div>
 
           <button
             onClick={() => executeScan()}
             disabled={isScanning || !brandInput.trim()}
-            className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-sm hover:from-blue-500 hover:to-indigo-500 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 active:scale-95"
+            className="flex items-center justify-center gap-2 h-12 px-6 rounded-[14px] bg-[#005b9c] hover:bg-[#00406e] text-white font-semibold text-xs sm:text-sm transition-all shadow-md shadow-blue-500/20 disabled:opacity-50 shrink-0 cursor-pointer"
           >
             {isScanning ? (
               <>
@@ -597,9 +468,9 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
           </button>
         </div>
 
-        {/* Preset Quick-Search Badges */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-1">
-          <span className="text-[11px] font-mono text-slate-400 font-bold shrink-0 mr-1">Trending Entities:</span>
+        {/* Preset Quick Chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pt-0.5 pb-1 scrollbar-none">
+          <span className="text-xs font-semibold text-[#4a6076] shrink-0 mr-1">Trending:</span>
           {ENTITY_PRESETS[entityCategory].map((b) => (
             <button
               key={b}
@@ -607,46 +478,44 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                 setBrandInput(b);
                 executeScan(b);
               }}
-              className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-[11px] font-semibold text-slate-300 border border-slate-700 transition-all shrink-0 active:scale-95"
+              className="px-3 py-1 rounded-xl bg-[#005b9c]/[0.08] hover:bg-[#005b9c]/[0.15] text-xs font-semibold text-[#005b9c] transition-all shrink-0 cursor-pointer"
             >
               {b}
             </button>
           ))}
         </div>
 
-        {/* Multi-Entity Sentinel Watchlist Manager */}
-        <div className="pt-3 border-t border-slate-800/80 space-y-2">
+        {/* Watchlist Manager */}
+        <div className="pt-3 border-t border-[#D5E7FA] space-y-2">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-1.5">
-              <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-              <span className="text-xs font-bold text-slate-200">
-                {isPidgin ? 'Your Sentinel Watchlist (Track Multi-Entities & Celebrities):' : 'Multi-Entity Sentinel Watchlist (Celebrities, Brands & Agencies):'}
+              <Radio className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+              <span className="text-xs font-bold text-[#0b2540]">
+                {isPidgin ? 'Sentinel Watchlist (Multi-Entity Surveillance):' : 'Multi-Entity Sentinel Watchlist:'}
               </span>
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#e6f1f8] text-[#005b9c]">
                 {watchlist.length} Active
               </span>
             </div>
 
-            {/* Quick Add Custom Entity */}
             <div className="flex items-center gap-1.5">
               <input 
                 type="text"
                 value={newWatchlistInput}
                 onChange={(e) => setNewWatchlistInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddToWatchlist()}
-                placeholder="Add celebrity or brand (e.g. Davido, Opay)..."
-                className="px-2.5 py-1 text-xs rounded-lg bg-slate-900 border border-slate-700 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-400 w-48 sm:w-56"
+                placeholder="Track celebrity or brand..."
+                className="h-9 px-3 text-xs rounded-xl bg-white border border-[#005b9c]/25 text-[#0b2540] placeholder-slate-400 focus:outline-none focus:border-[#005b9c] w-48 sm:w-56"
               />
               <button
                 onClick={() => handleAddToWatchlist()}
-                className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all active:scale-95 shrink-0"
+                className="h-9 px-3 rounded-xl bg-[#005b9c] hover:bg-[#00406e] text-white text-xs font-bold transition-all shrink-0 cursor-pointer"
               >
                 + Track
               </button>
             </div>
           </div>
 
-          {/* Watchlist Chips */}
           <div className="flex items-center gap-1.5 flex-wrap">
             {watchlist.map((entity) => {
               const isSelected = brandInput.toLowerCase() === entity.toLowerCase();
@@ -657,17 +526,17 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                     setBrandInput(entity);
                     executeScan(entity);
                   }}
-                  className={`group flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all border ${
+                  className={`group flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-medium cursor-pointer transition-all border ${
                     isSelected
-                      ? 'bg-blue-600 text-white border-blue-400 shadow-md ring-1 ring-blue-400'
-                      : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:border-blue-500 hover:text-white'
+                      ? 'bg-[#005b9c] text-white border-[#005b9c] shadow-xs'
+                      : 'bg-[#e6f1f8] text-[#005b9c] border-[#d5e7fa] hover:bg-[#d9ecfa]'
                   }`}
                 >
-                  <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white animate-ping' : 'bg-emerald-400'}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white animate-ping' : 'bg-emerald-500'}`} />
                   <span>{entity}</span>
                   <button
                     onClick={(e) => handleRemoveFromWatchlist(entity, e)}
-                    className="opacity-40 group-hover:opacity-100 hover:text-rose-400 p-0.5 rounded transition-opacity"
+                    className="opacity-50 group-hover:opacity-100 hover:text-rose-600 p-0.5 transition-opacity"
                     title={`Stop tracking ${entity}`}
                   >
                     <X className="w-3 h-3" />
@@ -675,43 +544,29 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                 </div>
               );
             })}
-            {!watchlist.includes(brandInput.trim()) && brandInput.trim().length > 0 && (
-              <button
-                onClick={() => handleAddToWatchlist(brandInput)}
-                className="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/40 text-xs font-medium hover:bg-blue-500/30 transition-all flex items-center gap-1"
-              >
-                <span>+ Add "{brandInput}" to Watchlist</span>
-              </button>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-2 pt-1 text-[11px] text-slate-400 font-mono">
-            <span className="text-emerald-400">● 24/7 Multi-Platform Coverage:</span>
-            <span>WhatsApp forward chains, X (Twitter) viral quotes, TikTok skits, Telegram channels & Nigerian newsrooms.</span>
           </div>
         </div>
       </div>
 
-      {/* DYNAMIC 24/7 SENTINEL NODE: LOCKED TEASER vs ACTIVE LIVE DISPATCHER */}
+      {/* 4. Upgrade Teaser vs Active Sentinel Banner */}
       {!isProActive ? (
-        /* Free Tier: Informational Upgrade Banner */
         <div 
           onClick={onOpenSubscriptionModal}
-          className="glass-panel p-4 rounded-2xl border-blue-500/40 bg-gradient-to-r from-blue-950/50 via-slate-900 to-indigo-950/40 hover:border-blue-400 transition-all cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg group"
+          className="p-4 sm:p-5 rounded-[22px] bg-white border border-[#005b9c]/25 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 group"
         >
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0 group-hover:scale-105 transition-transform">
-              <Lock className="w-5 h-5 text-blue-400" />
+            <div className="w-10 h-10 rounded-xl bg-[#e6f1f8] border border-[#d5e7fa] flex items-center justify-center text-[#005b9c] shrink-0">
+              <Lock className="w-5 h-5 text-[#005b9c]" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h4 className="text-xs sm:text-sm font-bold text-white">24/7 Automated Sentinel & Instant WhatsApp Alerts</h4>
-                <span className="text-[10px] font-mono font-bold bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded border border-blue-500/30">
-                  BMONI Pro Feature
+                <h4 className="text-xs sm:text-sm font-bold text-[#0b2540]">24/7 Automated Sentinel & Instant WhatsApp Alerts</h4>
+                <span className="text-[10px] font-semibold bg-[#e6f1f8] text-[#005b9c] px-2 py-0.5 rounded-full border border-[#d5e7fa]">
+                  Paga Plus Feature
                 </span>
               </div>
-              <p className="text-xs text-slate-400">
-                Get notified immediately on WhatsApp & Telegram the second viral rumors or new press articles mention your brand.
+              <p className="text-xs text-[#4a6076]">
+                Get notified immediately on WhatsApp & Telegram when breaking rumors or press articles mention your brand.
               </p>
             </div>
           </div>
@@ -721,164 +576,121 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
               e.stopPropagation();
               onOpenSubscriptionModal();
             }}
-            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shrink-0 transition-all active:scale-95 shadow-md flex items-center gap-1.5"
+            className="px-4 py-2 rounded-xl bg-[#005b9c] hover:bg-[#00406e] text-white font-semibold text-xs shrink-0 shadow-xs flex items-center gap-1.5 cursor-pointer"
           >
             <Zap className="w-3.5 h-3.5" />
             <span>Unlock Automated Sentinel &rarr;</span>
           </button>
         </div>
       ) : (
-        /* PRO & ENTERPRISE TIER: LIVE ACTIVE SENTINEL NODE */
-        <div className="glass-panel p-4 sm:p-5 rounded-2xl border-emerald-500/40 bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-950 shadow-xl space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+        <div className="p-4 sm:p-5 rounded-[22px] bg-white border border-emerald-300 shadow-xs space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#D5E7FA]">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
-                <Radio className="w-5 h-5 animate-pulse text-emerald-400" />
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0">
+                <Radio className="w-5 h-5 animate-pulse text-emerald-600" />
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="text-sm font-extrabold text-white">24/7 Automated Sentinel Node Active</h4>
-                  <span className="text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/40 uppercase">
+                  <h4 className="text-sm font-bold text-[#0b2540]">24/7 Automated Sentinel Node Active</h4>
+                  <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full uppercase">
                     Continuous Surveillance Live
                   </span>
                 </div>
-                <p className="text-xs text-slate-300">
-                  Active Target: <strong className="text-emerald-400">{scanResult?.brandName || brandInput}</strong> • Continuous 45s Multi-Source RSS & Social Crawl
+                <p className="text-xs text-[#4a6076]">
+                  Active Target: <strong className="text-[#005b9c]">{scanResult?.brandName || brandInput}</strong> • Continuous 45s Multi-Source RSS & Social Crawl
                 </p>
               </div>
             </div>
 
-            {/* Instant Actions */}
             <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
               <button
                 onClick={() => handleQuickDispatchWhatsapp()}
-                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95"
-                title="Send active debunk & crisis status to WhatsApp"
+                className="px-3.5 py-1.5 rounded-xl bg-[#005b9c] hover:bg-[#00406e] text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer"
               >
                 <MessageSquare className="w-3.5 h-3.5" />
                 <span>Instant WhatsApp Dispatch</span>
               </button>
 
               <button
-                onClick={handleQuickDispatchTelegram}
-                className="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center gap-1 transition-all shadow-md active:scale-95"
-                title="Share to Telegram channel"
-              >
-                <Send className="w-3 h-3" />
-                <span>Telegram</span>
-              </button>
-
-              <button
                 onClick={() => setIsAlertConfigOpen(true)}
-                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs flex items-center gap-1 transition-all active:scale-95"
-                title="Configure alert phone number & channels"
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-[#0b2540] border border-[#d5e7fa] font-semibold text-xs flex items-center gap-1 cursor-pointer"
               >
-                <Settings className="w-3.5 h-3.5 text-slate-400" />
+                <Settings className="w-3.5 h-3.5 text-[#005b9c]" />
                 <span>{alertWhatsappNumber ? `Alerts: ${alertWhatsappNumber.slice(-4)}` : 'Alert Settings'}</span>
-              </button>
-
-              <button
-                onClick={() => setShowLogs(!showLogs)}
-                className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 font-mono text-[11px] transition-colors"
-                title="View Sentinel Telemetry Stream"
-              >
-                {showLogs ? 'Hide Logs ▲' : 'Logs ▼'}
               </button>
             </div>
           </div>
-
-          {/* Collapsible Telemetry Ingestion Log Box */}
-          {showLogs && (
-            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] text-slate-300 space-y-1 max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800">
-              <div className="text-slate-500 pb-1 border-b border-slate-900 flex justify-between items-center">
-                <span>🛰️ Sentinel Live Ingestion Stream ({sentinelLogs.length} events):</span>
-                <span className="text-emerald-400">Node Status: Operational</span>
-              </div>
-              {sentinelLogs.length === 0 ? (
-                <div className="text-slate-500 py-2">Listening for incoming media streams...</div>
-              ) : (
-                sentinelLogs.map((log, idx) => (
-                  <div key={idx} className="flex items-start gap-2">
-                    <span className="text-slate-500 shrink-0">[{log.timestamp}]</span>
-                    <span className={log.type === 'alert' ? 'text-rose-400 font-bold' : log.type === 'success' ? 'text-emerald-400' : 'text-slate-300'}>
-                      {log.message}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
         </div>
       )}
 
-      {/* Main Results View */}
+      {/* 5. Main Results View */}
       {scanResult && (
         <div className="space-y-6">
           {/* Status Metrics Bar */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
-              <span className="text-[11px] font-mono text-slate-400 uppercase">Monitored Entity</span>
-              <div className="text-lg font-black text-white truncate">{scanResult.brandName}</div>
-              <div className="text-xs text-blue-400 font-mono">Nigeria Surveillance Grid</div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="p-4 rounded-2xl bg-white border border-[#D5E7FA] shadow-xs space-y-1">
+              <span className="text-[11px] font-semibold text-[#4a6076] uppercase tracking-wider">Monitored Entity</span>
+              <div className="text-lg font-bold text-[#0b2540] truncate">{scanResult.brandName}</div>
+              <div className="text-xs text-[#005b9c] font-medium">Nigeria Surveillance Grid</div>
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
-              <span className="text-[11px] font-mono text-slate-400 uppercase">Surveillance Threat Level</span>
+            <div className="p-4 rounded-2xl bg-white border border-[#D5E7FA] shadow-xs space-y-1">
+              <span className="text-[11px] font-semibold text-[#4a6076] uppercase tracking-wider">Surveillance Threat Level</span>
               <div className="flex items-center gap-2">
-                <span className={`px-2.5 py-0.5 rounded text-xs font-mono font-black ${
-                  scanResult.threatLevel === 'CRITICAL' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                  scanResult.threatLevel === 'CRITICAL' ? 'bg-rose-100 text-rose-800 border border-rose-300' : 'bg-amber-100 text-amber-800 border border-amber-300'
                 }`}>
                   {scanResult.threatLevel}
                 </span>
-                <span className="text-xs font-mono text-slate-400">Total Alerts: {scanResult.totalAlerts}</span>
+                <span className="text-xs text-[#4a6076]">Total Alerts: {scanResult.totalAlerts}</span>
               </div>
-              <div className="text-[11px] text-slate-400">Active Rumours Detected: {scanResult.alerts.length}</div>
+              <div className="text-[11px] text-[#4a6076]">Active Rumors Detected: {scanResult.alerts.length}</div>
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
-              <span className="text-[11px] font-mono text-slate-400 uppercase">Weekly Press Ingestion</span>
-              <div className="text-lg font-black text-emerald-400">
+            <div className="p-4 rounded-2xl bg-white border border-[#D5E7FA] shadow-xs space-y-1">
+              <span className="text-[11px] font-semibold text-[#4a6076] uppercase tracking-wider">Weekly Press Ingestion</span>
+              <div className="text-lg font-bold text-emerald-700">
                 {scanResult.recentWeeklyNews?.length || 0} Articles Scanned
               </div>
-              <div className="text-[11px] text-slate-400">Continuous 7-Day Live Ingestion</div>
+              <div className="text-[11px] text-[#4a6076]">Continuous 7-Day Live Ingestion</div>
             </div>
           </div>
 
           {/* Section Navigation Tabs */}
-          <div className="flex items-center gap-2 p-1 rounded-xl bg-slate-950/80 border border-slate-800 overflow-x-auto">
+          <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[#eaf3fc] border border-[#D5E7FA] overflow-x-auto">
             <button
               onClick={() => setActiveTab('rumours')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all shrink-0 ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
                 activeTab === 'rumours'
-                  ? 'bg-rose-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-[#005b9c] text-white shadow-xs'
+                  : 'text-[#4a6076] hover:text-[#0b2540] hover:bg-white/60'
               }`}
             >
-              <AlertTriangle className="w-3.5 h-3.5 text-rose-300" />
+              <AlertTriangle className="w-3.5 h-3.5" />
               <span>Unverified Rumours & Threat Alerts ({scanResult.alerts.length})</span>
             </button>
 
             <button
               onClick={() => setActiveTab('weekly_news')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all shrink-0 ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
                 activeTab === 'weekly_news'
-                  ? 'bg-emerald-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-[#005b9c] text-white shadow-xs'
+                  : 'text-[#4a6076] hover:text-[#0b2540] hover:bg-white/60'
               }`}
             >
-              <Newspaper className="w-3.5 h-3.5 text-emerald-300" />
+              <Newspaper className="w-3.5 h-3.5" />
               <span>All Recent News This Week ({scanResult.recentWeeklyNews?.length || 0})</span>
             </button>
 
             <button
               onClick={() => setActiveTab('debunk_kit')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all shrink-0 ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
                 activeTab === 'debunk_kit'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-[#005b9c] text-white shadow-xs'
+                  : 'text-[#4a6076] hover:text-[#0b2540] hover:bg-white/60'
               }`}
             >
-              <FileText className="w-3.5 h-3.5 text-blue-300" />
+              <FileText className="w-3.5 h-3.5" />
               <span>1-Click Multi-Platform PR Debunk Kit</span>
             </button>
           </div>
@@ -888,35 +700,26 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-2 px-1">
                 <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-300 font-display flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#0b2540] flex items-center gap-2">
                     <span>{isPidgin ? `Detected Rumor Signals (${scanResult.alerts.length})` : `Detected Misinformation Signals (${scanResult.alerts.length})`}</span>
-                    <span className="text-[10px] font-mono text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
-                      ← Swipe Horizontal Stream →
+                    <span className="text-[10px] text-[#005b9c] bg-[#e6f1f8] px-2 py-0.5 rounded-full border border-[#d5e7fa]">
+                      ← Horizontal Stream →
                     </span>
-                    {!isProActive && scanResult.alerts.length > 1 && (
-                      <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 flex items-center gap-1">
-                        <Lock className="w-2.5 h-2.5" /> Sample Preview (1 of {scanResult.alerts.length})
-                      </span>
-                    )}
                   </span>
-                  <p className="text-[11px] font-mono text-slate-500">
-                    {isPidgin ? 'Click "Check in Claim Engine" to verify why any tori be rumour' : 'Click "Check in Claim Engine" to inspect grounded evidence for any rumor'}
-                  </p>
                 </div>
 
-                {/* Horizontal Navigation Arrow Buttons */}
                 {scanResult.alerts.length > 0 && (
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       onClick={() => signalsScrollRef.current?.scrollBy({ left: -340, behavior: 'smooth' })}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 active:scale-95 transition-all shadow-sm"
+                      className="p-2 rounded-xl bg-white hover:bg-slate-50 text-[#0b2540] border border-[#D5E7FA] shadow-xs cursor-pointer"
                       title="Scroll left"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => signalsScrollRef.current?.scrollBy({ left: 340, behavior: 'smooth' })}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 active:scale-95 transition-all shadow-sm"
+                      className="p-2 rounded-xl bg-white hover:bg-slate-50 text-[#0b2540] border border-[#D5E7FA] shadow-xs cursor-pointer"
                       title="Scroll right"
                     >
                       <ChevronRight className="w-4 h-4" />
@@ -926,184 +729,111 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
               </div>
 
               {scanResult.alerts.length === 0 ? (
-                <div className="glass-panel p-8 text-center rounded-2xl border-emerald-500/40 bg-emerald-950/20 space-y-3">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center mx-auto text-emerald-400">
-                    <CheckCircle2 className="w-6 h-6" />
+                <div className="p-8 text-center rounded-2xl bg-white border border-[#D5E7FA] shadow-xs space-y-2">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                    <CheckCircle2 className="w-6 h-6 stroke-[2]" />
                   </div>
-                  <h3 className="text-base font-bold text-white">
-                    {isPidgin 
-                      ? `Everything Clean! We don scan everywhere and no lie-lie tori or fake news dey about ${scanResult.brandName}.`
-                      : `Surveillance Scan Complete: No active rumors, fake news, or circulars detected for ${scanResult.brandName}.`}
+                  <h3 className="text-base font-bold text-[#0b2540]">
+                    Surveillance Scan Complete: No active rumors detected for {scanResult.brandName}.
                   </h3>
-                  <p className="text-xs text-slate-400 max-w-md mx-auto font-mono">
-                    {isPidgin
-                      ? `Status: ALL CLEAR (0 Rumor Found in past 7 days)`
-                      : `Threat Status: ALL CLEAR (0 Monitored Rumors Found)`}
+                  <p className="text-xs text-[#4a6076]">
+                    Threat Status: ALL CLEAR (0 Monitored Rumors Found)
                   </p>
                 </div>
               ) : (
                 <div 
                   ref={signalsScrollRef}
-                  className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-slate-700"
+                  className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x scrollbar-none"
                 >
-                  {/* For Free Tier: Only display the first card as sample preview */}
                   {(isProActive ? scanResult.alerts : scanResult.alerts.slice(0, 1)).map((alert) => {
                     const cleanSummary = cleanHtmlEntities(alert.summary);
                     const cleanTitle = cleanHtmlEntities(alert.title);
                     return (
                       <div 
                         key={alert.id}
-                        className="w-[85vw] sm:w-[380px] min-w-[300px] max-w-[420px] shrink-0 snap-start glass-panel p-4 sm:p-5 rounded-2xl border-rose-500/30 flex flex-col justify-between shadow-xl space-y-3 hover:border-rose-500/60 transition-all bg-slate-950/80"
+                        className="w-[85vw] sm:w-[380px] min-w-[300px] max-w-[420px] shrink-0 snap-start p-5 rounded-2xl bg-white border border-[#D5E7FA] shadow-xs flex flex-col justify-between space-y-3"
                       >
                         <div className="space-y-2.5">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
                               {alert.severity}
                             </span>
-                            <span className="text-[11px] font-mono text-slate-400 font-semibold">{alert.publishedDate}</span>
+                            <span className="text-[11px] text-[#4a6076] font-medium">{alert.publishedDate}</span>
                           </div>
 
-                          <h4 className="font-bold text-sm text-white leading-snug line-clamp-2">{cleanTitle}</h4>
+                          <h4 className="font-bold text-sm text-[#0b2540] leading-snug line-clamp-2">{cleanTitle}</h4>
 
-                          <p className="text-xs text-slate-300 leading-relaxed bg-slate-900/80 p-3 rounded-xl border border-slate-800 line-clamp-3">
+                          <p className="text-xs text-[#4a6076] leading-relaxed bg-[#f8fbfe] p-3 rounded-xl border border-[#d5e7fa] line-clamp-3">
                             {cleanSummary}
                           </p>
                         </div>
 
-                        <div className="space-y-2.5 pt-3 border-t border-slate-800 text-xs">
-                          <div className="flex items-center justify-between text-slate-400 font-mono text-[11px]">
-                            <span>Source: <strong className="text-slate-200 truncate max-w-[150px] inline-block align-bottom">{alert.sourceName}</strong></span>
+                        <div className="space-y-2.5 pt-3 border-t border-[#D5E7FA] text-xs">
+                          <div className="flex items-center justify-between text-[#4a6076]">
+                            <span>Source: <strong className="text-[#0b2540] truncate max-w-[150px]">{alert.sourceName}</strong></span>
                             {alert.sourceUrl && (
                               <a
                                 href={alert.sourceUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300 transition-colors font-semibold"
+                                className="inline-flex items-center gap-1 text-[#005b9c] font-semibold hover:underline"
                               >
                                 <ExternalLink className="w-3 h-3" />
-                                <span>{isPidgin ? 'Source' : 'Source Article'}</span>
+                                <span>Source</span>
                               </a>
                             )}
                           </div>
 
-                          {/* Action Buttons: 1-Click Verify Claim & PR Debunk */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                             {onVerifyClaim && (
                               <button
                                 onClick={() => onVerifyClaim(`${cleanTitle} — ${cleanSummary}`)}
-                                className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95"
-                                title="Load into Claim Verification Engine"
+                                className="w-full py-2 px-3 rounded-xl bg-[#005b9c] hover:bg-[#00406e] text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
                               >
                                 <Sparkles className="w-3.5 h-3.5" />
-                                <span>{isPidgin ? '🔍 Check Tori' : '🔍 Verify Claim'}</span>
+                                <span>Verify Claim</span>
                               </button>
                             )}
 
                             <button
                               onClick={() => handleGenerateDebunkForStory(cleanTitle, cleanSummary, alert.sourceName)}
-                              className={`w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 ${!onVerifyClaim ? 'sm:col-span-2' : ''}`}
-                              title="Generate tailored PR Debunk Kit for this specific rumor"
+                              className={`w-full py-2 px-3 rounded-xl bg-[#e6f1f8] hover:bg-[#d9ecfa] text-[#005b9c] font-semibold text-xs flex items-center justify-center gap-1.5 transition-all border border-[#d5e7fa] cursor-pointer ${!onVerifyClaim ? 'sm:col-span-2' : ''}`}
                             >
                               <FileText className="w-3.5 h-3.5" />
-                              <span>{isPidgin ? 'PR Debunk Kit →' : 'PR Debunk Kit →'}</span>
+                              <span>PR Debunk Kit →</span>
                             </button>
                           </div>
                         </div>
                       </div>
                     );
                   })}
-
-                  {/* Free Tier: Locked Threat Stream Card appended immediately after the first card */}
-                  {!isProActive && (
-                    <div 
-                      onClick={onOpenSubscriptionModal}
-                      className="w-[85vw] sm:w-[380px] min-w-[300px] max-w-[420px] shrink-0 snap-start glass-panel p-5 rounded-2xl border-2 border-dashed border-blue-500/50 bg-gradient-to-br from-blue-950/60 via-slate-900 to-indigo-950/60 flex flex-col justify-between shadow-2xl space-y-4 hover:border-blue-400 transition-all cursor-pointer group"
-                    >
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
-                            <Lock className="w-5 h-5 text-blue-400" />
-                          </div>
-                          <span className="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40 uppercase">
-                            BMoni Pro Tier Only
-                          </span>
-                        </div>
-
-                        <div>
-                          <h4 className="text-base font-extrabold text-white leading-snug">
-                            {scanResult.alerts.length > 1 
-                              ? `🔒 +${scanResult.alerts.length - 1} More Threat Signals Detected` 
-                              : '🔒 Unlock Continuous Threat Surveillance'}
-                          </h4>
-                          <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                            Upgrade to <strong>BMoni Pro Tier</strong> to unlock the complete threat intelligence stream, all active WhatsApp rumors, TikTok skits, and 24/7 background sentinel alerts.
-                          </p>
-                        </div>
-
-                        <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-[11px] font-mono text-slate-400 space-y-1">
-                          <div className="text-emerald-400 flex items-center gap-1">
-                            <span>✓</span> <span>All Detected Misinformation Signals</span>
-                          </div>
-                          <div className="text-emerald-400 flex items-center gap-1">
-                            <span>✓</span> <span>WhatsApp & Telegram Sentinel Dispatches</span>
-                          </div>
-                          <div className="text-emerald-400 flex items-center gap-1">
-                            <span>✓</span> <span>Unlimited Multi-Entity Tracking</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onOpenSubscriptionModal();
-                        }}
-                        className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 active:scale-95 transition-all"
-                      >
-                        <Zap className="w-4 h-4" />
-                        <span>⚡ Create BMoni Pro Tier Account (₦50k/mo)</span>
-                      </button>
-                    </div>
-                  )}
                 </div>
               )}
             </div>
           )}
 
-          {/* Tab 2: All Recent News This Week (Live Weekly Ingestion) */}
+          {/* Tab 2: All Recent News This Week */}
           {activeTab === 'weekly_news' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-2 px-1">
                 <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400 font-display flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#0b2540] flex items-center gap-2">
                     <span>Verified News This Week ({scanResult.recentWeeklyNews?.length || 0})</span>
-                    <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                      ← Swipe Horizontal Stream →
-                    </span>
-                    {!isProActive && (scanResult.recentWeeklyNews?.length || 0) > 1 && (
-                      <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 flex items-center gap-1">
-                        <Lock className="w-2.5 h-2.5" /> Sample Preview (1 of {scanResult.recentWeeklyNews?.length || 0})
-                      </span>
-                    )}
                   </span>
-                  <p className="text-[11px] font-mono text-slate-500">
-                    Continuous 7-Day Live Ingestion
-                  </p>
                 </div>
 
-                {/* Horizontal Navigation Arrow Buttons */}
                 {scanResult.recentWeeklyNews && scanResult.recentWeeklyNews.length > 0 && (
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       onClick={() => newsScrollRef.current?.scrollBy({ left: -340, behavior: 'smooth' })}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 active:scale-95 transition-all shadow-sm"
+                      className="p-2 rounded-xl bg-white hover:bg-slate-50 text-[#0b2540] border border-[#D5E7FA] shadow-xs cursor-pointer"
                       title="Scroll left"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => newsScrollRef.current?.scrollBy({ left: 340, behavior: 'smooth' })}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 active:scale-95 transition-all shadow-sm"
+                      className="p-2 rounded-xl bg-white hover:bg-slate-50 text-[#0b2540] border border-[#D5E7FA] shadow-xs cursor-pointer"
                       title="Scroll right"
                     >
                       <ChevronRight className="w-4 h-4" />
@@ -1115,73 +845,50 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
               {scanResult.recentWeeklyNews && scanResult.recentWeeklyNews.length > 0 ? (
                 <div 
                   ref={newsScrollRef}
-                  className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-slate-700"
+                  className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x scrollbar-none"
                 >
-                  {/* For Free Tier: Only display the first news card as sample preview */}
                   {(isProActive ? scanResult.recentWeeklyNews : scanResult.recentWeeklyNews.slice(0, 1)).map((news) => {
                     const cleanNewsTitle = cleanHtmlEntities(news.title);
                     const cleanNewsSnippet = cleanHtmlEntities(news.snippet);
                     return (
                       <div
                         key={news.id}
-                        className={`w-[85vw] sm:w-[380px] min-w-[300px] max-w-[420px] shrink-0 snap-start p-4 sm:p-5 rounded-2xl bg-slate-900/80 border transition-all flex flex-col justify-between space-y-3 ${
-                          news.isNewlyIngested 
-                            ? 'border-emerald-500/80 bg-emerald-950/20 ring-1 ring-emerald-500/40 shadow-lg' 
-                            : 'border-slate-800 hover:border-slate-700'
-                        }`}
+                        className="w-[85vw] sm:w-[380px] min-w-[300px] max-w-[420px] shrink-0 snap-start p-5 rounded-2xl bg-white border border-[#D5E7FA] shadow-xs flex flex-col justify-between space-y-3"
                       >
                         <div className="space-y-2">
                           <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 truncate">
-                              <span className="text-[11px] font-bold text-emerald-400 truncate max-w-[180px]">
-                                {news.source}
-                              </span>
-                              {news.isNewlyIngested && (
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500 text-black uppercase animate-pulse">
-                                  ✨ NEW STORY
-                                </span>
-                              )}
-                            </div>
-                            <span className="text-[10px] font-mono text-slate-400 shrink-0">
+                            <span className="text-xs font-bold text-[#005b9c] truncate max-w-[180px]">
+                              {news.source}
+                            </span>
+                            <span className="text-[11px] text-[#4a6076]">
                               {news.publishedDate}
                             </span>
                           </div>
 
-                          <h4 className="text-sm font-semibold text-slate-100 leading-snug line-clamp-2">
+                          <h4 className="text-sm font-semibold text-[#0b2540] leading-snug line-clamp-2">
                             {cleanNewsTitle}
                           </h4>
 
-                          <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/80 line-clamp-3">
+                          <p className="text-xs text-[#4a6076] leading-relaxed bg-[#f8fbfe] p-3 rounded-xl border border-[#d5e7fa] line-clamp-3">
                             {cleanNewsSnippet}
                           </p>
                         </div>
 
-                        <div className="pt-3 border-t border-slate-800/80 space-y-2.5">
+                        <div className="pt-3 border-t border-[#D5E7FA] space-y-2.5">
                           <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
-                                news.sentiment === 'POSITIVE' ? 'bg-emerald-500/20 text-emerald-300' :
-                                news.sentiment === 'NEGATIVE' ? 'bg-rose-500/20 text-rose-300' :
-                                'bg-slate-800 text-slate-300'
-                              }`}>
-                                {news.sentiment}
-                              </span>
-
-                              <button
-                                onClick={() => handleQuickDispatchWhatsapp(`📰 *RUMOUR RADAR NEWS RADAR*\n\nBrand: *${brandInput}*\nHeadline: *${cleanNewsTitle}*\nPublisher: ${news.source}\nLink: ${news.link}`)}
-                                className="px-2 py-1 rounded-md bg-slate-800 hover:bg-emerald-600/30 text-slate-300 hover:text-emerald-300 text-[10px] font-bold flex items-center gap-1 transition-colors"
-                                title="Forward article to WhatsApp"
-                              >
-                                <MessageSquare className="w-3 h-3 text-emerald-400" />
-                                <span>Share</span>
-                              </button>
-                            </div>
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                              news.sentiment === 'POSITIVE' ? 'bg-emerald-100 text-emerald-800' :
+                              news.sentiment === 'NEGATIVE' ? 'bg-rose-100 text-rose-800' :
+                              'bg-slate-100 text-slate-700'
+                            }`}>
+                              {news.sentiment}
+                            </span>
 
                             <a
                               href={news.link}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors"
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-[#005b9c] hover:underline"
                             >
                               <span>Read Full Story</span>
                               <ExternalLink className="w-3 h-3" />
@@ -1192,17 +899,16 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                             {onVerifyClaim && (
                               <button
                                 onClick={() => onVerifyClaim(`${cleanNewsTitle} — ${cleanNewsSnippet}`)}
-                                className="w-full py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                                className="w-full py-1.5 px-3 rounded-xl bg-[#005b9c] hover:bg-[#00406e] text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
                               >
-                                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                                <span>{isPidgin ? 'Check Tori' : 'Verify Story'}</span>
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span>Verify Story</span>
                               </button>
                             )}
 
                             <button
                               onClick={() => handleGenerateDebunkForStory(cleanNewsTitle, cleanNewsSnippet, news.source)}
-                              className={`w-full py-1.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 ${!onVerifyClaim ? 'sm:col-span-2' : ''}`}
-                              title="Generate tailored PR Debunk Kit for this article"
+                              className={`w-full py-1.5 px-3 rounded-xl bg-[#e6f1f8] hover:bg-[#d9ecfa] text-[#005b9c] border border-[#d5e7fa] font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer ${!onVerifyClaim ? 'sm:col-span-2' : ''}`}
                             >
                               <FileText className="w-3.5 h-3.5" />
                               <span>Debunk Kit →</span>
@@ -1212,317 +918,92 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                       </div>
                     );
                   })}
-
-                  {/* Free Tier: Locked Weekly News Feed Card appended after first sample */}
-                  {!isProActive && (
-                    <div 
-                      onClick={onOpenSubscriptionModal}
-                      className="w-[85vw] sm:w-[380px] min-w-[300px] max-w-[420px] shrink-0 snap-start glass-panel p-5 rounded-2xl border-2 border-dashed border-emerald-500/50 bg-gradient-to-br from-emerald-950/50 via-slate-900 to-slate-950 flex flex-col justify-between shadow-2xl space-y-4 hover:border-emerald-400 transition-all cursor-pointer group"
-                    >
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
-                            <Lock className="w-5 h-5 text-emerald-400" />
-                          </div>
-                          <span className="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase">
-                            BMoni Pro Feed
-                          </span>
-                        </div>
-
-                        <div>
-                          <h4 className="text-base font-extrabold text-white leading-snug">
-                            🔒 +{(scanResult.recentWeeklyNews?.length || 1) - 1} More Articles Ingested
-                          </h4>
-                          <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                            Continuous 7-Day Live Ingestion stream is locked. Upgrade to <strong>BMoni Pro Tier</strong> to monitor all weekly press drops, sentiment indexes, and automated newsroom feeds.
-                          </p>
-                        </div>
-
-                        <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-[11px] font-mono text-slate-400 space-y-1">
-                          <div className="text-emerald-400 flex items-center gap-1">
-                            <span>✓</span> <span>Continuous 45s Multi-Source RSS & Media Crawl</span>
-                          </div>
-                          <div className="text-emerald-400 flex items-center gap-1">
-                            <span>✓</span> <span>Full Coverage of TechCabal, Punch, Vanguard & Nairametrics</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onOpenSubscriptionModal();
-                        }}
-                        className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30 active:scale-95 transition-all"
-                      >
-                        <Zap className="w-4 h-4" />
-                        <span>⚡ Unlock All Weekly Articles (₦50k/mo)</span>
-                      </button>
-                    </div>
-                  )}
                 </div>
               ) : (
-                <div className="glass-panel p-8 text-center rounded-2xl text-slate-400 text-xs font-mono">
+                <div className="p-8 text-center rounded-2xl bg-white border border-[#D5E7FA] text-[#4a6076] text-xs">
                   No press releases recorded in the past 7 days for this keyword.
                 </div>
               )}
             </div>
           )}
 
-          {/* Tab 3: 1-Click Multi-Platform PR Debunk Kit */}
+          {/* Tab 3: PR Debunk Kit */}
           {activeTab === 'debunk_kit' && scanResult.debunkKit && (
-            <div className="glass-panel p-5 sm:p-6 rounded-2xl border-blue-500/30 space-y-5 shadow-2xl relative overflow-hidden">
-              {/* Story Context & Debunk Switcher Banner */}
-              <div className="p-4 rounded-xl bg-slate-900/90 border border-blue-500/30 space-y-2">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 uppercase flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-blue-400" />
-                      <span>{entityCategory === 'creator' ? '👤 Authentic Creator Tone' : entityCategory === 'agency' ? '🏛️ Official Regulatory Gazette' : '🏢 Corporate Communications Tone'}</span>
-                    </span>
-                    {isGeneratingDebunk && (
-                      <span className="text-[11px] font-mono text-emerald-400 animate-pulse flex items-center gap-1">
-                        <RefreshCw className="w-3 h-3 animate-spin" /> Customizing kit for story...
-                      </span>
-                    )}
-                  </div>
-
-                  <span className="text-[11px] font-mono text-slate-400">
-                    Entity: <strong className="text-white">{scanResult.brandName}</strong>
-                  </span>
-                </div>
-
-                <div className="text-xs text-slate-300">
-                  <span className="font-semibold text-slate-400 uppercase text-[10px] tracking-wider block font-mono">Addressing Specific Story / Rumor:</span>
-                  <div className="font-bold text-white text-sm mt-0.5 line-clamp-2">
-                    "{cleanHtmlEntities(selectedStoryForDebunk?.title || scanResult.debunkKit.targetRumour || scanResult.alerts[0]?.title || scanResult.recentWeeklyNews?.[0]?.title || `Viral claims regarding ${scanResult.brandName}`)}"
-                  </div>
-                </div>
-
-                {/* Quick Switch Story Chips */}
-                {(scanResult.alerts.length > 1 || (scanResult.recentWeeklyNews && scanResult.recentWeeklyNews.length > 0)) && (
-                  <div className="pt-2 border-t border-slate-800/80 space-y-1">
-                    <span className="text-[10px] font-mono text-slate-400 uppercase">Change Story to Debunk:</span>
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5">
-                      {scanResult.alerts.map((a, i) => (
-                        <button
-                          key={a.id}
-                          onClick={() => handleGenerateDebunkForStory(cleanHtmlEntities(a.title), cleanHtmlEntities(a.summary), a.sourceName)}
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-semibold truncate max-w-[200px] shrink-0 border transition-all active:scale-95 ${
-                            selectedStoryForDebunk?.title === cleanHtmlEntities(a.title)
-                              ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                              : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200'
-                          }`}
-                          title={a.title}
-                        >
-                          ⚠️ Rumor #{i + 1}: {cleanHtmlEntities(a.title)}
-                        </button>
-                      ))}
-                      {(scanResult.recentWeeklyNews || []).slice(0, 4).map((n, i) => (
-                        <button
-                          key={n.id}
-                          onClick={() => handleGenerateDebunkForStory(cleanHtmlEntities(n.title), cleanHtmlEntities(n.snippet), n.source)}
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-semibold truncate max-w-[200px] shrink-0 border transition-all active:scale-95 ${
-                            selectedStoryForDebunk?.title === cleanHtmlEntities(n.title)
-                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                              : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200'
-                          }`}
-                          title={n.title}
-                        >
-                          📰 News #{i + 1}: {cleanHtmlEntities(n.title)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* STRICT BMoni Pro Lock Banner if not Pro */}
-              {!isProActive && (
-                <div 
-                  onClick={onOpenSubscriptionModal}
-                  className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-950/90 via-slate-900 to-indigo-950/90 border-2 border-blue-500/60 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4 cursor-pointer group hover:border-blue-400 transition-all"
-                >
-                  <div className="space-y-1 text-left flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase flex items-center gap-1">
-                        <Lock className="w-3 h-3 text-amber-400" /> Locked Feature
-                      </span>
-                      <span className="text-xs font-bold text-white">Full PR Debunk Kit & Auto-Dispatches</span>
-                    </div>
-                    <h4 className="text-sm sm:text-base font-extrabold text-white">
-                      Unlock Persona-Tailored Debunk Copy with BMoni Pro Tier (₦50k/mo)
-                    </h4>
-                    <p className="text-xs text-slate-300 max-w-xl">
-                      Debunk kits are locked for Free Tier users to prevent unauthorized reproduction. Create your BMoni Pro account to unlock copyable, authentic drafts tailored to WhatsApp, Twitter/X, Instagram, and LinkedIn.
-                    </p>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenSubscriptionModal();
-                    }}
-                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 shrink-0 active:scale-95 transition-all"
-                  >
-                    <Zap className="w-4 h-4" />
-                    <span>⚡ Create BMoni Pro Tier Account</span>
-                  </button>
-                </div>
-              )}
-
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-t border-slate-800 pt-3">
+            <div className="p-5 sm:p-7 rounded-[22px] sm:rounded-[26px] bg-white border border-[#D5E7FA] shadow-xs space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#D5E7FA]">
                 <div>
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-blue-400" />
+                  <h3 className="text-base font-bold text-[#0b2540] flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#005b9c]" />
                     <span>Multi-Platform Crisis PR Debunk Kit for {scanResult.brandName}</span>
                   </h3>
-                  <p className="text-xs text-slate-400">
-                    Ready-to-publish executive statements crafted by Rumour Radar crisis AI.
+                  <p className="text-xs text-[#4a6076]">
+                    Ready-to-publish executive statements crafted by Truetalk AI.
                   </p>
                 </div>
 
                 <div className="flex items-center gap-2 self-start sm:self-auto">
                   <button
-                    onClick={() => {
-                      if (!isProActive) {
-                        onOpenSubscriptionModal();
-                      } else {
-                        handleQuickDispatchWhatsapp();
-                      }
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 ${
-                      isProActive ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
-                    }`}
+                    onClick={() => handleQuickDispatchWhatsapp()}
+                    className="px-3.5 py-2 rounded-xl bg-[#005b9c] hover:bg-[#00406e] text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer"
                   >
-                    {!isProActive ? <Lock className="w-3.5 h-3.5 text-amber-400" /> : <MessageSquare className="w-3.5 h-3.5" />}
-                    <span>{isProActive ? 'Send to WhatsApp' : '⚡ Pro: Send to WhatsApp'}</span>
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>Share to WhatsApp</span>
                   </button>
 
                   <button
                     onClick={() => {
-                      if (!isProActive) {
-                        onOpenSubscriptionModal();
-                      } else if (scanResult.debunkKit) {
+                      if (scanResult.debunkKit) {
                         handleCopy(scanResult.debunkKit.officialStatementDraft, 'official_stmt');
                       }
                     }}
-                    className={`px-3 py-1.5 rounded-lg text-white font-bold text-xs flex items-center gap-1.5 transition-all ${
-                      isProActive ? 'bg-blue-600 hover:bg-blue-500' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
-                    }`}
+                    className="px-3.5 py-2 rounded-xl bg-[#e6f1f8] hover:bg-[#d9ecfa] text-[#005b9c] border border-[#d5e7fa] font-semibold text-xs flex items-center gap-1.5 cursor-pointer"
                   >
-                    {!isProActive ? <Lock className="w-3.5 h-3.5 text-amber-400" /> : copiedKey === 'official_stmt' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{!isProActive ? 'Unlock Copy (Pro)' : copiedKey === 'official_stmt' ? 'Copied Statement!' : 'Copy Official Statement'}</span>
+                    {copiedKey === 'official_stmt' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedKey === 'official_stmt' ? 'Copied Statement!' : 'Copy Statement'}</span>
                   </button>
                 </div>
               </div>
 
-              {/* Official Statement Draft */}
-              <div 
-                onClick={() => {
-                  if (!isProActive) onOpenSubscriptionModal();
-                }}
-                className={`p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2 relative transition-all ${
-                  !isProActive ? 'cursor-pointer hover:border-blue-500/50' : ''
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold text-blue-400 uppercase">
-                    Official Press Clarification Draft
-                  </span>
-                  {!isProActive && (
-                    <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 flex items-center gap-1">
-                      <Lock className="w-2.5 h-2.5" /> Pro Tier Protected
-                    </span>
-                  )}
-                </div>
-
-                <p className={`text-xs sm:text-sm text-slate-200 leading-relaxed font-sans transition-all ${
-                  !isProActive ? 'blur-[3px] select-none opacity-60' : ''
-                }`}>
-                  {scanResult.debunkKit.officialStatementDraft}
-                </p>
-              </div>
-
-              {/* Social Media Channels Copy Bar */}
+              {/* Social Channels Tabs */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
-                    Platform-Tailored Debunk Broadcasts:
-                  </span>
-                  {!isProActive && (
-                    <span className="text-[10px] font-mono text-amber-400 flex items-center gap-1">
-                      <Lock className="w-3 h-3" /> Pro unlocks unblurred copy for WhatsApp, X, LinkedIn & Instagram
-                    </span>
-                  )}
+                <span className="text-xs font-bold text-[#0b2540] uppercase tracking-wider block">
+                  Platform-Tailored Debunk Broadcasts:
+                </span>
+
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                  {[
+                    { id: 'twitter', label: '𝕏 Twitter / X' },
+                    { id: 'whatsapp', label: '💬 WhatsApp' },
+                    { id: 'linkedin', label: '💼 LinkedIn' },
+                    { id: 'instagram', label: '📷 Instagram' }
+                  ].map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setActiveSocialTab(p.id as any)}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                        activeSocialTab === p.id
+                          ? 'bg-[#005b9c] text-white shadow-xs font-bold'
+                          : 'bg-[#f4f8fc] text-[#4a6076] hover:bg-[#e6f1f8] border border-[#d5e7fa]'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
                 </div>
 
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                  <button
-                    onClick={() => setActiveSocialTab('twitter')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
-                      activeSocialTab === 'twitter' ? 'bg-sky-600 text-white' : 'bg-slate-800 text-slate-400'
-                    }`}
-                  >
-                    <span className="font-mono">𝕏</span> Twitter / X
-                  </button>
+                {/* Social Post Content Box */}
+                <div className="relative p-4 sm:p-5 rounded-2xl bg-[#f8fbfe] border border-[#d5e7fa] font-mono text-xs text-[#0b2540] whitespace-pre-wrap leading-relaxed">
+                  {getSocialPostText(scanResult.debunkKit)}
 
                   <button
-                    onClick={() => setActiveSocialTab('whatsapp')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
-                      activeSocialTab === 'whatsapp' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'
-                    }`}
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" /> WhatsApp Broadcast {!isProActive && '🔒'}
-                  </button>
-
-                  <button
-                    onClick={() => setActiveSocialTab('linkedin')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
-                      activeSocialTab === 'linkedin' ? 'bg-blue-700 text-white' : 'bg-slate-800 text-slate-400'
-                    }`}
-                  >
-                    <Briefcase className="w-3.5 h-3.5" /> LinkedIn Statement {!isProActive && '🔒'}
-                  </button>
-
-                  <button
-                    onClick={() => setActiveSocialTab('instagram')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
-                      activeSocialTab === 'instagram' ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white' : 'bg-slate-800 text-slate-400'
-                    }`}
-                  >
-                    <Camera className="w-3.5 h-3.5" /> Instagram Caption {!isProActive && '🔒'}
-                  </button>
-                </div>
-
-                {/* Social Copy Box */}
-                <div 
-                  onClick={() => {
-                    if (!isProActive) onOpenSubscriptionModal();
-                  }}
-                  className={`relative p-4 rounded-xl bg-slate-950 border border-slate-800 font-mono text-xs text-slate-200 whitespace-pre-wrap leading-relaxed transition-all ${
-                    !isProActive ? 'cursor-pointer hover:border-blue-500/50' : ''
-                  }`}
-                >
-                  <div className={!isProActive ? 'blur-[3px] select-none opacity-60' : ''}>
-                    {getSocialPostText(scanResult.debunkKit)}
-                  </div>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!isProActive) {
-                        onOpenSubscriptionModal();
-                        return;
-                      }
-                      const text = getSocialPostText(scanResult.debunkKit);
+                    onClick={() => {
+                      const text = getSocialPostText(scanResult.debunkKit!);
                       handleCopy(text, activeSocialTab);
                     }}
-                    className={`absolute top-3 right-3 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
-                      isProActive ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
-                    }`}
+                    className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-white border border-[#d5e7fa] text-xs font-semibold text-[#005b9c] shadow-2xs hover:bg-[#e6f1f8] transition-all flex items-center gap-1 cursor-pointer"
                   >
-                    {!isProActive ? <Lock className="w-3 h-3 text-amber-400" /> : copiedKey === activeSocialTab ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{!isProActive ? 'Unlock Copy' : copiedKey === activeSocialTab ? 'Copied!' : 'Copy'}</span>
+                    {copiedKey === activeSocialTab ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedKey === activeSocialTab ? 'Copied!' : 'Copy'}</span>
                   </button>
                 </div>
               </div>
@@ -1531,30 +1012,30 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
         </div>
       )}
 
-      {/* ALERT CONFIGURATION MODAL */}
+      {/* Alert Configuration Modal */}
       {isAlertConfigOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
-          <div className="relative w-full max-w-md p-6 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl text-slate-100 space-y-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-md animate-in fade-in">
+          <div className="relative w-full max-w-md p-6 rounded-[24px] bg-white border border-[#D5E7FA] shadow-2xl text-[#0b2540] space-y-4">
             <button
               onClick={() => setIsAlertConfigOpen(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-full bg-slate-800 text-slate-400 hover:text-white"
+              className="absolute top-4 right-4 p-1.5 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800"
             >
               <X className="w-4 h-4" />
             </button>
 
-            <div className="flex items-center gap-3 pb-2 border-b border-slate-800">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+            <div className="flex items-center gap-3 pb-2 border-b border-[#D5E7FA]">
+              <div className="w-10 h-10 rounded-xl bg-[#e6f1f8] border border-[#d5e7fa] flex items-center justify-center text-[#005b9c]">
                 <BellRing className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Configure Sentinel Alert Channels</h3>
-                <p className="text-xs text-slate-400">Instant notification rails for {brandInput}</p>
+                <h3 className="text-base font-bold text-[#0b2540]">Configure Sentinel Alert Channels</h3>
+                <p className="text-xs text-[#4a6076]">Instant notification rails for {brandInput}</p>
               </div>
             </div>
 
             <form onSubmit={handleSaveAlertConfig} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">
+                <label className="block font-semibold text-[#0b2540] mb-1">
                   WhatsApp Phone Number for Urgent Alerts:
                 </label>
                 <div className="relative">
@@ -1564,16 +1045,13 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                     value={alertWhatsappNumber}
                     onChange={(e) => setAlertWhatsappNumber(e.target.value)}
                     placeholder="e.g. 08012345678 or +234 801 234 5678"
-                    className="w-full pl-9 pr-3.5 py-2.5 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                    className="w-full h-10 pl-9 pr-3.5 rounded-xl bg-white border border-[#005b9c]/25 text-sm text-[#0b2540] placeholder-slate-400 focus:outline-none focus:border-[#005b9c]"
                   />
                 </div>
-                <span className="text-[10px] text-emerald-400 mt-1 block font-mono">
-                  ✓ Accepts all Nigerian formats (080..., 090..., 070... or +234...). Auto-formats to international country code.
-                </span>
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">
+                <label className="block font-semibold text-[#0b2540] mb-1">
                   PR Desk Email (Optional):
                 </label>
                 <input
@@ -1581,28 +1059,23 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                   value={alertEmail}
                   onChange={(e) => setAlertEmail(e.target.value)}
                   placeholder="pr-desk@company.ng"
-                  className="w-full px-3.5 py-2.5 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                  className="w-full h-10 px-3.5 rounded-xl bg-white border border-[#005b9c]/25 text-sm text-[#0b2540] placeholder-slate-400 focus:outline-none focus:border-[#005b9c]"
                 />
-              </div>
-
-              <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-[11px] flex items-center gap-2">
-                <Sparkles className="w-4 h-4 shrink-0 text-emerald-400" />
-                <span>Continuous crawler scans news every 45s and triggers instant WhatsApp broadcast intents.</span>
               </div>
 
               <div className="pt-2 flex items-center gap-2">
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5"
+                  className="flex-1 h-11 rounded-xl bg-[#005b9c] hover:bg-[#00406e] text-white font-semibold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  {isAlertConfigSaved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4 hidden" />}
-                  <span>{isAlertConfigSaved ? 'Alert Channels Saved!' : 'Save & Arm Sentinel Alerts'}</span>
+                  {isAlertConfigSaved ? <Check className="w-4 h-4" /> : null}
+                  <span>{isAlertConfigSaved ? 'Alert Channels Saved!' : 'Save & Arm Alerts'}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setIsAlertConfigOpen(false)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                  className="px-4 h-11 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs font-semibold cursor-pointer"
                 >
                   Close
                 </button>
@@ -1612,89 +1085,65 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
         </div>
       )}
 
-      {/* WHY BRAND SHIELD & BMONI PRO POPUP MODAL */}
+      {/* Why Brand Shield Modal */}
       {isWhyModalOpen && mounted && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in overflow-y-auto"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-md animate-in fade-in overflow-y-auto"
           onClick={() => setIsWhyModalOpen(false)}
         >
           <div
-            className="relative w-full max-w-xl p-6 sm:p-8 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl text-slate-100 max-h-[90vh] overflow-y-auto my-auto space-y-5"
+            className="relative w-full max-w-xl p-6 sm:p-8 rounded-[24px] bg-white border border-[#D5E7FA] shadow-2xl text-[#0b2540] max-h-[90vh] overflow-y-auto my-auto space-y-5"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setIsWhyModalOpen(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-full bg-slate-800 text-slate-400 hover:text-white transition-colors"
+              className="absolute top-4 right-4 p-1.5 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
 
-            {/* Modal Header matching BmoniSubscriptionModal branding */}
-            <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
-              <img
-                src="/images/logowhite.jpeg"
-                alt="RumourRadar Logo"
-                className="w-10 h-10 rounded-xl object-cover border border-blue-500/40 shadow-md shrink-0"
-              />
+            <div className="flex items-center gap-3 pb-3 border-b border-[#D5E7FA]">
+              <div className="w-10 h-10 rounded-xl bg-[#e6f1f8] border border-[#d5e7fa] flex items-center justify-center text-[#005b9c] shrink-0">
+                <Building2 className="w-5 h-5" />
+              </div>
               <div>
-                <div className="flex items-center gap-2 text-blue-400">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider">
-                    ⚡ BMONI SURVEILLANCE INTELLIGENCE
-                  </span>
-                </div>
-                <h3 className="text-base sm:text-lg font-black text-white">
-                  {isPidgin ? 'Why Brand Shield & BMoni Pro Tier Dey Critical?' : 'Why Brand Shield & BMoni Pro Tier is Critical'}
+                <span className="text-[10px] font-bold text-[#005b9c] uppercase tracking-wider block">
+                  ⚡ Paga Surveillance Intelligence
+                </span>
+                <h3 className="text-base sm:text-lg font-bold text-[#0b2540]">
+                  Why Brand Shield & Paga Plus Tier is Critical
                 </h3>
               </div>
             </div>
 
-            {/* Audience 1: Companies & Creators */}
-            <div className="p-4 rounded-xl bg-slate-950 border border-blue-500/30 space-y-2.5">
-              <div className="flex items-center gap-2 text-blue-400 font-bold text-xs sm:text-sm">
-                <span className="text-base">🏢</span>
-                <span>Target 1: Companies, Brands & Creators (People)</span>
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed">
+            <div className="p-4 rounded-xl bg-[#f8fbfe] border border-[#d5e7fa] space-y-2">
+              <h4 className="font-bold text-xs sm:text-sm text-[#005b9c]">
+                Target 1: Companies, Brands & Creators
+              </h4>
+              <p className="text-xs text-[#4a6076] leading-relaxed">
                 Stay ahead of viral defamatory rumors, fabricated bank circulars, and damaging trends across WhatsApp forwards and X quotes before panic hits customers or investors.
               </p>
-              <div className="text-[11px] text-emerald-400 font-mono flex items-center gap-1.5 pt-1 border-t border-slate-800/80">
-                <span>✓ Auto-generate 1-click PR Debunk Kits for WhatsApp, X, LinkedIn & Press in 60s</span>
-              </div>
             </div>
 
-            {/* Audience 2: Brand Trackers & Fans */}
-            <div className="p-4 rounded-xl bg-slate-950 border border-purple-500/30 space-y-2.5">
-              <div className="flex items-center gap-2 text-purple-400 font-bold text-xs sm:text-sm">
-                <span className="text-base">⭐</span>
-                <span>Target 2: Brand Trackers, Fans & Super-Followers</span>
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Keep complete real-time tabs on all verified updates, breaking press articles, and viral stories about your favorite celebrities (Davido, Burna Boy, Wizkid), banks (GTBank, Opay), or agencies (CBN, EFCC).
+            <div className="p-4 rounded-xl bg-[#f8fbfe] border border-[#d5e7fa] space-y-2">
+              <h4 className="font-bold text-xs sm:text-sm text-[#005b9c]">
+                Target 2: Brand Trackers & Newsrooms
+              </h4>
+              <p className="text-xs text-[#4a6076] leading-relaxed">
+                Keep complete real-time tabs on all verified updates, breaking press articles, and viral stories across national media desks.
               </p>
-              <div className="text-[11px] text-purple-300 font-mono flex items-center gap-1.5 pt-1 border-t border-slate-800/80">
-                <span>✓ 24/7 continuous 7-day live news ingestion & instant alert rails</span>
-              </div>
             </div>
 
-            {/* Continuous Surveillance Tech Badge */}
-            <div className="p-3 rounded-xl bg-blue-950/30 border border-blue-500/30 text-xs text-slate-300 flex items-center gap-2.5">
-              <Radio className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
-              <span className="text-[11px] text-slate-300 font-mono">
-                Surveillance grid crawls national newsrooms (TechCabal, Punch, Vanguard, Nairametrics), WhatsApp forward trends & social quotes every 45 seconds.
-              </span>
-            </div>
-
-            {/* Action Buttons */}
             <div className="pt-2 flex flex-col sm:flex-row items-center gap-2.5">
               <button
                 onClick={() => {
                   setIsWhyModalOpen(false);
                   onOpenSubscriptionModal();
                 }}
-                className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-blue-500/30 active:scale-95 transition-all flex items-center justify-center gap-2"
+                className="w-full sm:flex-1 h-12 rounded-xl bg-[#005b9c] hover:bg-[#00406e] text-white font-semibold text-xs shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Zap className="w-4 h-4" />
-                <span>{isProActive ? 'Manage BMoni Pro Tier' : '⚡ Create BMoni Pro Tier Account (₦50k/mo)'}</span>
+                <span>{isProActive ? 'Manage Paga Plus Tier' : '⚡ Upgrade to Paga Plus (₦50k/mo)'}</span>
               </button>
 
               <button
@@ -1702,10 +1151,9 @@ export function BrandShieldDashboard({ onOpenSubscriptionModal, appLanguage = 'e
                   setIsWhyModalOpen(false);
                   setIsHelpOpen(true);
                 }}
-                className="w-full sm:w-auto px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
+                className="w-full sm:w-auto h-12 px-5 rounded-xl bg-white border border-[#d5e7fa] text-[#4a6076] text-xs font-semibold cursor-pointer"
               >
-                <HelpCircle className="w-4 h-4 text-slate-400" />
-                <span>How to Use Guide</span>
+                How to Use Guide
               </button>
             </div>
           </div>
